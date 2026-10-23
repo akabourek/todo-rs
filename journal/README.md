@@ -13,6 +13,6 @@ git diff lekce-01 lekce-02 # co přibylo mezi lekcemi
 
 ### Část I – Základy (konzole)
 - [00 – Příprava prostředí](00-priprava.md)
-- 01 – První program *(připravuje se)*
+- [01 – První program](01-prvni-program.md) – proměnné, `Vec`, `for`, makra, closure `|x|`
 
 Celá plánovaná osnova je v [CLAUDE.md](../CLAUDE.md#osnova-stav--hotovo--čeká).

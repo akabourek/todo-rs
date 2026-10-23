@@ -17,7 +17,8 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
 - `journal/README.md` = obsah s odkazy na všechny lekce. Po každé lekci aktualizovat.
 - Struktura každé lekce (stručně, aby se k ní dalo vracet jako k taháku):
   1. **Cíl** – 1–2 věty, co umíme po lekci
-  2. **Nové pojmy** – krátké vysvětlení s mini-příklady
+  2. **Nové pojmy a syntaxe** – krátké vysvětlení s mini-příklady; rozebrat i každý nový zápis
+     (symboly jako `|x|`, `&`, `::`, `!`, `?`, `'a`…), ne jen koncept
   3. **Postup** – co jsme udělali, příkazy, klíčové kusy kódu
   4. **Tahák** – shrnutí v bodech / tabulce
   5. **Procvičení** – 2–3 malé úkoly pro samostatnou práci
@@ -31,6 +32,9 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
 - Claude: vysvětluje pojmy, zadává úkoly, kontroluje kód (build, clippy, testy), radí s chybami,
   píše journal, udržuje CLAUDE.md, dělá git commity a tagy. `Cargo.toml` (závislosti) může Claude
   upravit, ale lepší je ukázat příkaz (`cargo add ...`) a nechat Aleše ho spustit.
+- **Vždy vysvětlovat i syntaxi a jazykové konstrukce**, nejen co kód dělá. Každý nový symbol
+  nebo zápis (např. `|x|` u closure, `&`, `::`, `!` u maker, destrukturování `(a, b)`) rozebrat:
+  co znamená, jak se čte, s čím ho nezaměnit. Nepředpokládat, že Aleš zná zápis z jiného jazyka.
 - U chyb dávat nejdřív **nápovědu** (co kompilátor říká a proč), hotové řešení až když o něj Aleš požádá.
 
 ## Postup u každé lekce
@@ -55,29 +59,30 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
 
 ### Část I – Základy (konzole)
 - ✅ 00 Příprava prostředí (rustup, cargo, git, editor)
-- ⬜ 01 První program (println!, proměnné, mut, Vec, for)
-- ⬜ 02 Struktury a metody (`struct Task`, `impl`, `String` vs `&str`)
-- ⬜ 03 Enumy a `match` (stav úkolu, `Option`)
-- ⬜ 04 Vlastnictví a výpůjčky (ownership, borrowing, `&` / `&mut`)
-- ⬜ 05 Vstup od uživatele (stdin, interaktivní smyčka, parsování příkazů)
-- ⬜ 06 Chyby (`Result`, `?`, vlastní chybový typ)
-- ⬜ 07 Moduly (rozdělení do souborů, `pub`, `mod`, `use`)
-- ⬜ 08 Testy (`cargo test`, unit testy)
-- ⬜ 09 Ukládání do souboru (crates, `serde`, JSON, `std::fs`)
-- ⬜ 10 CLI argumenty (`clap`, `todo add "..."`)
+- ✅ 01 První program (println!, proměnné, mut, pole vs Vec, for, closure `|x|`)
+- ⬜ 02 Debugování ve VS Code (CodeLLDB, breakpointy, krokování, `dbg!`, format on save)
+- ⬜ 03 Struktury a metody (`struct Task`, `impl`, `String` vs `&str`)
+- ⬜ 04 Enumy a `match` (stav úkolu, `Option`)
+- ⬜ 05 Vlastnictví a výpůjčky (ownership, borrowing, `&` / `&mut`)
+- ⬜ 06 Vstup od uživatele (stdin, interaktivní smyčka, parsování příkazů)
+- ⬜ 07 Chyby (`Result`, `?`, vlastní chybový typ)
+- ⬜ 08 Moduly (rozdělení do souborů, `pub`, `mod`, `use`)
+- ⬜ 09 Testy (`cargo test`, unit testy)
+- ⬜ 10 Ukládání do souboru (crates, `serde`, JSON, `std::fs`)
+- ⬜ 11 CLI argumenty (`clap`, `todo add "..."`)
 
 ### Část II – Pokročilejší Rust
-- ⬜ 11 Traity a generika
-- ⬜ 12 Iterátory a closures (filtrování, řazení úkolů)
-- ⬜ 13 Lifetimes
-- ⬜ 14 Workspace: knihovna `todo-core` + binárky
+- ⬜ 12 Traity a generika
+- ⬜ 13 Iterátory a closures (filtrování, řazení úkolů)
+- ⬜ 14 Lifetimes
+- ⬜ 15 Workspace: knihovna `todo-core` + binárky
 
 ### Část III – TUI
-- ⬜ 15 ratatui: první okno, event loop
-- ⬜ 16 Stav aplikace, seznam, navigace klávesami
-- ⬜ 17 Přidávání/editace úkolů, režimy (normal/insert)
+- ⬜ 16 ratatui: první okno, event loop
+- ⬜ 17 Stav aplikace, seznam, navigace klávesami
+- ⬜ 18 Přidávání/editace úkolů, režimy (normal/insert)
 
 ### Část IV – GUI
-- ⬜ 18 egui/eframe: první okno
-- ⬜ 19 ToDo GUI nad `todo-core`
-- ⬜ 20 Release build, distribuce, (volitelně) srovnání s iced
+- ⬜ 19 egui/eframe: první okno
+- ⬜ 20 ToDo GUI nad `todo-core`
+- ⬜ 21 Release build, distribuce, (volitelně) srovnání s iced
