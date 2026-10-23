@@ -27,11 +27,15 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
 
 ## Kdo co dělá
 
-- **Zdrojové soubory (`src/**`, později `*.rs` kdekoliv) píše Aleš sám.** Claude do nich nezapisuje.
-  Výjimka jen na Alešův výslovný pokyn pro konkrétní změnu.
-- Claude: vysvětluje pojmy, zadává úkoly, kontroluje kód (build, clippy, testy), radí s chybami,
-  píše journal, udržuje CLAUDE.md, dělá git commity a tagy. `Cargo.toml` (závislosti) může Claude
-  upravit, ale lepší je ukázat příkaz (`cargo add ...`) a nechat Aleše ho spustit.
+- **Claude nedělá nic za Aleše.** Aleš se učí tím, že věci dělá sám. Claude nic nevytváří, neupravuje,
+  nemaže ani nespouští za něj – bez výslovného pokynu pro konkrétní akci. Ani „na pomoc“, ani podle
+  vlastního výkladu Alešovy otázky; když není jasné, co chce, Claude se zeptá a počká.
+- **Všechny soubory projektu vytváří a upravuje Aleš sám**: zdrojáky (`*.rs`), `Cargo.toml`,
+  konfigurace (`.vscode/`, `.gitignore`, `rustfmt.toml`…), i příkazy, které něco mění (`cargo add`, `cargo fmt`…).
+  Claude místo toho řekne, co a kde udělat (návod, ne hotový soubor).
+- Claude sám zapisuje **jen** do `journal/` a `CLAUDE.md`. Git commit/tag dělá, když o to Aleš požádá.
+- Claude: vysvětluje pojmy, zadává úkoly, kontroluje kód (build, clippy, testy – jen čtení/ověření),
+  radí s chybami.
 - **Vždy vysvětlovat i syntaxi a jazykové konstrukce**, nejen co kód dělá. Každý nový symbol
   nebo zápis (např. `|x|` u closure, `&`, `::`, `!` u maker, destrukturování `(a, b)`) rozebrat:
   co znamená, jak se čte, s čím ho nezaměnit. Nepředpokládat, že Aleš zná zápis z jiného jazyka.
@@ -45,7 +49,7 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
    okomentuje kód, navrhne vylepšení.
 4. Claude napíše lekci do `journal/` podle skutečného Alešova kódu, aktualizuje `journal/README.md`
    a stav osnovy níže.
-5. Commit (česká zpráva) + tag `lekce-NN`.
+5. Na Alešův pokyn: commit (česká zpráva) + tag `lekce-NN`.
 
 ## Technické volby
 
@@ -60,7 +64,7 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
 ### Část I – Základy (konzole)
 - ✅ 00 Příprava prostředí (rustup, cargo, git, editor)
 - ✅ 01 První program (println!, proměnné, mut, pole vs Vec, for, closure `|x|`)
-- ⬜ 02 Debugování ve VS Code (CodeLLDB, breakpointy, krokování, `dbg!`, format on save)
+- ✅ 02 Debugování ve VS Code (CodeLLDB, breakpointy, krokování, `dbg!`, format on save)
 - ⬜ 03 Struktury a metody (`struct Task`, `impl`, `String` vs `&str`)
 - ⬜ 04 Enumy a `match` (stav úkolu, `Option`)
 - ⬜ 05 Vlastnictví a výpůjčky (ownership, borrowing, `&` / `&mut`)
