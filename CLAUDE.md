@@ -66,7 +66,7 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
 - ✅ 01 První program (println!, proměnné, mut, pole vs Vec, for, closure `|x|`)
 - ✅ 02 Debugování ve VS Code (CodeLLDB, breakpointy, krokování, `dbg!`, format on save)
 - ✅ 03 Struktury a metody (`struct Task`, `impl`, `String` vs `&str`)
-- ⬜ 04 Enumy a `match` (stav úkolu, `Option`)
+- ✅ 04 Enumy a `match` (stav úkolu, `Option`)
 - ⬜ 05 Vlastnictví a výpůjčky (ownership, borrowing, `&` / `&mut`)
 - ⬜ 06 Vstup od uživatele (stdin, interaktivní smyčka, parsování příkazů)
 - ⬜ 07 Chyby (`Result`, `?`, vlastní chybový typ)

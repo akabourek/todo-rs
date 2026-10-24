@@ -16,5 +16,6 @@ git diff lekce-01 lekce-02 # co přibylo mezi lekcemi
 - [01 – První program](01-prvni-program.md) – proměnné, `Vec`, `for`, makra, closure `|x|`
 - [02 – Debugování ve VS Code](02-debugovani.md) – CodeLLDB, breakpointy, krokování, `dbg!`
 - [03 – Struktury a metody](03-struktury-a-metody.md) – `struct`, `impl`, `&self`, `String` vs `&str`, `if` jako výraz
+- [04 – Enumy a `match`](04-enumy-a-match.md) – `enum`, `match`, `matches!`, `Option`, `if let`, `get` vs `[]`
 
 Celá plánovaná osnova je v [CLAUDE.md](../CLAUDE.md#osnova-stav--hotovo--čeká).
