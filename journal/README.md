@@ -18,5 +18,6 @@ git diff lekce-01 lekce-02 # co přibylo mezi lekcemi
 - [03 – Struktury a metody](03-struktury-a-metody.md) – `struct`, `impl`, `&self`, `String` vs `&str`, `if` jako výraz
 - [04 – Enumy a `match`](04-enumy-a-match.md) – `enum`, `match`, `matches!`, `Option`, `if let`, `get` vs `[]`
 - [05 – Vlastnictví a výpůjčky](05-vlastnictvi-a-vypujcky.md) – move, `Copy`/`clone`, `&`/`&mut`, borrow checker, slice `&[T]`
+  - [Infografika: Kdo drží krabici?](05-vlastnictvi-infografika.html) – vlastnictví na krabicích + hřiště na borrow checker (otevřít v prohlížeči)
 
 Celá plánovaná osnova je v [CLAUDE.md](../CLAUDE.md#osnova-stav--hotovo--čeká).

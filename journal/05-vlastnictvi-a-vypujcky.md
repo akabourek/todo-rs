@@ -188,6 +188,7 @@ Z názvu metody se dá poznat, co dělá se `self` (konvence standardní knihovn
    `tasks.remove(i)`). Na `&Task` (např. z `find_task`) skončí `E0507` – půjčenou věc nejde dát pryč.
 
 ## Odkazy
+- [Infografika: Kdo drží krabici?](05-vlastnictvi-infografika.html) – celá lekce na obrázcích s krabicemi a interaktivní hřiště (otevřít v prohlížeči)
 - [Rust Book 4.1 – What is Ownership?](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html)
 - [Rust Book 4.2 – References and Borrowing](https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html)
 - [Rust Book 4.3 – The Slice Type](https://doc.rust-lang.org/book/ch04-03-slices.html)
