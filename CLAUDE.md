@@ -25,6 +25,16 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
   6. **Odkazy** – kapitoly z The Rust Book apod.
 - Lekce popisuje stav kódu odpovídající git tagu `lekce-NN`.
 
+## Infografiky
+
+- **Ke každé lekci patří infografika** – Claude ji vytvoří vždy spolu se zápisem lekce (krok 4 postupu).
+- Umístění: `journal/infografika/NN-kratky-nazev-infografika.html` (jeden samostatný HTML soubor,
+  otevírá se v prohlížeči), odkaz v sekci **Odkazy** lekce i v `journal/README.md`.
+- Postup, struktura, jednotný styl řady, pasti a ověřovací skripty jsou ve skillu
+  **`infografika`** (`.claude/skills/infografika/SKILL.md`, skripty v `scripts/`):
+  `rustc-check.sh` (ukázky a hlášky na skutečném `rustc`), `overflow.sh` (přetékání na mobilu),
+  `shot.sh` (screenshoty desktop/mobil), `playtest.sh` (test hřiště). Při tvorbě infografiky skill vždy načíst.
+
 ## Kdo co dělá
 
 - **Claude nedělá nic za Aleše.** Aleš se učí tím, že věci dělá sám. Claude nic nevytváří, neupravuje,
@@ -33,7 +43,8 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
 - **Všechny soubory projektu vytváří a upravuje Aleš sám**: zdrojáky (`*.rs`), `Cargo.toml`,
   konfigurace (`.vscode/`, `.gitignore`, `rustfmt.toml`…), i příkazy, které něco mění (`cargo add`, `cargo fmt`…).
   Claude místo toho řekne, co a kde udělat (návod, ne hotový soubor).
-- Claude sám zapisuje **jen** do `journal/` a `CLAUDE.md`. Git commit/tag dělá, když o to Aleš požádá.
+- Claude sám zapisuje **jen** do `journal/` (včetně `journal/infografika/`), `CLAUDE.md`
+  a svých pomocných nástrojů v `.claude/skills/` (skilly a skripty pro psaní journalu a infografik). Git commit/tag dělá, když o to Aleš požádá.
 - Claude: vysvětluje pojmy, zadává úkoly, kontroluje kód (build, clippy, testy – jen čtení/ověření),
   radí s chybami.
 - **Vždy vysvětlovat i syntaxi a jazykové konstrukce**, nejen co kód dělá. Každý nový symbol
@@ -47,8 +58,8 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
 2. Aleš napíše kód.
 3. Claude ověří: `cargo build`, `cargo run`, `cargo clippy`, od lekce s testy i `cargo test`;
    okomentuje kód, navrhne vylepšení.
-4. Claude napíše lekci do `journal/` podle skutečného Alešova kódu, aktualizuje `journal/README.md`
-   a stav osnovy níže.
+4. Claude napíše lekci do `journal/` podle skutečného Alešova kódu, vytvoří k ní infografiku
+   v `journal/infografika/`, aktualizuje `journal/README.md` a stav osnovy níže.
 5. Na Alešův pokyn: commit (česká zpráva) + tag `lekce-NN`.
 
 ## Technické volby
