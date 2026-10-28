@@ -297,6 +297,7 @@ Poznámky:
    destrukturuj do `(no, title)`. Co uděláš, když název chybí?
 
 ## Odkazy
+- [Infografika: Cesta příkazu](06-vstup-infografika.html) – stanice od `read_line` po `get_mut`, let chains jako řada branek + hřiště, kde pošleš příkaz svým programem (otevřít v prohlížeči)
 - [Rust Book 2 – Programming a Guessing Game](https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html) (stdin, `read_line`, `parse`, `loop`)
 - [Rust Book 3.5 – Control Flow (`loop`, `break`)](https://doc.rust-lang.org/book/ch03-05-control-flow.html)
 - [Rust Book 3.2 – Data Types (tuples)](https://doc.rust-lang.org/book/ch03-02-data-types.html#the-tuple-type)

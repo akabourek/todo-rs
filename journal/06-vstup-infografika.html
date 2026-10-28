@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>Cesta příkazu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
+<style>
+/* Layout: text z klávesnice putuje stanicemi (read_line → trim → split_once → match → parse → get_mut);
+   řetězení podmínek = řada branek, kterými se musí projít všemi. Barvy a písma sdílí s lekcemi 04 a 05. */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #1b2330;
+  --muted: #5b6676;
+  --line: #cfd6df;
+  --kraft: #c9975c;
+  --kraft-dark: #a7773f;
+  --kraft-edge: #6f4c24;
+  --tape: #efc75e;
+  --label: #f7f1e3;
+  --read: #0d7480;
+  --read-soft: #d7eef0;
+  --write: #c2410c;
+  --write-soft: #fbe3d6;
+  --ok: #2e7d32;
+  --ok-soft: #dcefdc;
+  --err: #b42318;
+  --err-soft: #f9dedb;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --f-stamp: "Saira Stencil One", Impact, "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+    --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+    --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+    --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+  --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+  --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+  --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  /* bez ligatur: && => -> musí vypadat přesně tak, jak se píšou */
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3.2vw, 2rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 code { font-size: 0.85em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+code, pre { font-family: var(--f-code); font-size: 0.86em; }
+:not(pre) > code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; white-space: nowrap; }
+a { color: var(--read); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--write); outline-offset: 2px; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 32px; align-items: center; }
+.hero .lead { font-size: 1.2rem; color: var(--muted); margin-top: 16px; }
+.eyebrow { font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hero-fig { display: flex; justify-content: center; min-width: 0; }
+
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.rule b { font-family: var(--f-display); font-size: 1.15rem; }
+.rule span { color: var(--muted); font-size: 0.95rem; }
+.rule .n { font-family: var(--f-stamp); font-size: 1.6rem; color: var(--kraft-dark); line-height: 1; }
+
+/* ---------- pásek znaků (String) ---------- */
+.str { display: inline-flex; flex-wrap: nowrap; gap: 2px; font-family: var(--f-code); font-size: 0.85rem; max-width: 100%; overflow-x: auto; padding: 2px; }
+.str > span { display: inline-grid; place-items: center; min-width: 1.45em; height: 1.9em; padding: 0 2px; background: var(--label); color: #3a2b17; border: 1px solid var(--kraft-dark); border-radius: 3px; white-space: pre; }
+.str > .ws { background: var(--surface-2); color: var(--muted); border-style: dashed; border-color: var(--line); }
+.str > .nl { background: var(--write-soft); color: var(--write); border-color: var(--write); font-weight: 600; }
+.str > .cut { opacity: 0.25; text-decoration: line-through; }
+.str > .sp { background: var(--tape); border-color: var(--kraft-edge); }
+.str.cmd > span:not(.cut) { background: var(--read-soft); border-color: var(--read); color: var(--read); }
+.str-cap { font-family: var(--f-code); font-size: 0.75rem; color: var(--muted); }
+
+/* ---------- smyčka ---------- */
+.loop { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%; position: relative; }
+.stn { background: var(--surface-2); border: 2px solid var(--line); border-radius: 10px; padding: 10px; display: grid; gap: 4px; justify-items: center; text-align: center; font-size: 0.85rem; }
+.stn code { font-size: 0.8rem; }
+.stn b { font-family: var(--f-display); font-size: 0.95rem; }
+.stn.exit { border-color: var(--err); background: var(--err-soft); }
+.loop-back { grid-column: 1 / -1; text-align: center; font-family: var(--f-code); font-size: 0.8rem; color: var(--muted); border: 2px dashed var(--line); border-top: 0; border-radius: 0 0 14px 14px; padding: 4px 0 6px; }
+
+/* ---------- branky (let chain) ---------- */
+.chain { display: flex; align-items: stretch; gap: 0; width: 100%; overflow-x: auto; padding: 4px 2px; }
+.gate {
+  flex: 1 1 0; min-width: 120px; display: grid; gap: 4px; align-content: start;
+  padding: 10px 10px 12px; border: 2px solid var(--line); border-top-width: 8px; border-radius: 6px;
+  background: var(--surface); font-size: 0.82rem;
+}
+.gate code { font-size: 0.78rem; white-space: normal; overflow-wrap: anywhere; }
+.gate .g-h { font-family: var(--f-code); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.gate .g-v { font-family: var(--f-code); font-weight: 600; font-size: 0.8rem; overflow-wrap: anywhere; }
+.gate.pass { border-color: var(--ok); background: var(--ok-soft); }
+.gate.pass .g-v { color: var(--ok); }
+.gate.fail { border-color: var(--err); background: var(--err-soft); }
+.gate.fail .g-v { color: var(--err); }
+.gate.skip { border-style: dashed; opacity: 0.5; }
+.gate.body { border-color: var(--ink); }
+.gate.body.pass { background: var(--ok-soft); border-color: var(--ok); }
+.and { flex: none; align-self: center; font-family: var(--f-code); font-weight: 600; font-size: 0.95rem; color: var(--muted); padding: 0 6px; }
+.else-row { display: flex; gap: 10px; align-items: center; justify-content: flex-end; width: 100%; font-size: 0.85rem; }
+.else-box { font-family: var(--f-code); font-size: 0.8rem; padding: 6px 10px; border: 2px dashed var(--line); border-radius: 6px; color: var(--muted); }
+.else-box.hit { border: 2px solid var(--err); background: var(--err-soft); color: var(--err); font-weight: 600; }
+.scope { display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); align-items: center; }
+.scope .v { font-family: var(--f-code); font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--read-soft); color: var(--read); border: 1px solid var(--read); }
+
+/* ---------- scény ---------- */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.scene.wide { grid-template-columns: minmax(0, 1fr); }
+.scene-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.scene-head .num { font-family: var(--f-stamp); font-size: 2rem; color: var(--kraft-dark); line-height: 1; }
+.scene-head .sym { font-family: var(--f-code); font-size: 1rem; color: var(--muted); }
+.fig {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0;
+  padding: 22px 18px; display: grid; gap: 16px; justify-items: center; align-content: center; min-height: 200px;
+  overflow-x: auto;
+}
+.fig-cap { font-size: 0.9rem; color: var(--muted); text-align: center; max-width: 46ch; }
+.lbl { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.steps { display: grid; gap: 10px; width: 100%; justify-items: start; }
+.step { display: grid; gap: 4px; width: 100%; min-width: 0; }
+.step-op { font-family: var(--f-code); font-size: 0.78rem; color: var(--muted); }
+.step-op::before { content: "↓ "; color: var(--ink); font-weight: 600; }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+.vs > div { display: grid; gap: 8px; align-content: start; padding: 12px; border-radius: 8px; background: var(--surface-2); min-width: 0; }
+.vs h3 { font-size: 0.95rem; }
+
+.text { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.text .metaphor { font-size: 1.12rem; }
+.text .metaphor b { font-family: var(--f-display); }
+
+pre {
+  margin: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .e { color: var(--err); font-weight: 600; }
+pre .k { color: var(--ok); font-weight: 600; }
+pre .r { color: var(--read); font-weight: 600; }
+pre .w { color: var(--write); font-weight: 600; }
+
+.verdict { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+.verdict.bad { background: var(--err-soft); }
+.verdict.good { background: var(--ok-soft); }
+.verdict.warn { background: var(--write-soft); }
+.verdict .code { font-family: var(--f-code); font-weight: 600; flex: none; }
+.verdict.bad .code { color: var(--err); }
+.verdict.good .code { color: var(--ok); }
+.verdict.warn .code { color: var(--write); }
+
+.mini { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.mini th, .mini td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mini th { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.mini tr:last-child td { border-bottom: 0; }
+.mini td.ok { color: var(--ok); font-weight: 700; }
+.mini td.bad { color: var(--err); font-weight: 700; }
+
+.numline { display: flex; align-items: flex-end; gap: 0; font-family: var(--f-code); font-size: 0.8rem; }
+.numline span { width: 42px; text-align: center; padding-top: 6px; border-top: 3px solid var(--ink); position: relative; }
+.numline span::before { content: ""; position: absolute; top: -9px; left: 50%; width: 2px; height: 12px; background: var(--ink); }
+.numline .no { border-top: 3px dashed var(--err); color: var(--err); }
+.numline .no::before { background: var(--err); }
+
+.term { font-family: var(--f-code); font-size: 0.85rem; background: #10161e; color: #e6ebf1; border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; width: 100%; min-width: 0; overflow-x: auto; }
+.term .p { color: #7f8b99; }
+.term .u { color: #efc75e; }
+.term .bad { color: #f2a59d; }
+
+/* ---------- hřiště ---------- */
+.play { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
+.play-intro { display: grid; gap: 8px; }
+.hint { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--tape); padding-left: 12px; }
+.prompt { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.prompt label { font-family: var(--f-code); font-weight: 600; font-size: 1.1rem; }
+.prompt input {
+  flex: 1 1 220px; min-width: 0; font-family: var(--f-code); font-size: 1rem; padding: 9px 12px;
+  border: 2px solid var(--ink); border-radius: 8px; background: var(--surface); color: var(--ink);
+  white-space: pre;
+}
+.btn {
+  font-family: var(--f-body); font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  padding: 9px 14px; border-radius: 8px; border: 2px solid var(--ink); background: var(--ink); color: var(--surface);
+}
+.btn.quiet { background: var(--surface); color: var(--muted); border-color: var(--line); }
+.btn.eof { background: var(--surface); color: var(--err); border-color: var(--err); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.examples button {
+  font-family: var(--f-code); font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: pre;
+  padding: 5px 10px; border-radius: 999px; border: 2px solid var(--kraft-dark); background: var(--label); color: #3a2b17;
+}
+.play-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.trace { display: grid; gap: 6px; min-width: 0; }
+.tr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); border-left: 5px solid var(--line); min-width: 0; }
+.tr .op { font-family: var(--f-code); font-size: 0.78rem; color: var(--muted); overflow-wrap: anywhere; }
+.tr .val { font-family: var(--f-code); font-size: 0.85rem; font-weight: 600; overflow-wrap: anywhere; white-space: pre-wrap; }
+.tr.ok { border-left-color: var(--ok); }
+.tr.ok .val { color: var(--ok); }
+.tr.bad { border-left-color: var(--err); background: var(--err-soft); }
+.tr.bad .val { color: var(--err); }
+.tr.skip { opacity: 0.45; border-left-style: dashed; }
+.tr.hl { border-left-color: var(--tape); }
+.tr .chain { margin-top: 6px; flex-direction: column; }
+.tr .chain .and { align-self: flex-start; padding: 2px 0 2px 12px; }
+.tr .gate, .hero .gate { min-width: 0; }
+.side { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.tasks { display: grid; gap: 4px; font-family: var(--f-code); font-size: 0.82rem; }
+.tasks div { padding: 5px 8px; background: var(--surface-2); border-radius: 6px; overflow-wrap: anywhere; }
+.tasks div.changed { box-shadow: 0 0 0 2px var(--tape); }
+.side .term { max-height: 280px; overflow-y: auto; }
+
+/* ---------- tahák ---------- */
+.cheat-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table.cheat { border-collapse: collapse; width: 100%; min-width: 640px; }
+table.cheat th, table.cheat td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.cheat th { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+table.cheat tr:last-child td { border-bottom: 0; }
+table.cheat td:first-child { font-weight: 700; }
+
+footer { display: grid; gap: 8px; color: var(--muted); font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 20px; }
+footer ul { margin: 0; padding-left: 1.2em; }
+
+@media (max-width: 780px) {
+  .hero, .scene, .play-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero-fig { order: -1; }
+  .rules { grid-template-columns: 1fr; }
+  .vs { grid-template-columns: 1fr; }
+  .loop { grid-template-columns: 1fr; }
+  .chain { flex-direction: column; }
+  .chain .and { align-self: flex-start; padding: 2px 0 2px 12px; }
+  .gate { min-width: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <div>
+      <div class="eyebrow">todo-rs · lekce 06 · vstup od uživatele</div>
+      <h1>Cesta příkazu</h1>
+      <p class="lead">Co napíšeš do terminálu, je pro program jen <b>pásek znaků</b>. Ten projde řadou stanic: přečíst, oříznout, rozstřihnout, roztřídit, převést na číslo, najít úkol. Poslední úsek je <b>řada branek</b> (<code>if let … &amp;&amp; let …</code>): projdeš jen tehdy, když se otevřou všechny.</p>
+    </div>
+    <div class="hero-fig" aria-hidden="true">
+      <div class="steps" style="max-width:380px">
+        <div class="step"><span class="str-cap">z klávesnice</span><span class="str"><span>d</span><span>o</span><span>n</span><span>e</span><span class="sp"> </span><span>2</span><span class="nl">\n</span></span></div>
+        <div class="step"><span class="step-op">trim · split_once(' ')</span><span class="row" style="display:flex; gap:10px"><span class="str cmd"><span>d</span><span>o</span><span>n</span><span>e</span></span><span class="str"><span>2</span></span></span></div>
+        <div class="step"><span class="step-op">if let … &amp;&amp; let …</span>
+          <div class="chain">
+            <div class="gate pass"><span class="g-h">branka 1</span><span class="g-v">Some(2)</span></div>
+            <span class="and">&amp;&amp;</span>
+            <div class="gate pass"><span class="g-h">branka 2</span><span class="g-v">Some(task)</span></div>
+            <span class="and">⟶</span>
+            <div class="gate body pass"><span class="g-h">tělo</span><span class="g-v">complete()</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="rules" aria-label="Tři pravidla">
+    <div class="rule"><span class="n">1</span><b>Vstup je vždy text.</b><span>I <code>2</code> je jen znak. Číslo z něj udělá teprve <code>parse</code>, a to se nemusí povést.</span></div>
+    <div class="rule"><span class="n">2</span><b>Nevěř tomu, co uživatel napíše.</b><span>Mezery, prázdný řádek, <code>abc</code>, <code>0</code>, <code>99</code>, Ctrl+D. Program nesmí spadnout na ničem z toho.</span></div>
+    <div class="rule"><span class="n">3</span><b>Branky se otevírají zleva.</b><span>Když jedna zůstane zavřená, další se už ani nezkouší a jde se do <code>else</code>.</span></div>
+  </section>
+
+  <!-- ===== 1 SMYČKA ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">1</span><h2>Kolotoč: <code>loop</code></h2><span class="sym">loop { … break; }</span></div>
+    <div class="fig">
+      <div class="loop">
+        <div class="stn"><b>výzva</b><code>print!("&gt; ")</code><code>flush()</code></div>
+        <div class="stn"><b>čekej na Enter</b><code>read_line</code></div>
+        <div class="stn"><b>proveď příkaz</b><code>match cmd</code></div>
+        <div class="loop-back">↺ a znovu dokola</div>
+      </div>
+      <div class="loop" style="grid-template-columns: 1fr 1fr">
+        <div class="stn exit"><b>quit</b><code>"quit" =&gt; break</code></div>
+        <div class="stn exit"><b>Ctrl+D (EOF)</b><code>bytes == 0 → break</code></div>
+      </div>
+      <p class="fig-cap">Program běží v kruhu, dokud ho něco nezastaví. Ven vedou dvě cesty a obě končí slovem <code>break</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Kolotoč, který se točí, dokud nezatáhneš za brzdu.</b> <code>loop</code> sám od sebe nikdy neskončí.</p>
+<pre><code>loop {
+    print!("&gt; ");
+    io::stdout().flush().expect("Can't write");
+    <span class="c">// … přečti, zpracuj …</span>
+    if bytes == 0 {
+        <span class="w">break</span>;      <span class="c">// vyskoč ze smyčky</span>
+    }
+}</code></pre>
+      <p><code>break</code> ukončí nejbližší smyčku, <code>continue</code> skočí na začátek dalšího kola. <code>loop</code> je v Rustu idiomatičtější než <code>while true</code>.</p>
+      <div class="verdict bad"><span class="code">zacyklení</span><span>Bez kontroly <code>bytes == 0</code> po Ctrl+D <code>read_line</code> už nečeká a hned vrací prázdno. Kolotoč se roztočí naprázdno a donekonečna píše <code>&gt; Unknown command:</code>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 2 READ_LINE ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">2</span><h2><code>read_line</code> připisuje, nemaže</h2><span class="sym">read_line(&amp;mut buff)</span></div>
+    <div class="fig">
+      <div class="steps">
+        <div class="step"><span class="str-cap">String::new()</span><span class="str"><span class="ws">∅</span></span></div>
+        <div class="step"><span class="step-op">read_line: napíšeš list ⏎</span><span class="str"><span>l</span><span>i</span><span>s</span><span>t</span><span class="nl">\n</span></span><span class="str-cap">bytes = 5</span></div>
+        <div class="step"><span class="step-op">read_line znovu se STEJNÝM buff: help ⏎</span><span class="str"><span>l</span><span>i</span><span>s</span><span>t</span><span class="nl">\n</span><span>h</span><span>e</span><span>l</span><span>p</span><span class="nl">\n</span></span><span class="str-cap">obsah se nahromadil</span></div>
+        <div class="step"><span class="step-op">Ctrl+D</span><span class="str"><span class="ws">∅</span></span><span class="str-cap">bytes = 0 → konec vstupu</span></div>
+      </div>
+      <p class="fig-cap">Proto <code>let mut buff = String::new();</code> stojí <b>uvnitř</b> smyčky. Každé kolo začíná s prázdným páskem.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Lepicí páska, na kterou se jen přidává.</b> <code>read_line</code> přilepí, co jsi napsal, na konec. Včetně Enteru.</p>
+<pre><code>let mut buff = String::new();
+let bytes = io::stdin()
+    .read_line(<span class="w">&amp;mut buff</span>)     <span class="c">// zapisuje do buff</span>
+    .expect("Can't read");     <span class="c">// Result → usize</span></code></pre>
+      <p><b><code>&amp;mut buff</code></b>: funkce do našeho <code>String</code> zapisuje, proto měnitelná výpůjčka (lekce 05) a proto <code>let mut</code>.</p>
+      <p><b>Vrací <code>Result</code></b>, buď počet přečtených bajtů, nebo chybu. <code>.expect("…")</code> při chybě shodí program s touto zprávou, jinak číslo vybalí. Pořádně v lekci 07.</p>
+      <p><b>Prázdný Enter ≠ Ctrl+D:</b> Enter vrátí <code>1</code> (je v něm <code>\n</code>), konec vstupu vrátí <code>0</code>.</p>
+    </div>
+  </section>
+
+  <!-- ===== 3 TRIM + SPLIT ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">3</span><h2>Ostříhat a rozstřihnout</h2><span class="sym">trim · split_once · unwrap_or</span></div>
+    <div class="fig">
+      <div class="vs">
+        <div>
+          <h3>S mezerou</h3>
+          <span class="str"><span class="ws cut">·</span><span>a</span><span>d</span><span>d</span><span class="sp"> </span><span>T</span><span>e</span><span>s</span><span>t</span><span class="nl cut">\n</span></span>
+          <span class="step-op">trim()</span>
+          <span class="str"><span>a</span><span>d</span><span>d</span><span class="sp"> </span><span>T</span><span>e</span><span>s</span><span>t</span></span>
+          <span class="step-op">split_once(' ')</span>
+          <code style="white-space:normal">Some(("add", "Test"))</code>
+          <span class="step-op">unwrap_or(…)</span>
+          <span style="display:flex; gap:8px; flex-wrap:wrap"><span class="str cmd"><span>a</span><span>d</span><span>d</span></span><span class="str"><span>T</span><span>e</span><span>s</span><span>t</span></span></span>
+        </div>
+        <div>
+          <h3>Bez mezery</h3>
+          <span class="str"><span>l</span><span>i</span><span>s</span><span>t</span><span class="nl cut">\n</span></span>
+          <span class="step-op">trim()</span>
+          <span class="str"><span>l</span><span>i</span><span>s</span><span>t</span></span>
+          <span class="step-op">split_once(' ')</span>
+          <code>None</code>
+          <span class="step-op">unwrap_or((input, ""))</span>
+          <span style="display:flex; gap:8px; flex-wrap:wrap"><span class="str cmd"><span>l</span><span>i</span><span>s</span><span>t</span></span><span class="str"><span class="ws">""</span></span></span>
+        </div>
+      </div>
+      <p class="fig-cap">Modrý pásek je <code>cmd</code>, žlutý <code>arg</code>. Žlutá buňka je mezera, na které se stříhá. Šedé škrtnuté znaky ustřihl <code>trim</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Nejdřív ostříhat okraje, pak rozstřihnout na první mezeře.</b></p>
+<pre><code>let input = buff.trim();
+let (cmd, arg) = input
+    .split_once(' ')            <span class="c">// Option&lt;(&amp;str, &amp;str)&gt;</span>
+    .unwrap_or((input, ""));    <span class="c">// None → celé je příkaz</span></code></pre>
+      <p><b><code>(a, b)</code></b> je <b>n-tice</b>, dvojice hodnot. <b><code>let (cmd, arg) = …</code></b> je vzor, který dvojici rozloží do dvou proměnných, stejně jako <code>|(index, task)|</code> u <code>enumerate</code>.</p>
+      <p><b><code>.unwrap_or(x)</code></b>: ze <code>Some(v)</code> vrátí <code>v</code>, z <code>None</code> náhradní <code>x</code>.</p>
+      <div class="verdict bad"><span class="code">tvoje chyba</span><span><code>unwrap_or((&amp;buff, ""))</code> vracel neoříznutý <code>buff</code>, takže <code>cmd</code> byl <code>"list\n"</code>. Prozradilo to <code>, try: help</code> vypsané na novém řádku. Oprava: uložit <code>buff.trim()</code> do <code>input</code> a dál používat jen to.</span></div>
+      <p><code>trim()</code> vrací <code>&amp;str</code>, tedy pohled do <code>buff</code> (slice z lekce 05). Nic se nekopíruje.</p>
+    </div>
+  </section>
+
+  <!-- ===== 4 PARSE ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">4</span><h2>Převodník text → číslo</h2><span class="sym">arg.parse::&lt;usize&gt;()</span></div>
+    <div class="fig">
+      <table class="mini">
+        <thead><tr><th>arg</th><th>parse::&lt;usize&gt;()</th><th>parse_index</th></tr></thead>
+        <tbody>
+          <tr><td><code>"2"</code></td><td class="ok">Ok(2)</td><td class="ok">Some(2)</td></tr>
+          <tr><td><code>"0"</code></td><td class="ok">Ok(0)</td><td class="bad">None</td></tr>
+          <tr><td><code>"abc"</code></td><td class="bad">Err(…)</td><td class="bad">None</td></tr>
+          <tr><td><code>"-1"</code></td><td class="bad">Err(…)</td><td class="bad">None</td></tr>
+          <tr><td><code>""</code></td><td class="bad">Err(…)</td><td class="bad">None</td></tr>
+          <tr><td><code>" 2"</code></td><td class="bad">Err(…)</td><td class="bad">None</td></tr>
+        </tbody>
+      </table>
+      <p class="fig-cap"><code>usize</code> nemá záporná čísla, proto <code>"-1"</code> neprojde. Mezera taky ne, <code>parse</code> neořezává. Proto <code>done  2</code> (dvě mezery) skončí chybou.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Automat, který buď vydá číslo, nebo vrátí minci.</b> Výsledek je <code>Result</code>: <code>Ok(číslo)</code> nebo <code>Err(chyba)</code>.</p>
+<pre><code>fn parse_index(arg: &amp;str) -&gt; Option&lt;usize&gt; {
+    match arg.parse::<span class="r">&lt;usize&gt;</span>() {
+        Ok(0) =&gt; None,       <span class="c">// nula: úkol č. 0 není</span>
+        Ok(n) =&gt; Some(n),
+        Err(_) =&gt; None,      <span class="c">// _ = chyba mě nezajímá</span>
+    }
+}</code></pre>
+      <p><b><code>::&lt;usize&gt;</code></b> se jmenuje <b>turbofish</b> (rybka <code>::&lt;&gt;</code>). Říká, <i>na jaký typ</i> převádět, protože <code>parse</code> umí stovky typů a sám to neví.</p>
+      <p><b>Pořadí větví:</b> <code>Ok(0)</code> musí stát před <code>Ok(n)</code>, jinak by nulu chytilo <code>Ok(n)</code> (třídička z lekce 04).</p>
+      <p><b>Zkratka:</b> když chybu zahazuješ celou, <code>arg.parse::&lt;usize&gt;().ok()</code> převede <code>Result</code> na <code>Option</code>.</p>
+    </div>
+  </section>
+
+  <!-- ===== 5 USIZE ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">5</span><h2>Pod nulou je propast</h2><span class="sym">0 - 1 u usize</span></div>
+    <div class="fig">
+      <div class="numline" aria-label="Číselná osa usize">
+        <span class="no">-2</span><span class="no">-1</span><span>0</span><span>1</span><span>2</span><span>3</span><span>…</span>
+      </div>
+      <div class="term"><span class="p">&gt;</span> <span class="u">done 0</span>
+<span class="bad">thread 'main' panicked at src/main.rs:
+attempt to subtract with overflow</span></div>
+      <p class="fig-cap">Kdyby <code>parse_index</code> nulu propustila, <code>n - 1</code> by spadlo. Uživatel čísluje od 1, vektor od 0.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b><code>usize</code> je pravítko, které začíná nulou.</b> Kousek vlevo od nuly už nic není.</p>
+      <p>V debug režimu (<code>cargo run</code>) Rust přetečení hlídá a program zastaví. V release režimu (<code>cargo build --release</code>) by se číslo tiše „přetočilo“ na obrovskou hodnotu 18446744073709551615 a chyba by zůstala skrytá. Proto je lepší nulu odchytit předem.</p>
+<pre><code>tasks.get_mut(n - 1)   <span class="c">// Option&lt;&amp;mut Task&gt;</span></code></pre>
+      <p><b><code>get_mut</code></b> je bratr <code>get</code> z lekce 04: podá krabici <code>Option</code> s měnitelnou výpůjčkou. Číslo od uživatele nikdy neindexuj přes <code>tasks[i]</code>, protože <code>done 99</code> by skončilo panikou.</p>
+    </div>
+  </section>
+
+  <!-- ===== 6 LET CHAINS ===== -->
+  <section class="scene wide">
+    <div class="scene-head"><span class="num">6</span><h2>Řetězení podmínek: řada branek</h2><span class="sym">if let … &amp;&amp; let … { } else { }</span></div>
+    <div class="fig" style="justify-items:stretch">
+      <div class="lbl">done 2: všechny branky otevřené</div>
+      <div class="chain">
+        <div class="gate pass"><span class="g-h">branka 1</span><code>let Some(n) = parse_index(arg)</code><span class="g-v">Some(2) → n = 2</span></div>
+        <span class="and">&amp;&amp;</span>
+        <div class="gate pass"><span class="g-h">branka 2</span><code>let Some(task) = tasks.get_mut(n - 1)</code><span class="g-v">Some(&amp;mut Task) → task</span></div>
+        <span class="and">⟶</span>
+        <div class="gate body pass"><span class="g-h">tělo { }</span><code>task.complete();</code><span class="g-v">✓ provede se</span></div>
+      </div>
+      <div class="else-row"><span class="else-box">else: Invalid task no!</span></div>
+
+      <div class="lbl" style="margin-top:8px">done abc: zavřená hned první</div>
+      <div class="chain">
+        <div class="gate fail"><span class="g-h">branka 1</span><code>let Some(n) = parse_index(arg)</code><span class="g-v">None ✗</span></div>
+        <span class="and">&amp;&amp;</span>
+        <div class="gate skip"><span class="g-h">branka 2</span><code>let Some(task) = tasks.get_mut(n - 1)</code><span class="g-v">nezkouší se</span></div>
+        <span class="and">⟶</span>
+        <div class="gate body skip"><span class="g-h">tělo { }</span><code>task.complete();</code><span class="g-v">—</span></div>
+      </div>
+      <div class="else-row"><span class="else-box hit">else: Invalid task no!</span></div>
+
+      <div class="lbl" style="margin-top:8px">done 99: první projde, druhá ne</div>
+      <div class="chain">
+        <div class="gate pass"><span class="g-h">branka 1</span><code>let Some(n) = parse_index(arg)</code><span class="g-v">Some(99) → n = 99</span></div>
+        <span class="and">&amp;&amp;</span>
+        <div class="gate fail"><span class="g-h">branka 2</span><code>let Some(task) = tasks.get_mut(n - 1)</code><span class="g-v">get_mut(98) → None ✗</span></div>
+        <span class="and">⟶</span>
+        <div class="gate body skip"><span class="g-h">tělo { }</span><code>task.complete();</code><span class="g-v">—</span></div>
+      </div>
+      <div class="else-row"><span class="else-box hit">else: Invalid task no!</span></div>
+      <p class="fig-cap" style="justify-self:center">Branky se zkoušejí <b>zleva</b>. Jakmile jedna zůstane zavřená, další se už nevyhodnocují a jde se rovnou do <code>else</code>.</p>
+    </div>
+  </section>
+
+  <section class="scene">
+    <div class="fig">
+      <div class="lbl">co je kde k dispozici</div>
+      <div class="chain">
+        <div class="gate"><span class="g-h">branka 1</span><div class="scope">vzniká <span class="v">n</span></div></div>
+        <span class="and">&amp;&amp;</span>
+        <div class="gate"><span class="g-h">branka 2</span><div class="scope">vidí <span class="v">n</span> vzniká <span class="v">task</span></div></div>
+        <span class="and">⟶</span>
+        <div class="gate body"><span class="g-h">tělo</span><div class="scope">vidí <span class="v">n</span> <span class="v">task</span></div></div>
+      </div>
+      <div class="else-row" style="justify-content:center"><span class="else-box">else: nevidí nic z toho</span></div>
+      <p class="fig-cap">Proměnná z branky platí <b>doprava</b>: v dalších brankách a v těle. V <code>else</code> ne, protože tam se nemusela vůbec vytvořit.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Řada turniketů na nádraží.</b> Na peron se dostaneš, jen když projdeš všemi. Když první nepustí, k druhému se vůbec nedostaneš.</p>
+      <p><b>Jak číst:</b> „<b>když</b> <code>parse_index(arg)</code> pasuje na <code>Some(n)</code>, <b>a zároveň</b> <code>tasks.get_mut(n - 1)</code> pasuje na <code>Some(task)</code>, <b>tak</b> …, <b>jinak</b> …“.</p>
+      <ul style="margin:0; padding-left:1.2em; display:grid; gap:6px">
+        <li><code>&amp;&amp;</code> = „a zároveň“, stejné jako u obyčejných podmínek.</li>
+        <li>Každá část s <code>let</code> je vzor jako v <code>if let</code> (lekce 04). Část bez <code>let</code> je obyčejný <code>bool</code>. Obojí jde míchat: tvoje první verze měla <code>&amp;&amp; n &gt; 0</code> uprostřed.</li>
+        <li><b>Líné vyhodnocení:</b> díky tomu je <code>n - 1</code> bezpečné. Branka 2 se spustí, jen když branka 1 pustila (a <code>parse_index</code> nulu nepustí).</li>
+        <li>Je to novinka <b>edice 2024</b> (Rust 1.88+). Ve starších návodech a odpovědích na internetu ji nenajdeš.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== 7 SROVNÁNÍ ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">7</span><h2>Jak se to psalo dřív</h2><span class="sym">vnořené if let · match</span></div>
+    <div class="text">
+      <h3>Dřív: schody doprava</h3>
+<pre><code>if let Some(n) = parse_index(arg) {
+    if let Some(task) = tasks.get_mut(n - 1) {
+        task.complete();
+    } else {
+        println!("Invalid task no!");  <span class="e">// 2× stejné</span>
+    }
+} else {
+    println!("Invalid task no!");      <span class="e">// 2× stejné</span>
+}</code></pre>
+      <p>Každá další podmínka = další odsazení a další <code>else</code>.</p>
+    </div>
+    <div class="text">
+      <h3>Teď: jedna řada</h3>
+<pre><code>if let Some(n) = parse_index(arg)
+    <span class="r">&amp;&amp;</span> let Some(task) = tasks.get_mut(n - 1)
+{
+    task.complete();
+} else {
+    println!("Invalid task no!");      <span class="k">// 1× pro všechno</span>
+}</code></pre>
+      <p>Rovné a čitelné. Ale <b>pozor na druhou stranu mince</b>:</p>
+      <div class="verdict warn"><span class="code">daň</span><span><code>else</code> neví, <b>která</b> branka zůstala zavřená. <code>abc</code>, <code>0</code> i <code>99</code> dostanou stejnou hlášku. Když chceš různé zprávy, potřebuješ vnořené větve, <code>match</code>, nebo vlastní chybový typ, a to je lekce 07.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== HŘIŠTĚ ===== -->
+  <section class="play" aria-labelledby="play-h">
+    <div class="play-intro">
+      <h2 id="play-h">Hřiště: pošli příkaz svým programem</h2>
+      <p>Napiš příkaz a stiskni Enter. Uvidíš, jakými stanicemi text prošel, co bylo v každé proměnné a u <code>start</code> / <code>done</code> / <code>cancel</code> i které branky se otevřely. Simulace se chová jako tvůj <code>main.rs</code> po lekci 06.</p>
+      <p class="hint">Zkus: <code>list</code> s mezerami okolo, <code>done abc</code>, <code>done 0</code>, <code>done 99</code>, <code>done  2</code> se dvěma mezerami, <code>add</code> bez názvu, <code>DONE 1</code>, prázdný Enter a nakonec Ctrl+D.</p>
+    </div>
+    <form class="prompt" id="form" autocomplete="off">
+      <label for="cmd">&gt;</label>
+      <input id="cmd" type="text" spellcheck="false" placeholder="např. done 2" aria-label="Příkaz">
+      <button class="btn" type="submit" id="send">Enter ⏎</button>
+      <button class="btn eof" type="button" id="eof">Ctrl+D</button>
+      <button class="btn quiet" type="button" id="reset">Začít znovu</button>
+    </form>
+    <div class="examples" id="examples" aria-label="Příklady"></div>
+    <div class="play-grid">
+      <div class="trace" id="trace" aria-live="polite"></div>
+      <div class="side">
+        <span class="lbl">tasks</span>
+        <div class="tasks" id="tasks"></div>
+        <span class="lbl">Terminál</span>
+        <div class="term" id="term"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TAHÁK ===== -->
+  <section style="display:grid; gap:16px">
+    <h2>Tahák</h2>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Zápis</th><th>Význam</th><th>Obrázek</th></tr></thead>
+        <tbody>
+          <tr><td><code>use std::io;</code></td><td>zkratka: <code>io::…</code> místo <code>std::io::…</code></td><td></td></tr>
+          <tr><td><code>loop { … break; }</code></td><td>nekonečná smyčka / vyskočení z ní</td><td>kolotoč a brzda</td></tr>
+          <tr><td><code>read_line(&amp;mut s)</code></td><td>připíše řádek <b>včetně</b> <code>\n</code>, vrátí počet bajtů</td><td>lepicí páska</td></tr>
+          <tr><td><code>bytes == 0</code></td><td>konec vstupu (Ctrl+D)</td><td>páska nepřibyla</td></tr>
+          <tr><td><code>print!</code> + <code>flush()</code></td><td>výpis bez odřádkování, hned na obrazovku</td><td></td></tr>
+          <tr><td><code>s.trim()</code></td><td><code>&amp;str</code> bez bílých znaků na okrajích</td><td>ostříhat okraje</td></tr>
+          <tr><td><code>s.split_once(' ')</code></td><td><code>Option&lt;(&amp;str, &amp;str)&gt;</code> podle první mezery</td><td>rozstřihnout</td></tr>
+          <tr><td><code>opt.unwrap_or(x)</code></td><td>hodnota ze <code>Some</code>, jinak <code>x</code></td><td></td></tr>
+          <tr><td><code>let (a, b) = dvojice;</code></td><td>destrukturování n-tice</td><td></td></tr>
+          <tr><td><code>s.parse::&lt;usize&gt;()</code></td><td>text → číslo, <code>Ok</code> / <code>Err</code>; <code>::&lt;&gt;</code> = turbofish</td><td>automat na čísla</td></tr>
+          <tr><td><code>v.get_mut(i)</code></td><td><code>Option&lt;&amp;mut T&gt;</code></td><td></td></tr>
+          <tr><td><code>if let A = x &amp;&amp; let B = y { } else { }</code></td><td>let chains: všechny vzory musí pasovat, zleva, líně</td><td>řada branek</td></tr>
+          <tr><td><code>"" =&gt; {}</code></td><td>prázdný blok, neudělej nic</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Co se pokazí</th><th>Projev</th><th>Lék</th></tr></thead>
+        <tbody>
+          <tr><td>chybí kontrola EOF</td><td>po Ctrl+D nekonečné <code>&gt; Unknown command:</code></td><td><code>if bytes == 0 { break; }</code></td></tr>
+          <tr><td><code>String</code> mimo smyčku</td><td>příkazy se slepují: <code>"list\nhelp\n"</code></td><td><code>String::new()</code> uvnitř, nebo <code>buff.clear()</code></td></tr>
+          <tr><td>chybí <code>trim</code></td><td><code>Unknown command: list</code> a <code>, try: help</code> na dalším řádku</td><td>pracovat s <code>buff.trim()</code></td></tr>
+          <tr><td>chybí <code>flush</code></td><td>výzva <code>&gt; </code> se neukáže</td><td><code>io::stdout().flush()</code></td></tr>
+          <tr><td><code>0 - 1</code> u <code>usize</code></td><td>panika <i>attempt to subtract with overflow</i></td><td>odchytit <code>Ok(0)</code> předem</td></tr>
+          <tr><td><code>tasks[n - 1]</code></td><td>panika <i>index out of bounds</i></td><td><code>tasks.get_mut(n - 1)</code></td></tr>
+          <tr><td><code>flush</code> bez <code>use</code></td><td><code>E0599</code> no method named <code>flush</code></td><td><code>use std::io::Write;</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Doplněk k lekci 06 projektu todo-rs. Ukázky kódu jsou ze <code>src/main.rs</code> (tag <code>lekce-06</code>).</span>
+    <ul>
+      <li><a href="06-vstup-od-uzivatele.md">Lekce 06: Vstup od uživatele (text)</a></li>
+      <li><a href="04-enumy-infografika.html">Infografika k lekci 04: třídička, if let, Option</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html">Rust Book 2: Programming a Guessing Game</a></li>
+      <li><a href="https://doc.rust-lang.org/reference/expressions/if-expr.html#chains-of-conditions">Rust Reference: if, chains of conditions</a></li>
+      <li><a href="https://doc.rust-lang.org/std/primitive.str.html#method.split_once">str::split_once</a>, <a href="https://doc.rust-lang.org/std/primitive.str.html#method.parse">str::parse</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Rust Debug výpis řetězce: "done 2\n"
+  const dbg = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') + '"';
+  const bytesOf = (s) => new TextEncoder().encode(s).length;
+  const SYM = { ToDo: ' ', InProgress: '~', Done: 'X', Canceled: 'C' };
+  const WS = /^[\s\u0085]+|[\s\u0085]+$/g;
+
+  let tasks, out, trace, stopped, changed;
+  const traceEl = document.getElementById('trace');
+  const tasksEl = document.getElementById('tasks');
+  const termEl = document.getElementById('term');
+  const input = document.getElementById('cmd');
+
+  function reset() {
+    tasks = ['Buy groceries', 'Clean the house', 'Finish Rust project'].map((t) => ({ title: t, status: 'ToDo' }));
+    out = [];
+    trace = [];
+    stopped = false;
+    changed = -1;
+    render();
+  }
+
+  const row = (kind, op, val, extra = '') => trace.push({ kind, op, val, extra });
+
+  // usize::from_str: volitelné '+', pak jen číslice, max 2^64 - 1
+  function parseUsize(s) {
+    if (!/^\+?[0-9]+$/.test(s)) return { ok: false, why: s === '' ? 'Empty' : 'InvalidDigit' };
+    const n = BigInt(s.replace('+', ''));
+    if (n > 18446744073709551615n) return { ok: false, why: 'PosOverflow' };
+    return { ok: true, n: Number(n) };
+  }
+
+  function gateHtml(cls, head, code, val) {
+    return `<div class="gate ${cls}"><span class="g-h">${head}</span><code>${esc(code)}</code><span class="g-v">${esc(val)}</span></div>`;
+  }
+
+  function chainCmd(cmd, arg) {
+    const method = { start: 'start', done: 'complete', cancel: 'cancel' }[cmd];
+    const p = parseUsize(arg);
+    let g1, g2 = null, n = null, task = null;
+    if (p.ok && p.n !== 0) { n = p.n; g1 = { cls: 'pass', val: `parse → Ok(${n}) → Some(${n})` }; }
+    else if (p.ok) g1 = { cls: 'fail', val: 'parse → Ok(0) → None ✗' };
+    else g1 = { cls: 'fail', val: `parse → Err(${p.why}) → None ✗` };
+    if (n !== null) {
+      const i = n - 1;
+      if (i < tasks.length) { task = i; g2 = { cls: 'pass', val: `get_mut(${i}) → Some(&mut "${tasks[i].title}")` }; }
+      else g2 = { cls: 'fail', val: `get_mut(${i}) → None ✗ (len je ${tasks.length})` };
+    }
+    const html = '<div class="chain">' +
+      gateHtml(g1.cls, 'branka 1', `let Some(n) = parse_index(${dbg(arg)})`, g1.val) +
+      '<span class="and">&amp;&amp;</span>' +
+      gateHtml(g2 ? g2.cls : 'skip', 'branka 2', 'let Some(task) = tasks.get_mut(n - 1)', g2 ? g2.val : 'nezkouší se') +
+      '<span class="and">⟶</span>' +
+      gateHtml('body ' + (task !== null ? 'pass' : 'skip'), 'tělo { }', `task.${method}();`, task !== null ? '✓ provede se' : '—') +
+      `</div><div class="else-row"><span class="else-box${task === null ? ' hit' : ''}">else: Invalid task no!</span></div>`;
+    row(task !== null ? 'ok' : 'bad', `"${cmd}" => if let … && let … { } else { }`, task !== null ? `úkol ${n}: ${tasks[task].status} → ${{ start: 'InProgress', done: 'Done', cancel: 'Canceled' }[cmd]}` : 'else', html);
+    if (task !== null) {
+      tasks[task].status = { start: 'InProgress', done: 'Done', cancel: 'Canceled' }[cmd];
+      changed = task;
+    } else out.push({ t: 'Invalid task no!' });
+  }
+
+  function run(line, eof) {
+    trace = [];
+    changed = -1;
+    if (eof) {
+      out.push({ u: '^D' });
+      row('ok', 'io::stdin().read_line(&mut buff)', 'buff = "", bytes = 0');
+      row('bad', 'if bytes == 0 { break; }', 'konec vstupu → break → program skončil');
+      stopped = true;
+      return;
+    }
+    const buff = line + '\n';
+    out.push({ u: line });
+    row('ok', 'io::stdin().read_line(&mut buff)', `buff = ${dbg(buff)}, bytes = ${bytesOf(buff)}`);
+    row('skip', 'if bytes == 0 { break; }', `${bytesOf(buff)} ≠ 0 → pokračuj`);
+    const inp = buff.replace(WS, '');
+    row('ok', 'let input = buff.trim();', `input = ${dbg(inp)}`);
+    const sp = inp.indexOf(' ');
+    const split = sp >= 0 ? [inp.slice(0, sp), inp.slice(sp + 1)] : null;
+    row(split ? 'ok' : 'hl', "input.split_once(' ')", split ? `Some((${dbg(split[0])}, ${dbg(split[1])}))` : 'None');
+    const [cmd, arg] = split || [inp, ''];
+    row('ok', '.unwrap_or((input, ""))  →  let (cmd, arg)', `cmd = ${dbg(cmd)}, arg = ${dbg(arg)}`);
+
+    switch (cmd) {
+      case '':
+        row('skip', 'match cmd { "" => {} }', 'prázdný blok, nic se neděje');
+        break;
+      case 'quit':
+        row('bad', 'match cmd { "quit" => break }', 'break → program skončil');
+        stopped = true;
+        break;
+      case 'list': {
+        row('ok', 'match cmd { "list" => print_tasks(&tasks) }', 'vypíše seznam');
+        tasks.forEach((t, i) => { out.push({ t: `${i + 1}: [${SYM[t.status]}] ${t.title}` }); out.push({ t: '   Priority: None' }); });
+        out.push({ t: `Done: ${tasks.filter((t) => t.status === 'Done').length}/${tasks.length}` });
+        break;
+      }
+      case 'add': {
+        const title = arg.replace(WS, '');
+        row('ok', 'match cmd { "add" => add_task(&mut tasks, arg.trim()) }', `title = ${dbg(title)}`);
+        if (title === '') { row('bad', 'if title.is_empty()', 'true → return'); out.push({ t: "Title can't be empty!" }); }
+        else { tasks.push({ title, status: 'ToDo' }); changed = tasks.length - 1; row('ok', 'tasks.push(Task::new(title))', `úkol ${tasks.length} přidán`); }
+        break;
+      }
+      case 'startall':
+        row('ok', 'match cmd { "startall" => start_all(&mut tasks) }', 'všechny ToDo → InProgress');
+        tasks.forEach((t) => { if (t.status === 'ToDo') t.status = 'InProgress'; });
+        break;
+      case 'start': case 'done': case 'cancel':
+        chainCmd(cmd, arg);
+        break;
+      case 'help':
+        row('ok', 'match cmd { "help" => { println!(…); … } }', 'vypíše nápovědu');
+        ['quit: end of app', 'list: print all tasks', 'add <title>: add new task', 'startall: start all unfinished tasks',
+          'start <n>: start task number <n>', 'done <n>: finish task number <n>', 'cancel <n>: cancel task number <n>'].forEach((t) => out.push({ t }));
+        break;
+      default:
+        row('bad', 'match cmd { _ => println!("Unknown command: …") }', `${dbg(cmd)} nepasuje na žádný příkaz`);
+        out.push({ t: `Unknown command: ${cmd}, try: help` });
+    }
+  }
+
+  function render() {
+    traceEl.innerHTML = trace.length
+      ? trace.map((r) => `<div class="tr ${r.kind}"><span class="op">${esc(r.op)}</span><span class="val">${esc(r.val)}</span>${r.extra}</div>`).join('')
+      : '<div class="tr skip"><span class="op">čeká se na příkaz</span><span class="val">napiš něco a stiskni Enter</span></div>';
+    tasksEl.innerHTML = tasks.map((t, i) => `<div class="${i === changed ? 'changed' : ''}">${i + 1}: [${SYM[t.status]}] ${esc(t.title)}</div>`).join('');
+    termEl.innerHTML = out.map((o) => (o.u !== undefined ? `<span class="p">&gt;</span> <span class="u">${esc(o.u)}</span>` : esc(o.t))).join('\n') +
+      (stopped ? '\n<span class="bad">(program skončil, klikni na Začít znovu)</span>' : '\n<span class="p">&gt;</span> ');
+    termEl.scrollTop = termEl.scrollHeight;
+    document.getElementById('send').disabled = stopped;
+    document.getElementById('eof').disabled = stopped;
+    input.disabled = stopped;
+  }
+
+  document.getElementById('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (stopped) return;
+    run(input.value, false);
+    input.value = '';
+    render();
+    input.focus();
+  });
+  document.getElementById('eof').addEventListener('click', () => { if (!stopped) { run('', true); render(); } });
+  document.getElementById('reset').addEventListener('click', () => { reset(); input.focus(); });
+
+  const EX = ['list', '  list  ', 'help', 'add Koupit mléko', 'add', 'done 2', 'done abc', 'done 0', 'done 99', 'done  2', 'start 1', 'DONE 1', 'startall', ''];
+  document.getElementById('examples').innerHTML = '<span class="lbl">příklady (· = mezera):</span>' +
+    EX.map((x, i) => `<button type="button" data-i="${i}" title="${esc(x === '' ? 'prázdný Enter' : x)}">${x === '' ? '⏎ prázdný' : esc(x.replace(/ /g, '·'))}</button>`).join('');
+  document.getElementById('examples').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-i]');
+    if (!b || stopped) return;
+    run(EX[Number(b.dataset.i)], false);
+    render();
+  });
+
+  reset();
+})();
+</script>
+</body>
+</html>

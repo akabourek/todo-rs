@@ -21,5 +21,6 @@ git diff lekce-01 lekce-02 # co přibylo mezi lekcemi
 - [05 – Vlastnictví a výpůjčky](05-vlastnictvi-a-vypujcky.md) – move, `Copy`/`clone`, `&`/`&mut`, borrow checker, slice `&[T]`
   - [Infografika: Kdo drží krabici?](05-vlastnictvi-infografika.html) – vlastnictví na krabicích + hřiště na borrow checker (otevřít v prohlížeči)
 - [06 – Vstup od uživatele](06-vstup-od-uzivatele.md) – stdin, `loop`, EOF, `split_once`, `parse::<usize>()`, `get_mut`, let chains
+  - [Infografika: Cesta příkazu](06-vstup-infografika.html) – cesta textu programem, řetězení podmínek jako řada branek + hřiště (otevřít v prohlížeči)
 
 Celá plánovaná osnova je v [CLAUDE.md](../CLAUDE.md#osnova-stav--hotovo--čeká).
