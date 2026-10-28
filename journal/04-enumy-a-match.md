@@ -267,6 +267,7 @@ Poznámky:
    `Some(1) => ...`, `Some(_) => ...`.
 
 ## Odkazy
+- [Infografika: Která přihrádka?](04-enumy-infografika.html) – enum jako žeton, `match` jako třídička, `Option` jako krabice + hřiště, kde se dají vypínat větve (otevřít v prohlížeči)
 - [Rust Book 6 – Enums and Pattern Matching](https://doc.rust-lang.org/book/ch06-00-enums.html)
 - [Rust Book 6.2 – The match Control Flow Construct](https://doc.rust-lang.org/book/ch06-02-match.html)
 - [Rust Book 6.3 – Concise Control Flow with if let](https://doc.rust-lang.org/book/ch06-03-if-let.html)

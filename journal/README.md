@@ -17,6 +17,7 @@ git diff lekce-01 lekce-02 # co přibylo mezi lekcemi
 - [02 – Debugování ve VS Code](02-debugovani.md) – CodeLLDB, breakpointy, krokování, `dbg!`
 - [03 – Struktury a metody](03-struktury-a-metody.md) – `struct`, `impl`, `&self`, `String` vs `&str`, `if` jako výraz
 - [04 – Enumy a `match`](04-enumy-a-match.md) – `enum`, `match`, `matches!`, `Option`, `if let`, `get` vs `[]`
+  - [Infografika: Která přihrádka?](04-enumy-infografika.html) – třídička na enumy, krabice `Option` + hřiště s větvemi `match` (otevřít v prohlížeči)
 - [05 – Vlastnictví a výpůjčky](05-vlastnictvi-a-vypujcky.md) – move, `Copy`/`clone`, `&`/`&mut`, borrow checker, slice `&[T]`
   - [Infografika: Kdo drží krabici?](05-vlastnictvi-infografika.html) – vlastnictví na krabicích + hřiště na borrow checker (otevřít v prohlížeči)
 

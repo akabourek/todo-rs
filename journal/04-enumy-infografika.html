@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>Která přihrádka?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
+<style>
+/* Layout: třídička – hodnota enumu propadá větvemi match shora dolů; Option = krabice, která může být prázdná.
+   Barvy a písma sdílí s infografikou k lekci 05. */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #1b2330;
+  --muted: #5b6676;
+  --line: #cfd6df;
+  --kraft: #c9975c;
+  --kraft-top: #dcb07a;
+  --kraft-dark: #a7773f;
+  --kraft-edge: #6f4c24;
+  --tape: #efc75e;
+  --label: #f7f1e3;
+  --read: #0d7480;
+  --read-soft: #d7eef0;
+  --write: #c2410c;
+  --write-soft: #fbe3d6;
+  --ok: #2e7d32;
+  --ok-soft: #dcefdc;
+  --err: #b42318;
+  --err-soft: #f9dedb;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --f-stamp: "Saira Stencil One", Impact, "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+    --kraft: #b8884f; --kraft-top: #cc9e66; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+    --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+    --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+  --kraft: #b8884f; --kraft-top: #cc9e66; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+  --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+  --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3.2vw, 2rem); font-weight: 800; letter-spacing: -0.01em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+code, pre { font-family: var(--f-code); font-size: 0.86em; }
+/* bez ligatur: => a -> musí vypadat přesně tak, jak se píšou */
+code, pre, .chip, .arm, .slot, .combos, .lbl, .sym, .box-cap, .tag, .note, .out-term, .codebox, .eyebrow, .machine-top, .fall, .arrow-step, th { font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; }
+:not(pre) > code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; white-space: nowrap; }
+a { color: var(--read); }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--write); outline-offset: 2px; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; align-items: center; }
+.hero .lead { font-size: 1.2rem; color: var(--muted); margin-top: 16px; }
+.eyebrow { font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hero-fig { display: flex; justify-content: center; }
+
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.rule b { font-family: var(--f-display); font-size: 1.15rem; }
+.rule span { color: var(--muted); font-size: 0.95rem; }
+.rule .n { font-family: var(--f-stamp); font-size: 1.6rem; color: var(--kraft-dark); line-height: 1; }
+
+/* ---------- legenda ---------- */
+.legend { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; padding: 14px 18px; border: 1px dashed var(--line); border-radius: 10px; }
+.legend > div { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--muted); }
+.legend-title { font-family: var(--f-code); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- žeton = hodnota ---------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  font-family: var(--f-code); font-size: 0.85rem; font-weight: 600; white-space: nowrap;
+  padding: 5px 12px; border-radius: 999px;
+  background: var(--label); color: #3a2b17; border: 2px solid var(--kraft-dark);
+  box-shadow: 0 2px 0 var(--kraft-edge);
+}
+.chip.lit { box-shadow: 0 0 0 3px var(--tape), 0 2px 0 var(--kraft-edge); }
+.chip.big { font-size: 1rem; padding: 7px 16px; }
+.drop { display: grid; justify-items: center; gap: 4px; }
+.drop::after { content: "↓"; font-family: var(--f-display); font-weight: 800; font-size: 1.4rem; line-height: 1; color: var(--muted); }
+
+/* ---------- přepínač (enum) ---------- */
+.dial { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; width: 100%; max-width: 440px; }
+.slot {
+  display: grid; justify-items: center; gap: 6px; padding: 10px 4px 8px;
+  border: 2px solid var(--line); border-radius: 8px; background: var(--surface-2);
+  font-family: var(--f-code); font-size: 0.78rem; color: var(--muted); text-align: center;
+}
+.slot::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); }
+.slot.on { border-color: var(--kraft-dark); background: var(--label); color: #3a2b17; font-weight: 600; }
+.slot.on::before { background: var(--tape); border-color: var(--kraft-edge); box-shadow: 0 0 0 4px color-mix(in srgb, var(--tape) 40%, transparent); }
+
+.combos { display: grid; grid-template-columns: auto repeat(2, minmax(0, 1fr)); gap: 6px; font-family: var(--f-code); font-size: 0.78rem; width: 100%; max-width: 440px; }
+.combos > span { padding: 8px; border-radius: 6px; text-align: center; }
+.combos .h { color: var(--muted); }
+.combos .c { background: var(--surface-2); border: 1px solid var(--line); }
+.combos .x { background: var(--err-soft); border: 2px solid var(--err); color: var(--err); font-family: var(--f-stamp); font-size: 0.95rem; letter-spacing: 0.04em; }
+
+/* ---------- třídička (match) ---------- */
+.machine { display: grid; gap: 4px; width: 100%; max-width: 460px; padding: 10px; border: 2px solid var(--ink); border-radius: 10px; background: var(--surface-2); position: relative; }
+.machine-top { font-family: var(--f-code); font-size: 0.78rem; color: var(--muted); padding: 0 4px 4px; border-bottom: 1px dashed var(--line); }
+.arm {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, auto); gap: 10px; align-items: center;
+  font-family: var(--f-code); font-size: 0.82rem; padding: 7px 10px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--line); border-left-width: 5px;
+}
+.arm .pat { overflow-wrap: anywhere; }
+.arm .to { color: var(--muted); }
+.arm .out { font-weight: 600; white-space: nowrap; }
+.arm.hit { background: var(--ok-soft); border-color: var(--ok); }
+.arm.hit .out { color: var(--ok); }
+.arm.pass { opacity: 0.55; }
+.arm.bin { border-style: dashed; border-left-style: solid; }
+.arm.gone { border: 2px dashed var(--err); background: transparent; color: var(--err); }
+.arm.gone .pat { text-decoration: line-through; }
+.fall { display: flex; align-items: center; gap: 10px; justify-content: center; font-family: var(--f-code); font-size: 0.82rem; color: var(--err); font-weight: 600; }
+.stamp-err { font-family: var(--f-stamp); font-size: 1.05rem; letter-spacing: 0.06em; color: var(--err); border: 3px solid var(--err); border-radius: 4px; padding: 0 6px; transform: rotate(-6deg); background: var(--surface); }
+
+/* ---------- krabice (Option) ---------- */
+.box { position: relative; display: inline-grid; justify-items: center; gap: 4px; flex: none; }
+.box svg { width: 112px; height: auto; display: block; }
+.box.sm svg { width: 72px; }
+.box.lg svg { width: 170px; }
+.box-cap { font-family: var(--f-code); font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+.box .note.inside { position: absolute; top: 0; left: 50%; transform: translateX(-50%) rotate(-4deg); }
+.box.sm .note.inside { width: 34px; height: 30px; font-size: 0.9rem; top: -2px; }
+.box.lg .note.inside { width: 60px; height: 52px; font-size: 1.3rem; top: 0; }
+.note {
+  display: inline-grid; place-items: center; width: 46px; height: 40px; flex: none;
+  background: var(--label); color: #3a2b17; border: 1px solid var(--kraft-dark); border-radius: 3px;
+  font-family: var(--f-code); font-weight: 600; font-size: 1.05rem; transform: rotate(-3deg);
+  box-shadow: 2px 3px 0 var(--line);
+}
+.note.hl { box-shadow: 0 0 0 3px var(--tape); }
+.box .panic {
+  position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%) rotate(-12deg);
+  font-family: var(--f-stamp); font-size: 1.05rem; letter-spacing: 0.06em; color: var(--err);
+  border: 3px solid var(--err); border-radius: 4px; padding: 0 6px; background: var(--surface); white-space: nowrap;
+}
+
+.tag {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  font-family: var(--f-code); font-size: 0.85rem; font-weight: 600;
+  padding: 4px 10px; border-radius: 999px 6px 6px 999px; white-space: nowrap;
+  border: 2px solid var(--ink); background: var(--ink); color: var(--surface);
+}
+.tag::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+.wire { width: 26px; height: 0; border-top: 2px solid var(--ink); flex: none; }
+
+.row { display: flex; align-items: center; gap: 0; }
+.col { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- scény ---------- */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.scene-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.scene-head .num { font-family: var(--f-stamp); font-size: 2rem; color: var(--kraft-dark); line-height: 1; }
+.scene-head .sym { font-family: var(--f-code); font-size: 1rem; color: var(--muted); }
+.fig {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 24px 18px; display: grid; gap: 18px; justify-items: center; align-content: center; min-height: 220px;
+  overflow-x: auto;
+}
+.fig-cap { font-size: 0.9rem; color: var(--muted); text-align: center; max-width: 42ch; }
+.fig-split { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; width: 100%; justify-items: center; }
+.lbl { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.arrow-step { font-family: var(--f-code); font-size: 0.8rem; color: var(--muted); display: grid; justify-items: center; gap: 2px; text-align: center; }
+.arrow-step::after { content: "⟶"; font-size: 1.6rem; line-height: 1; color: var(--ink); }
+.fig-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; }
+.fig-pair > div { display: grid; justify-items: center; gap: 12px; align-content: start; padding: 12px 10px; border-radius: 8px; background: var(--surface-2); }
+.fig-pair h3 { font-size: 1rem; }
+
+.text { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.text .metaphor { font-size: 1.12rem; }
+.text .metaphor b { font-family: var(--f-display); }
+
+pre {
+  margin: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .e { color: var(--err); font-weight: 600; }
+pre .k { color: var(--ok); font-weight: 600; }
+pre .r { color: var(--read); font-weight: 600; }
+pre .w { color: var(--write); font-weight: 600; }
+
+.verdict { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+.verdict.bad { background: var(--err-soft); }
+.verdict.good { background: var(--ok-soft); }
+.verdict.warn { background: var(--write-soft); }
+.verdict .code { font-family: var(--f-code); font-weight: 600; flex: none; }
+.verdict.bad .code { color: var(--err); }
+.verdict.good .code { color: var(--ok); }
+.verdict.warn .code { color: var(--write); }
+
+.mini { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.mini th, .mini td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mini th { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.mini tr:last-child td { border-bottom: 0; }
+
+/* regál */
+.shelf { display: grid; gap: 4px; justify-items: start; }
+.shelf-row { display: flex; gap: 6px; align-items: flex-end; padding: 0 8px 6px; border-bottom: 5px solid var(--kraft-edge); }
+
+/* ---------- hřiště ---------- */
+.play { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 20px; }
+.play-intro { display: grid; gap: 8px; }
+.hint { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--tape); padding-left: 12px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.tabs button, .vals button, .arm-toggle {
+  font-family: var(--f-body); font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  padding: 8px 12px; border-radius: 8px; border: 2px solid var(--line); background: var(--surface); color: var(--ink);
+}
+.tabs button code, .vals button code { background: none; border: 0; padding: 0; font-weight: 600; }
+.tabs button[aria-selected="true"] { border-color: var(--ink); background: var(--ink); color: var(--surface); }
+.vals { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.vals .lbl { margin-right: 4px; }
+.vals button { border-radius: 999px; border-color: var(--kraft-dark); background: var(--label); color: #3a2b17; }
+.vals button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--tape); }
+.play-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.codebox { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 4px; min-width: 0; overflow-x: auto; }
+.codebox .ln { font-family: var(--f-code); font-size: 0.82rem; white-space: pre; padding: 2px 4px; color: var(--muted); }
+.codebox .arm { grid-template-columns: auto minmax(0, 1fr) auto minmax(0, auto); margin-left: 2ch; }
+.codebox .arm.off { background: transparent; border-style: dashed; color: var(--muted); }
+.codebox .arm.off .pat, .codebox .arm.off .out, .codebox .arm.off .to { text-decoration: line-through; }
+.arm-toggle { padding: 0; width: 28px; height: 28px; font-size: 1rem; line-height: 1; display: grid; place-items: center; }
+.arm-toggle[aria-pressed="false"] { border-color: var(--ok); color: var(--ok); }
+.result { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.out-term { font-family: var(--f-code); font-size: 0.9rem; background: #10161e; color: #e6ebf1; border-radius: 8px; padding: 12px 14px; min-height: 48px; white-space: pre-wrap; }
+.out-term .p { color: #7f8b99; }
+.out-term.err { color: #f2a59d; }
+.explain { font-size: 0.95rem; }
+
+/* ---------- tahák ---------- */
+.cheat-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table.cheat { border-collapse: collapse; width: 100%; min-width: 640px; }
+table.cheat th, table.cheat td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.cheat th { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+table.cheat tr:last-child td { border-bottom: 0; }
+table.cheat td:first-child { font-weight: 700; }
+
+footer { display: grid; gap: 8px; color: var(--muted); font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 20px; }
+footer ul { margin: 0; padding-left: 1.2em; }
+
+@media (max-width: 780px) {
+  .hero, .scene, .play-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero-fig { order: -1; }
+  .rules { grid-template-columns: 1fr; }
+  .fig-pair { grid-template-columns: 1fr; }
+  .fig-split { grid-template-columns: 1fr; }
+  .arrow-step::after { content: "↓"; }
+  .dial { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .combos { font-size: 0.68rem; gap: 4px; }
+  .combos > span { padding: 6px 3px; overflow-wrap: anywhere; }
+  .combos .x { font-size: 0.78rem; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- zavřená krabice: stejná jako v lekci 05 -->
+    <symbol id="box" viewBox="0 0 120 104">
+      <polygon points="10,32 60,12 110,32 60,52" style="fill:var(--kraft-top)"/>
+      <polygon points="10,32 60,52 60,98 10,78" style="fill:var(--kraft)"/>
+      <polygon points="60,52 110,32 110,78 60,98" style="fill:var(--kraft-dark)"/>
+      <polygon points="31,23.6 39,20.4 89,40.4 81,43.6" style="fill:var(--tape)"/>
+      <polygon points="81,43.6 89,40.4 89,62.4 81,65.6" style="fill:var(--tape);opacity:.8"/>
+      <polygon points="18,50 46,61.2 46,77.2 18,66" style="fill:var(--label)"/>
+      <line x1="22" y1="57" x2="41" y2="64.6" style="stroke:var(--kraft-dark);stroke-width:2"/>
+      <line x1="22" y1="62.5" x2="35" y2="67.7" style="stroke:var(--kraft-dark);stroke-width:2"/>
+      <polyline points="10,32 60,52 110,32" style="fill:none;stroke:var(--kraft-edge);stroke-width:1.4"/>
+      <line x1="60" y1="52" x2="60" y2="98" style="stroke:var(--kraft-edge);stroke-width:1.4"/>
+      <polygon points="10,32 60,12 110,32 110,78 60,98 10,78" style="fill:none;stroke:var(--kraft-edge);stroke-width:2;stroke-linejoin:round"/>
+    </symbol>
+    <!-- otevřená krabice: do Option se dá nahlédnout -->
+    <symbol id="box-open" viewBox="0 0 120 104">
+      <polygon points="10,32 60,12 50,0 0,20" style="fill:var(--kraft-top);stroke:var(--kraft-edge);stroke-width:1.4;stroke-linejoin:round"/>
+      <polygon points="60,12 110,32 120,20 70,0" style="fill:var(--kraft-dark);stroke:var(--kraft-edge);stroke-width:1.4;stroke-linejoin:round"/>
+      <polygon points="10,32 60,12 110,32 60,52" style="fill:var(--kraft-edge)"/>
+      <polygon points="10,32 60,52 60,98 10,78" style="fill:var(--kraft)"/>
+      <polygon points="60,52 110,32 110,78 60,98" style="fill:var(--kraft-dark)"/>
+      <polygon points="18,50 46,61.2 46,77.2 18,66" style="fill:var(--label)"/>
+      <line x1="22" y1="57" x2="41" y2="64.6" style="stroke:var(--kraft-dark);stroke-width:2"/>
+      <line x1="22" y1="62.5" x2="35" y2="67.7" style="stroke:var(--kraft-dark);stroke-width:2"/>
+      <polyline points="10,32 60,52 110,32" style="fill:none;stroke:var(--kraft-edge);stroke-width:1.4"/>
+      <line x1="60" y1="52" x2="60" y2="98" style="stroke:var(--kraft-edge);stroke-width:1.4"/>
+      <polygon points="10,32 60,12 110,32 110,78 60,98 10,78" style="fill:none;stroke:var(--kraft-edge);stroke-width:2;stroke-linejoin:round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <div>
+      <div class="eyebrow">todo-rs · lekce 04 · enumy a match</div>
+      <h1>Která přihrádka?</h1>
+      <p class="lead">Hodnota enumu je <b>žeton</b>, na kterém je napsaná právě jedna varianta. <code>match</code> je <b>třídička</b>: žeton propadá přihrádkami shora dolů a zapadne do první, která mu pasuje. <code>if let</code> je třídička s jedinou přihrádkou. A <code>Option</code> je <b>krabice</b>, ve které něco je (<code>Some</code>), nebo je prázdná (<code>None</code>). Rust tě nenechá sáhnout dovnitř, dokud se nepodíváš.</p>
+    </div>
+    <div class="hero-fig" aria-hidden="true">
+      <div class="col" style="align-items:center; width:100%; max-width:340px">
+        <div class="drop"><span class="chip big lit">TaskStatus::Done</span></div>
+        <div class="machine">
+          <div class="arm pass"><span class="pat">ToDo</span><span class="to">=&gt;</span><span class="out">' '</span></div>
+          <div class="arm pass"><span class="pat">InProgress</span><span class="to">=&gt;</span><span class="out">'~'</span></div>
+          <div class="arm hit"><span class="pat">Done</span><span class="to">=&gt;</span><span class="out">'X'</span></div>
+          <div class="arm"><span class="pat">Canceled</span><span class="to">=&gt;</span><span class="out">'C'</span></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="rules" aria-label="Tři pravidla">
+    <div class="rule"><span class="n">1</span><b>Hodnota enumu je vždy právě jedna varianta.</b><span>Úkol je <code>ToDo</code>, nebo <code>Done</code>. Nikdy obojí, nikdy nic.</span></div>
+    <div class="rule"><span class="n">2</span><b><code>match</code> musí mít přihrádku pro každý žeton.</b><span>Chybí-li větev, kompilátor kód odmítne (<code>E0004</code>).</span></div>
+    <div class="rule"><span class="n">3</span><b>Žádný <code>null</code>. „Možná nic“ je <code>Option</code>.</b><span>Než sáhneš na hodnotu, musíš obsloužit i prázdnou krabici <code>None</code>.</span></div>
+  </section>
+
+  <div class="legend" aria-label="Legenda">
+    <span class="legend-title">Legenda</span>
+    <div><span class="chip">Done</span> hodnota (žeton s variantou)</div>
+    <div><span class="arm" style="padding:3px 8px"><span class="pat">vzor</span><span class="to">=&gt;</span><span class="out">výsledek</span></span> větev <code>match</code></div>
+    <div><span class="arm hit" style="padding:3px 8px"><span class="pat">vzor</span><span class="to">=&gt;</span><span class="out">ano</span></span> sem žeton zapadl</div>
+    <div><div class="box sm"><svg viewBox="0 0 120 104"><use href="#box-open"/></svg><span class="note inside">1</span></div> <code>Some(1)</code></div>
+    <div><div class="box sm"><svg viewBox="0 0 120 104"><use href="#box-open"/></svg></div> <code>None</code></div>
+  </div>
+
+  <!-- ===== 1 ENUM ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">1</span><h2>Enum: přepínač s pevnými polohami</h2><span class="sym">enum TaskStatus</span></div>
+    <div class="fig">
+      <span class="lbl">enum: vždy svítí právě jedna</span>
+      <div class="dial" aria-label="TaskStatus s rozsvícenou variantou Done">
+        <span class="slot">ToDo</span><span class="slot">InProgress</span><span class="slot on">Done</span><span class="slot">Canceled</span>
+      </div>
+      <span class="lbl" style="margin-top:6px">dva bool: čtyři kombinace</span>
+      <div class="combos" aria-label="Kombinace dvou bool">
+        <span></span><span class="h">done: false</span><span class="h">done: true</span>
+        <span class="h">in_progress: false</span><span class="c">čeká</span><span class="c">hotovo</span>
+        <span class="h">in_progress: true</span><span class="c">rozpracováno</span><span class="x">NESMYSL</span>
+      </div>
+      <p class="fig-cap">Se dvěma <code>bool</code> jde zapsat úkol „hotový a zároveň rozpracovaný“. Enum takový stav vůbec nemá, takže ho nejde ani omylem vytvořit.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Přepínač na pračce:</b> poloh je pevný počet a knoflík stojí vždy právě v jedné.</p>
+<pre><code>#[derive(Debug)]
+enum TaskStatus {
+    ToDo,          <span class="c">// varianty: PascalCase, za každou čárka</span>
+    InProgress,
+    Done,
+    Canceled,
+}
+
+let s = TaskStatus::Done;</code></pre>
+      <p><b>Jak číst <code>::</code>:</b> „z“. <code>TaskStatus::Done</code> = varianta <code>Done</code> z typu <code>TaskStatus</code>. Stejně jako <code>Task::new</code> = funkce <code>new</code> z typu <code>Task</code>.</p>
+      <p><b><code>::</code> vs <code>.</code></b>: dvojtečky sahají do <b>typu</b> (varianta, asociovaná funkce), tečka do <b>hodnoty</b> (pole <code>task.title</code>, metoda <code>task.start()</code>).</p>
+    </div>
+  </section>
+
+  <!-- ===== 2 MATCH ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">2</span><h2><code style="font-size:0.85em">match</code>: třídička</h2><span class="sym">vzor =&gt; výraz,</span></div>
+    <div class="fig">
+      <div class="col" style="align-items:center; width:100%">
+        <div class="drop"><span class="chip big lit">TaskStatus::InProgress</span></div>
+        <div class="machine">
+          <div class="machine-top">match self.status {</div>
+          <div class="arm pass"><span class="pat">TaskStatus::ToDo</span><span class="to">=&gt;</span><span class="out">' '</span></div>
+          <div class="arm hit"><span class="pat">TaskStatus::InProgress</span><span class="to">=&gt;</span><span class="out">'~'</span></div>
+          <div class="arm"><span class="pat">TaskStatus::Done</span><span class="to">=&gt;</span><span class="out">'X'</span></div>
+          <div class="arm"><span class="pat">TaskStatus::Canceled</span><span class="to">=&gt;</span><span class="out">'C'</span></div>
+        </div>
+        <span class="chip">symbol() vrátí '~'</span>
+      </div>
+      <p class="fig-cap">Žeton zkouší přihrádky <b>shora dolů</b>. Zapadne do první, která pasuje, a další už nezkouší.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Třídička na mince:</b> každá mince propadne otvorem, do kterého se vejde, a na druhé straně vypadne výsledek.</p>
+<pre><code>fn symbol(&amp;self) -&gt; char {
+    match self.status {
+        TaskStatus::ToDo <span class="r">=&gt;</span> ' ',
+        TaskStatus::InProgress <span class="r">=&gt;</span> '~',
+        TaskStatus::Done <span class="r">=&gt;</span> 'X',
+        TaskStatus::Canceled <span class="r">=&gt;</span> 'C',
+    }   <span class="c">// bez ; = návratová hodnota</span>
+}</code></pre>
+      <p><b><code>=&gt;</code></b> (tlustá šipka) čti „pak“: „když <code>Done</code>, pak <code>'X'</code>“. Nezaměnit s <code>-&gt;</code> (tenká šipka) = návratový typ funkce.</p>
+      <p><b><code>match</code> je výraz</b>, stejně jako <code>if</code>: vrací hodnotu. Proto může stát na konci funkce bez <code>return</code>, nebo vpravo od <code>let x = match …</code>.</p>
+      <div class="verdict bad"><span class="code">E0308</span><span><code>let c: char = "X";</code> mismatched types: expected <code>char</code>, found <code>&amp;str</code>. <code>'X'</code> (jednoduché uvozovky) je jeden znak, <code>"X"</code> (dvojité) je text. V Rustu nejsou zaměnitelné.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 3 ÚPLNOST ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">3</span><h2>Žádný žeton nesmí propadnout</h2><span class="sym">úplnost · _ · A | B</span></div>
+    <div class="fig">
+      <div class="col" style="align-items:center; width:100%">
+        <div class="drop"><span class="chip big lit">TaskStatus::Canceled</span></div>
+        <div class="machine">
+          <div class="machine-top">match self.status {</div>
+          <div class="arm pass"><span class="pat">TaskStatus::ToDo</span><span class="to">=&gt;</span><span class="out">' '</span></div>
+          <div class="arm pass"><span class="pat">TaskStatus::InProgress</span><span class="to">=&gt;</span><span class="out">'~'</span></div>
+          <div class="arm pass"><span class="pat">TaskStatus::Done</span><span class="to">=&gt;</span><span class="out">'X'</span></div>
+          <div class="arm gone"><span class="pat">TaskStatus::Canceled</span><span class="to">=&gt;</span><span class="out">?</span></div>
+        </div>
+        <div class="fall"><span>žeton nemá kam zapadnout</span><span class="stamp-err">E0004</span></div>
+      </div>
+      <p class="fig-cap">Kompilátor projde všechny možné žetony ještě před spuštěním. Když pro některý chybí přihrádka, program vůbec nepřeloží.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Třídička se nesmí ucpat.</b> Pro každý žeton musí existovat otvor, jinak ji kompilátor nedovolí postavit.</p>
+      <div class="verdict bad"><span class="code">E0004</span><span>non-exhaustive patterns: <code>TaskStatus::Canceled</code> not covered. Přesně tohle se stalo, když jsi přidal <code>Canceled</code>: kompilátor tě dovedl do <code>symbol()</code>.</span></div>
+      <p><b><code>_ =&gt; …</code></b> je <b>sběrný koš</b> na všechno ostatní. Je pohodlný, ale spolkne i varianty, které přidáš později, a kompilátor už nic neřekne.</p>
+      <p><b><code>A | B =&gt; …</code></b> = jedna přihrádka pro víc žetonů, <code>|</code> čti „nebo“. Nezaměnit se svislítky u closure <code>|x|</code>.</p>
+<pre><code>match self.status {
+    TaskStatus::Done <span class="r">|</span> TaskStatus::Canceled =&gt; "uzavřeno",
+    <span class="r">_</span> =&gt; "otevřeno",
+}</code></pre>
+      <div class="verdict warn"><span class="code">warning</span><span>unreachable pattern. Dáš-li <code>_</code> jako <b>první</b> větev, chytí všechno a přihrádky pod ní se nikdy nepoužijí.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 4 MATCHES! ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">4</span><h2><code style="font-size:0.85em">matches!</code>: branka „ano / ne“</h2><span class="sym">matches!(x, Vzor)</span></div>
+    <div class="fig">
+      <div class="col" style="align-items:center; width:100%">
+        <div class="drop"><span class="chip big lit">TaskStatus::Canceled</span></div>
+        <div class="machine">
+          <div class="machine-top">matches!(self.status, TaskStatus::Done) je zkratka pro:</div>
+          <div class="arm pass"><span class="pat">TaskStatus::Done</span><span class="to">=&gt;</span><span class="out">true</span></div>
+          <div class="arm bin hit"><span class="pat">_</span><span class="to">=&gt;</span><span class="out">false</span></div>
+        </div>
+      </div>
+      <p class="fig-cap">Jen dvě přihrádky: „tenhle vzor“ a „všechno ostatní“. Skrytý sběrný koš <code>_</code> znamená, že nová varianta projde bez varování.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Turniket, ne třídička.</b> Zajímá tě jen „pasuje, nebo ne?“ a výsledek je <code>bool</code>.</p>
+<pre><code>fn is_done(&amp;self) -&gt; bool {
+    matches!(self.status, TaskStatus::Done)
+}</code></pre>
+      <p><b><code>!</code></b> za jménem = <b>makro</b>, jako <code>println!</code>, <code>vec!</code> nebo <code>dbg!</code>. Makro se před překladem rozepíše na delší kód, tady na <code>match</code> se dvěma větvemi.</p>
+      <p><b>Kdy co:</b> na otázky ano/ne (<code>is_done</code>, <code>filter</code>) <code>matches!</code>. Když každá varianta dává jiný výsledek (<code>symbol</code>), plný <code>match</code>, protože ten tě při nové variantě upozorní.</p>
+    </div>
+  </section>
+
+  <!-- ===== 5 OPTION ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">5</span><h2><code style="font-size:0.85em">Option</code>: krabice, která může být prázdná</h2><span class="sym">Some(x) · None</span></div>
+    <div class="fig">
+      <div class="fig-pair">
+        <div>
+          <h3><code>Some(1)</code></h3>
+          <div class="box lg"><svg viewBox="0 0 120 104"><use href="#box-open"/></svg><span class="note inside">1</span><span class="box-cap">Option&lt;u8&gt;</span></div>
+          <p class="fig-cap">V krabici leží lísteček s hodnotou.</p>
+        </div>
+        <div>
+          <h3><code>None</code></h3>
+          <div class="box lg"><svg viewBox="0 0 120 104"><use href="#box-open"/></svg><span class="box-cap">Option&lt;u8&gt;</span></div>
+          <p class="fig-cap">Krabice je prázdná. Pořád je to ale krabice stejného typu.</p>
+        </div>
+      </div>
+      <p class="fig-cap">Krabice <code>Option&lt;u8&gt;</code> není číslo. Na <code>u8</code> uvnitř se dostaneš, jen když nejdřív zjistíš, jestli tam vůbec je.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Nejdřív se podívej do krabice, pak sahej.</b> V jiných jazycích je „nic“ <code>null</code> a zjistíš to, až když program spadne. Rust <code>null</code> nemá.</p>
+<pre><code>enum Option&lt;T&gt; {   <span class="c">// definice ve std</span>
+    None,         <span class="c">// prázdná krabice</span>
+    Some(T),      <span class="c">// krabice s hodnotou typu T</span>
+}
+
+struct Task { ..., priority: Option&lt;u8&gt; }
+
+priority: None,                   <span class="c">// zatím nic</span>
+self.priority = Some(priority);   <span class="c">// vlož do krabice</span></code></pre>
+      <p><b>Jak číst <code>&lt;T&gt;</code>:</b> typový parametr, „krabice na cokoliv“. <code>Option&lt;u8&gt;</code> = možná <code>u8</code>, <code>Option&lt;&amp;Task&gt;</code> = možná půjčený úkol. Víc v lekci 12.</p>
+      <p><code>Some</code> a <code>None</code> jsou tak běžné, že se píšou bez <code>Option::</code> (jsou v tzv. prelude).</p>
+      <p><b>Varianta s daty:</b> <code>Some(T)</code> ukazuje, že varianta enumu může nést hodnotu. Žeton <code>Some</code> má v sobě přilepený lísteček.</p>
+    </div>
+  </section>
+
+  <!-- ===== 6 DESTRUKTUROVÁNÍ ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">6</span><h2>Vzor, který vyndá obsah</h2><span class="sym">Some(p) =&gt; …</span></div>
+    <div class="fig">
+      <div class="fig-split">
+        <div class="col" style="align-items:center">
+          <span class="lbl">task.priority</span>
+          <div class="box"><svg viewBox="0 0 120 104"><use href="#box-open"/></svg><span class="note inside">2</span></div>
+        </div>
+        <div class="arrow-step">Some(p) =&gt;</div>
+        <div class="col" style="align-items:center">
+          <span class="lbl">nová proměnná</span>
+          <div class="row"><span class="tag">p</span><span class="wire"></span><span class="note hl">2</span></div>
+        </div>
+      </div>
+      <div class="machine">
+        <div class="machine-top">match self.priority {</div>
+        <div class="arm pass"><span class="pat">Some(1)</span><span class="to">=&gt;</span><span class="out">"High"</span></div>
+        <div class="arm hit"><span class="pat">Some(2)</span><span class="to">=&gt;</span><span class="out">"Medium"</span></div>
+        <div class="arm"><span class="pat">Some(3)</span><span class="to">=&gt;</span><span class="out">"Low"</span></div>
+        <div class="arm bin"><span class="pat">_</span><span class="to">=&gt;</span><span class="out">"None"</span></div>
+      </div>
+      <p class="fig-cap">Vzor <code>Some(p)</code> krabici otevře a obsah pojmenuje <code>p</code>. Vzor <code>Some(2)</code> navíc rovnou porovná, co uvnitř leží.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Vzor je šablona tvaru krabice.</b> Když krabice pasuje, to, co je na místě jména, se vyndá a dostane štítek.</p>
+<pre><code>match tasks.get(10) {
+    Some(<span class="r">task</span>) =&gt; println!("Task found: {}", <span class="r">task</span>.title),
+    None =&gt; println!("Task not found"),
+}</code></pre>
+      <p><code>task</code> ve vzoru není existující proměnná. Je to <b>nová</b> proměnná, která vznikne jen v této větvi. Stejný trik jako <code>|(index, task)|</code> u <code>enumerate</code>.</p>
+      <p><b>Vnořené vzory</b> (z tvého <code>priority_label</code>): <code>Some(1)</code> pasuje jen na krabici, ve které je přesně 1. Na zbytek (<code>None</code>, <code>Some(0)</code>, <code>Some(4)</code>…) je <code>_</code>.</p>
+      <div class="verdict bad"><span class="code">E0004</span><span>Bez <code>_</code> by kompilátor napsal: <code>None</code> not covered. A s větví pro <code>None</code>: <code>Some(0_u8)</code> and <code>Some(4_u8..=u8::MAX)</code> not covered. Hlídá i čísla uvnitř krabice.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 7 IF LET ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">7</span><h2><code style="font-size:0.85em">if let</code>: zajímá mě jen jedna přihrádka</h2><span class="sym">if let Some(p) = x { … }</span></div>
+    <div class="fig">
+      <div class="fig-pair">
+        <div>
+          <h3><code>Some(3)</code></h3>
+          <div class="machine">
+            <div class="arm hit"><span class="pat">Some(p)</span><span class="to">=&gt;</span><span class="out">println!</span></div>
+            <div class="arm bin"><span class="pat">jinak</span><span class="to">=&gt;</span><span class="out">nic</span></div>
+          </div>
+          <p class="fig-cap">Pasuje: vypíše <code>Priority: 3</code>.</p>
+        </div>
+        <div>
+          <h3><code>None</code></h3>
+          <div class="machine">
+            <div class="arm pass"><span class="pat">Some(p)</span><span class="to">=&gt;</span><span class="out">println!</span></div>
+            <div class="arm bin hit"><span class="pat">jinak</span><span class="to">=&gt;</span><span class="out">nic</span></div>
+          </div>
+          <p class="fig-cap">Nepasuje: neděje se nic (nebo <code>else</code>).</p>
+        </div>
+      </div>
+      <p class="fig-cap"><code>if let</code> je třídička s jednou přihrádkou. Všechno ostatní tiše propadne, a proto tu kompilátor úplnost nehlídá.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Podívám se do krabice, a jen když v ní něco je, s tím pracuju.</b></p>
+<pre><code>if let Some(priority) = task.priority {
+    println!("   Priority: {}", priority);
+} else {                         <span class="c">// nepovinné</span>
+    println!("   No priority");
+}</code></pre>
+      <p><b>Jak číst:</b> „pokud <code>task.priority</code> pasuje na vzor <code>Some(priority)</code>, tak…“. <b><code>=</code> tady není přiřazení ani porovnání.</b> Odděluje <b>vzor</b> (vlevo) od <b>hodnoty</b> (vpravo).</p>
+      <table class="mini">
+        <thead><tr><th>chci</th><th>použiju</th></tr></thead>
+        <tbody>
+          <tr><td>každá varianta jiný výsledek</td><td><code>match</code> (hlídá úplnost)</td></tr>
+          <tr><td>něco udělat jen v jednom případě</td><td><code>if let</code></td></tr>
+          <tr><td>jen <code>true</code> / <code>false</code></td><td><code>matches!</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 8 [] vs get ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">8</span><h2>Sáhnout naslepo, nebo si nechat podat krabici?</h2><span class="sym">v[i] vs v.get(i)</span></div>
+    <div class="fig">
+      <div class="shelf">
+        <span class="lbl">tasks: 3 úkoly (index 0, 1, 2)</span>
+        <div class="shelf-row">
+          <div class="box sm"><svg viewBox="0 0 120 104"><use href="#box"/></svg><span class="box-cap">0</span></div>
+          <div class="box sm"><svg viewBox="0 0 120 104"><use href="#box"/></svg><span class="box-cap">1</span></div>
+          <div class="box sm"><svg viewBox="0 0 120 104"><use href="#box"/></svg><span class="box-cap">2</span></div>
+        </div>
+      </div>
+      <div class="fig-pair">
+        <div>
+          <h3><code>tasks[10]</code></h3>
+          <div class="box" style="opacity:.9"><svg viewBox="0 0 120 104" style="opacity:.2"><use href="#box"/></svg><span class="panic">PANIKA</span></div>
+          <p class="fig-cap">Sáhneš do prázdna a program spadne.</p>
+        </div>
+        <div>
+          <h3><code>tasks.get(10)</code></h3>
+          <div class="box"><svg viewBox="0 0 120 104"><use href="#box-open"/></svg><span class="box-cap">None</span></div>
+          <p class="fig-cap">Dostaneš prázdnou krabici a rozhodneš sám.</p>
+        </div>
+      </div>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b><code>[]</code> sahá rovnou do regálu. <code>get</code> ti podá krabici <code>Option</code></b>, ve které úkol buď je, nebo není.</p>
+<pre><code>let t = &amp;tasks[10];         <span class="e">// 💥 panika za běhu</span>
+
+match tasks.get(10) {       <span class="k">// ✅ Option&lt;&amp;Task&gt;</span>
+    Some(task) =&gt; println!("{}", task.title),
+    None =&gt; println!("Task not found"),
+}</code></pre>
+      <div class="verdict bad"><span class="code">panic</span><span>index out of bounds: the len is 3 but the index is 10. Tohle není chyba kompilátoru, program se přeloží a spadne až za běhu.</span></div>
+      <p><b>Kdy co:</b> <code>[i]</code>, když index určitě existuje (sám jsi ho právě spočítal). <code>.get(i)</code>, když nemusí, třeba když číslo zadal uživatel. Přesně tak to máš v lekci 06 u <code>done 99</code>.</p>
+    </div>
+  </section>
+
+  <!-- ===== HŘIŠTĚ ===== -->
+  <section class="play" aria-labelledby="play-h">
+    <div class="play-intro">
+      <h2 id="play-h">Hřiště: pusť žeton třídičkou</h2>
+      <p>Vyber funkci a hodnotu. Uvidíš, do které větve hodnota zapadne a co program udělá. Tlačítkem <b>−</b> u větve ji vypneš (jako bys ji smazal z kódu) a uvidíš, jestli to kompilátor dovolí.</p>
+      <p class="hint">Zkus třeba: v <code>symbol()</code> vypni <code>Canceled</code>. V <code>is_done()</code> vypni <code>Done</code>. V <code>priority_label()</code> pusť <code>Some(7)</code>, pak vypni <code>_</code>.</p>
+    </div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="vals" id="vals"></div>
+    <div class="play-grid">
+      <div class="codebox" id="code" aria-live="polite"></div>
+      <div class="result">
+        <span class="lbl">Terminál</span>
+        <div class="out-term" id="term"></div>
+        <p class="explain" id="explain"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TAHÁK ===== -->
+  <section style="display:grid; gap:16px">
+    <h2>Tahák</h2>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Zápis</th><th>Význam</th><th>Třídička</th></tr></thead>
+        <tbody>
+          <tr><td><code>enum E { A, B }</code></td><td>typ s vyjmenovanými variantami</td><td>sada žetonů</td></tr>
+          <tr><td><code>E::A</code></td><td>varianta <code>A</code> z typu <code>E</code></td><td>jeden žeton</td></tr>
+          <tr><td><code>match x { A =&gt; 1, B =&gt; 2 }</code></td><td>rozvětvení podle vzoru, vrací hodnotu</td><td>třídička, první pasující přihrádka vyhrává</td></tr>
+          <tr><td><code>=&gt;</code> / <code>-&gt;</code></td><td>„pak“ ve větvi / návratový typ funkce</td><td>výstup z přihrádky</td></tr>
+          <tr><td><code>_ =&gt; …</code></td><td>všechno ostatní</td><td>sběrný koš (vypíná hlídání nových variant)</td></tr>
+          <tr><td><code>A | B =&gt; …</code></td><td>víc vzorů v jedné větvi</td><td>jedna přihrádka pro víc žetonů</td></tr>
+          <tr><td><code>matches!(x, A)</code></td><td><code>true</code> / <code>false</code></td><td>turniket ano / ne</td></tr>
+          <tr><td><code>Option&lt;T&gt;</code></td><td><code>Some(hodnota)</code> nebo <code>None</code>, náhrada za <code>null</code></td><td>krabice, plná nebo prázdná</td></tr>
+          <tr><td><code>Some(v) =&gt; …</code></td><td>vzor, který vyndá hodnotu do <code>v</code></td><td>otevřu krabici, obsah dostane štítek</td></tr>
+          <tr><td><code>if let Some(v) = x { }</code></td><td><code>match</code> jen pro jednu větev</td><td>jedna přihrádka, zbytek propadne</td></tr>
+          <tr><td><code>v[i]</code> / <code>v.get(i)</code></td><td>prvek (panika mimo rozsah) / <code>Option&lt;&amp;T&gt;</code></td><td>sáhnu naslepo / nechám si podat krabici</td></tr>
+          <tr><td><code>'X'</code> / <code>"X"</code></td><td><code>char</code> (jeden znak) / <code>&amp;str</code> (text)</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Chyba</th><th>Co říká kompilátor</th><th>Třídička</th></tr></thead>
+        <tbody>
+          <tr><td><code>E0004</code></td><td>non-exhaustive patterns: … not covered</td><td>pro některý žeton chybí přihrádka</td></tr>
+          <tr><td><code>E0308</code></td><td>mismatched types: expected <code>char</code>, found <code>&amp;str</code></td><td>uvozovky: <code>'X'</code> vs <code>"X"</code></td></tr>
+          <tr><td><code>warning</code></td><td>unreachable pattern</td><td>přihrádka pod sběrným košem, nic do ní nedopadne</td></tr>
+          <tr><td><code>warning</code></td><td>variant … is never constructed</td><td>žeton existuje, ale nikdo ho nevyrobí</td></tr>
+          <tr><td><code>panic</code></td><td>index out of bounds</td><td>sáhl jsi do regálu naslepo (<code>v[i]</code>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Doplněk k lekci 04 projektu todo-rs. Ukázky kódu jsou ze <code>src/main.rs</code> (tag <code>lekce-04</code>).</span>
+    <ul>
+      <li><a href="04-enumy-a-match.md">Lekce 04: Enumy a match (text)</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch06-00-enums.html">Rust Book 6: Enums and Pattern Matching</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch06-02-match.html">Rust Book 6.2: The match Control Flow Construct</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch06-03-if-let.html">Rust Book 6.3: Concise Control Flow with if let</a></li>
+      <li><a href="https://doc.rust-lang.org/std/option/enum.Option.html">std::option::Option</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Hodnoty, které se dají pustit třídičkou
+  const STATUS = ['ToDo', 'InProgress', 'Done', 'Canceled'];
+  const PRIO = [null, 1, 2, 3, 7];
+  const statusName = (s) => `TaskStatus::${s}`;
+  const prioName = (p) => (p === null ? 'None' : `Some(${p})`);
+
+  // Programy: větve s vzorem, výsledkem a funkcí „pasuje?“
+  const PROGS = {
+    symbol: {
+      tab: 'symbol()', input: 'status', exhaustive: true,
+      head: ['fn symbol(&self) -> char {', '    match self.status {'], tail: ['    }', '}'],
+      arms: [
+        { pat: 'TaskStatus::ToDo', out: "' '", m: (v) => v === 'ToDo' },
+        { pat: 'TaskStatus::InProgress', out: "'~'", m: (v) => v === 'InProgress' },
+        { pat: 'TaskStatus::Done', out: "'X'", m: (v) => v === 'Done' },
+        { pat: 'TaskStatus::Canceled', out: "'C'", m: (v) => v === 'Canceled' },
+      ],
+      run: (arm) => `vrátí ${arm.out}`,
+    },
+    is_done: {
+      tab: 'is_done()', input: 'status', exhaustive: true,
+      head: ['fn is_done(&self) -> bool {', '    // matches!(self.status, TaskStatus::Done) =', '    match self.status {'], tail: ['    }', '}'],
+      arms: [
+        { pat: 'TaskStatus::Done', out: 'true', m: (v) => v === 'Done' },
+        { pat: '_', out: 'false', m: () => true, bin: true },
+      ],
+      run: (arm) => `vrátí ${arm.out}`,
+    },
+    label: {
+      tab: 'priority_label()', input: 'prio', exhaustive: true,
+      head: ['fn priority_label(&self) -> &str {', '    match self.priority {'], tail: ['    }', '}'],
+      arms: [
+        { pat: 'Some(1)', out: '"High"', m: (v) => v === 1 },
+        { pat: 'Some(2)', out: '"Medium"', m: (v) => v === 2 },
+        { pat: 'Some(3)', out: '"Low"', m: (v) => v === 3 },
+        { pat: '_', out: '"None"', m: () => true, bin: true },
+      ],
+      run: (arm) => `vrátí ${arm.out}`,
+    },
+    iflet: {
+      tab: 'if let', input: 'prio', exhaustive: false,
+      head: [], tail: [],
+      arms: [
+        { pat: 'if let Some(p) = task.priority', out: 'println!("Priority: {}", p);', m: (v) => v !== null, print: (v) => `Priority: ${v}` },
+        { pat: 'else', out: 'println!("No priority");', m: () => true, print: () => 'No priority', bin: true },
+      ],
+    },
+  };
+
+  const state = { prog: 'symbol', value: { status: 'Done', prio: 2 }, off: {} };
+  const tabsEl = document.getElementById('tabs');
+  const valsEl = document.getElementById('vals');
+  const codeEl = document.getElementById('code');
+  const termEl = document.getElementById('term');
+  const explainEl = document.getElementById('explain');
+
+  const offSet = () => (state.off[state.prog] ||= new Set());
+
+  // Které hodnoty nepokryje žádná zapnutá větev (jako kontrola úplnosti v rustc)
+  function uncovered(prog, arms) {
+    if (prog.input === 'status') return STATUS.filter((s) => !arms.some((a) => a.m(s))).map(statusName);
+    const out = [];
+    if (!arms.some((a) => a.m(null))) out.push('None');
+    let start = null;
+    for (let n = 0; n <= 256; n++) {
+      const miss = n <= 255 && !arms.some((a) => a.m(n));
+      if (miss && start === null) start = n;
+      if (!miss && start !== null) {
+        const end = n - 1;
+        if (start === end) out.push(`Some(${start}_u8)`);
+        else out.push(`Some(${start}_u8..=${end === 255 ? 'u8::MAX' : end + '_u8'})`);
+        start = null;
+      }
+    }
+    return out;
+  }
+  // Výčet jako v rustc: `A`, `B` and `C` / … and 2 more
+  function listPats(list) {
+    const q = list.map((x) => '`' + x + '`');
+    if (q.length === 1) return q[0];
+    if (q.length <= 3) return `${q.slice(0, -1).join(', ')} and ${q[q.length - 1]}`;
+    return `${q.slice(0, 3).join(', ')} and ${q.length - 3} more`;
+  }
+
+  function render() {
+    const prog = PROGS[state.prog];
+    const off = offSet();
+    const v = state.value[prog.input];
+    const active = prog.arms.filter((_, i) => !off.has(i));
+
+    tabsEl.innerHTML = Object.entries(PROGS).map(([k, p]) =>
+      `<button type="button" role="tab" aria-selected="${k === state.prog}" data-prog="${k}"><code>${esc(p.tab)}</code></button>`).join('');
+
+    const values = prog.input === 'status' ? STATUS : PRIO;
+    const label = prog.input === 'status' ? 'self.status =' : (state.prog === 'iflet' ? 'task.priority =' : 'self.priority =');
+    valsEl.innerHTML = `<span class="lbl">${esc(label)}</span>` + values.map((x) =>
+      `<button type="button" aria-pressed="${x === v}" data-val="${x === null ? 'null' : x}"><code>${esc(prog.input === 'status' ? statusName(x) : prioName(x))}</code></button>`).join('');
+
+    const missing = prog.exhaustive ? uncovered(prog, active) : [];
+    const error = missing.length > 0;
+    const hitIdx = error ? -1 : prog.arms.findIndex((a, i) => !off.has(i) && a.m(v));
+
+    // kód
+    const lines = [];
+    prog.head.forEach((l) => lines.push(`<div class="ln">${esc(l)}</div>`));
+    prog.arms.forEach((a, i) => {
+      const isOff = off.has(i);
+      const cls = ['arm', a.bin ? 'bin' : '', isOff ? 'off' : '', i === hitIdx ? 'hit' : '', !isOff && hitIdx >= 0 && i < hitIdx ? 'pass' : ''].join(' ');
+      const btn = `<button type="button" class="arm-toggle" data-arm="${i}" aria-pressed="${!isOff}" aria-label="${isOff ? 'Zapnout' : 'Vypnout'} větev ${esc(a.pat)}">${isOff ? '+' : '−'}</button>`;
+      if (state.prog === 'iflet') {
+        lines.push(`<div class="${cls}" style="margin-left:0">${btn}<span class="pat">${esc(a.pat)} {</span><span class="to"></span><span class="out">${esc(a.out)} }</span></div>`);
+      } else {
+        lines.push(`<div class="${cls}">${btn}<span class="pat">${esc(a.pat)}</span><span class="to">=&gt;</span><span class="out">${esc(a.out)},</span></div>`);
+      }
+    });
+    prog.tail.forEach((l) => lines.push(`<div class="ln">${esc(l)}</div>`));
+    codeEl.innerHTML = lines.join('');
+
+    // výsledek
+    const vName = prog.input === 'status' ? statusName(v) : prioName(v);
+    termEl.classList.toggle('err', error);
+    if (error) {
+      const ty = prog.input === 'status' ? 'TaskStatus' : 'Option<u8>';
+      termEl.innerHTML = `<span class="p">$ cargo build</span>\nerror[E0004]: non-exhaustive patterns: ${esc(listPats(missing))} not covered\n  = note: the matched value is of type \`${esc(ty)}\``;
+      explainEl.innerHTML = `Program se <b>nepřeloží</b>. Pro ${missing.length === 1 ? 'tuto hodnotu' : 'tyto hodnoty'} nemá třídička přihrádku. Je jedno, jakou hodnotu zrovna zkoušíš: kompilátor kontroluje všechny možné předem.`;
+      return;
+    }
+    const hit = prog.arms[hitIdx];
+    if (state.prog === 'iflet') {
+      termEl.innerHTML = `<span class="p">$ cargo run</span>\n${hit ? esc(hit.print(v)) : '<span class="p">(nic se nevypsalo)</span>'}`;
+      if (hitIdx === 0) explainEl.innerHTML = `<code>${esc(vName)}</code> pasuje na vzor <code>Some(p)</code>. Z krabice se vyndá <code>${v}</code> a dostane jméno <code>p</code>.`;
+      else if (hit) explainEl.innerHTML = `<code>None</code> na <code>Some(p)</code> nepasuje, takže se provede <code>else</code>.`;
+      else explainEl.innerHTML = `<code>None</code> nepasuje a <code>else</code> chybí. Neprovede se nic a kompilátor nic nenamítá: <code>if let</code> úplnost nehlídá.`;
+      return;
+    }
+    termEl.innerHTML = `<span class="p">${esc(prog.tab.replace('()', ''))}(${esc(vName)})</span>\n${esc(prog.run(hit))}`;
+    const skipped = prog.arms.some((a, i) => off.has(i) && a.m(v));
+    let msg = `<code>${esc(vName)}</code> zkouší větve shora dolů. První, která pasuje: <code>${esc(hit.pat)} =&gt; ${esc(hit.out)}</code>.`;
+    if (hit.bin && skipped) msg += ` Jeho vlastní větev je vypnutá, a tak ho chytil sběrný koš <code>_</code>. <b>Kompilátor mlčí</b>, protože <code>_</code> pokrývá všechno. Přesně tohle se stalo s <code>matches!</code>, když přibyla varianta <code>Canceled</code>.`;
+    else if (hit.bin && state.prog === 'label' && v !== null) msg += ` Pozor: priorita <b>je</b> nastavená, a stejně se vypíše „None“. Sběrný koš nerozliší <code>None</code> od <code>Some(7)</code>.`;
+    else if (hit.bin) msg += ` Žádná konkrétní větev nepasuje, takže to chytil sběrný koš <code>_</code>.`;
+    explainEl.innerHTML = msg;
+  }
+
+  tabsEl.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-prog]');
+    if (!b) return;
+    state.prog = b.dataset.prog;
+    render();
+  });
+  valsEl.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-val]');
+    if (!b) return;
+    const prog = PROGS[state.prog];
+    state.value[prog.input] = b.dataset.val === 'null' ? null : (prog.input === 'status' ? b.dataset.val : Number(b.dataset.val));
+    render();
+  });
+  codeEl.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-arm]');
+    if (!b) return;
+    const off = offSet();
+    const i = Number(b.dataset.arm);
+    if (off.has(i)) off.delete(i); else off.add(i);
+    render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>
