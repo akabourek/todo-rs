@@ -132,6 +132,7 @@ Pravým klikem na breakpoint → **Edit Breakpoint** → podmínka, např. `inde
 3. Vlož do cyklu `dbg!(index);`, spusť `cargo run` a porovnej výstup s `println!`. Pak `dbg!` zase smaž.
 
 ## Odkazy
+- [Infografika: Pauza na dálkovém](infografika/02-debugovani-infografika.html) – debugger jako dálkové ovládání, breakpoint, krokování F10/F11/⇧F11, panely, `dbg!` + hřiště se simulovaným debuggerem nad `main.rs` z lekce 02 (otevřít v prohlížeči)
 - [CodeLLDB – User's Manual](https://github.com/vadimcn/codelldb/blob/master/MANUAL.md)
 - [VS Code – Debugging](https://code.visualstudio.com/docs/editor/debugging)
 - [VS Code – Language specific settings](https://code.visualstudio.com/docs/getstarted/settings#_language-specific-editor-settings)

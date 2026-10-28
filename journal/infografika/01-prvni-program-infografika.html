@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>Štítky a sklenice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
+<style>
+/* Layout: spíž – proměnná = štítek na sklenici, mut = sklenice s otvíracím víčkem, pole = plato na vajíčka,
+   Vec = regál, který jde prodloužit, for = pás, closure = strojek na lístečku. Barvy a písma sdílí s lekcemi 04–06. */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #1b2330;
+  --muted: #5b6676;
+  --line: #cfd6df;
+  --kraft: #c9975c;
+  --kraft-top: #dcb07a;
+  --kraft-dark: #a7773f;
+  --kraft-edge: #6f4c24;
+  --tape: #efc75e;
+  --label: #f7f1e3;
+  --glass: #d6e9ee;
+  --glass-edge: #7fa9b3;
+  --read: #0d7480;
+  --read-soft: #d7eef0;
+  --write: #c2410c;
+  --write-soft: #fbe3d6;
+  --ok: #2e7d32;
+  --ok-soft: #dcefdc;
+  --err: #b42318;
+  --err-soft: #f9dedb;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --f-stamp: "Saira Stencil One", Impact, "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+    --kraft: #b8884f; --kraft-top: #cc9e66; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+    --glass: #1f3a42; --glass-edge: #5f97a3;
+    --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+    --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+  --kraft: #b8884f; --kraft-top: #cc9e66; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+  --glass: #1f3a42; --glass-edge: #5f97a3;
+  --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+  --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  /* bez ligatur: => -> || musí vypadat přesně tak, jak se píšou */
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3.2vw, 2rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 code { font-size: 0.85em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+code, pre { font-family: var(--f-code); font-size: 0.86em; }
+:not(pre) > code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; white-space: nowrap; }
+a { color: var(--read); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--write); outline-offset: 2px; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 32px; align-items: center; }
+.hero .lead { font-size: 1.2rem; color: var(--muted); margin-top: 16px; }
+.eyebrow { font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hero-fig { display: flex; justify-content: center; min-width: 0; }
+
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.rule b { font-family: var(--f-display); font-size: 1.15rem; }
+.rule span { color: var(--muted); font-size: 0.95rem; }
+.rule .n { font-family: var(--f-stamp); font-size: 1.6rem; color: var(--kraft-dark); line-height: 1; }
+
+/* ---------- štítek (proměnná) ---------- */
+.tag {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  font-family: var(--f-code); font-size: 0.85rem; font-weight: 600;
+  padding: 4px 10px; border-radius: 999px 6px 6px 999px; white-space: nowrap;
+  border: 2px solid var(--ink); background: var(--ink); color: var(--surface);
+}
+.tag::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+.tag.mut { background: var(--write-soft); color: var(--write); border-color: var(--write); }
+.wire { width: 26px; height: 0; border-top: 2px solid var(--ink); flex: none; }
+.wire.mut { border-top-color: var(--write); }
+
+/* ---------- sklenice ---------- */
+.jar { position: relative; display: inline-grid; justify-items: center; gap: 4px; flex: none; }
+.jar svg { width: 84px; height: auto; display: block; }
+.jar .content {
+  position: absolute; top: 56%; left: 50%; transform: translate(-50%, -50%);
+  font-family: var(--f-code); font-weight: 600; font-size: 1.15rem; color: var(--ink);
+  background: var(--label); border: 1px solid var(--kraft-dark); border-radius: 3px; padding: 0 6px; color: #3a2b17;
+}
+.jar-cap { font-family: var(--f-code); font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+.row { display: flex; align-items: center; gap: 0; }
+.col { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- plato (pole) a regál (Vec) ---------- */
+.tray { display: inline-grid; grid-auto-flow: column; gap: 6px; padding: 10px; background: var(--kraft-top); border: 2px solid var(--kraft-edge); border-radius: 14px; }
+.cell { display: grid; place-items: center; min-width: 74px; height: 46px; padding: 0 6px; border-radius: 50%; background: var(--kraft); box-shadow: inset 0 3px 0 var(--kraft-dark); font-family: var(--f-code); font-size: 0.8rem; font-weight: 600; color: #3a2b17; }
+.cell span { background: var(--label); border-radius: 999px; padding: 2px 8px; border: 1px solid var(--kraft-dark); }
+.cell.idx { background: transparent; box-shadow: none; height: auto; color: var(--muted); font-weight: 400; font-size: 0.72rem; }
+.shelf { display: inline-flex; align-items: flex-end; gap: 6px; padding: 0 8px 6px; border-bottom: 6px solid var(--kraft-edge); }
+.item { display: grid; place-items: center; min-width: 74px; height: 44px; padding: 0 8px; border: 2px solid var(--kraft-dark); border-radius: 6px; background: var(--label); font-family: var(--f-code); font-size: 0.8rem; font-weight: 600; color: #3a2b17; }
+.item.new { border-color: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.item.slot { border: 2px dashed var(--line); background: transparent; color: var(--muted); font-weight: 400; }
+.item.blocked { border: 2px dashed var(--err); color: var(--err); background: var(--err-soft); text-decoration: line-through; }
+.idxs { display: inline-flex; gap: 6px; padding: 0 8px; }
+.idxs span { min-width: 74px; text-align: center; font-family: var(--f-code); font-size: 0.72rem; color: var(--muted); }
+
+/* ---------- šablona println! ---------- */
+.tpl { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; font-family: var(--f-code); font-size: 0.95rem; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 8px; background: var(--surface-2); }
+.hole { display: inline-grid; place-items: center; min-width: 2.4em; padding: 2px 6px; border: 2px dashed var(--read); border-radius: 6px; color: var(--read); font-weight: 600; background: var(--read-soft); }
+.hole.named { border-color: var(--write); color: var(--write); background: var(--write-soft); }
+.feed { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; font-family: var(--f-code); font-size: 0.82rem; }
+.feed span { padding: 3px 10px; border-radius: 999px; }
+.feed .a { background: var(--read-soft); color: var(--read); border: 1px solid var(--read); }
+.feed .b { background: var(--write-soft); color: var(--write); border: 1px solid var(--write); }
+
+/* ---------- pás (for) ---------- */
+.belt { display: flex; gap: 8px; align-items: center; padding: 10px 12px 14px; border-bottom: 6px double var(--muted); overflow-x: auto; max-width: 100%; }
+.pkg { display: grid; justify-items: center; gap: 4px; }
+.pkg .num { font-family: var(--f-code); font-size: 0.75rem; padding: 1px 8px; border-radius: 999px; background: var(--tape); color: #3a2b17; font-weight: 600; }
+.pkg.cur .item { box-shadow: 0 0 0 3px var(--tape); }
+.pkg.done { opacity: 0.45; }
+
+/* ---------- strojek (closure) ---------- */
+.machine { display: grid; grid-template-columns: auto auto auto; gap: 10px; align-items: center; justify-content: center; font-family: var(--f-code); }
+.m-in, .m-out { padding: 6px 12px; border-radius: 999px; background: var(--label); color: #3a2b17; border: 2px solid var(--kraft-dark); font-weight: 600; white-space: nowrap; }
+.m-out { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+.m-body { display: grid; gap: 0; border: 2px solid var(--ink); border-radius: 10px; overflow: hidden; min-width: 130px; }
+.m-body .params { padding: 6px 12px; background: var(--ink); color: var(--surface); text-align: center; font-weight: 600; }
+.m-body .body { padding: 8px 12px; background: var(--surface-2); text-align: center; }
+.m-arrow { color: var(--muted); font-size: 1.3rem; }
+
+/* ---------- scény ---------- */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.scene-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.scene-head .num { font-family: var(--f-stamp); font-size: 2rem; color: var(--kraft-dark); line-height: 1; }
+.scene-head .sym { font-family: var(--f-code); font-size: 1rem; color: var(--muted); }
+.fig {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0;
+  padding: 22px 18px; display: grid; gap: 16px; justify-items: center; align-content: center; min-height: 200px;
+  overflow-x: auto;
+}
+.fig-cap { font-size: 0.9rem; color: var(--muted); text-align: center; max-width: 46ch; }
+.lbl { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+.vs > div { display: grid; gap: 10px; justify-items: center; align-content: start; padding: 12px; border-radius: 8px; background: var(--surface-2); min-width: 0; overflow-x: auto; }
+.vs h3 { font-size: 0.95rem; }
+.vs .cell, .vs .item { min-width: 0; }
+.vs .cell { padding: 0 4px; }
+.vs .tray, .vs .shelf { max-width: 100%; }
+.fig-cap code { white-space: normal; }
+
+.text { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.text .metaphor { font-size: 1.12rem; }
+.text .metaphor b { font-family: var(--f-display); }
+
+pre {
+  margin: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .e { color: var(--err); font-weight: 600; }
+pre .k { color: var(--ok); font-weight: 600; }
+pre .r { color: var(--read); font-weight: 600; }
+pre .w { color: var(--write); font-weight: 600; }
+
+.verdict { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+.verdict.bad { background: var(--err-soft); }
+.verdict.good { background: var(--ok-soft); }
+.verdict.warn { background: var(--write-soft); }
+.verdict .code { font-family: var(--f-code); font-weight: 600; flex: none; }
+.verdict.bad .code { color: var(--err); }
+.verdict.good .code { color: var(--ok); }
+.verdict.warn .code { color: var(--write); }
+
+.mini { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.mini th, .mini td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mini th { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.mini tr:last-child td { border-bottom: 0; }
+
+.term { font-family: var(--f-code); font-size: 0.85rem; background: #10161e; color: #e6ebf1; border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; width: 100%; min-width: 0; overflow-x: auto; }
+.term .p { color: #7f8b99; }
+.term .u { color: #efc75e; }
+.term .bad { color: #f2a59d; }
+.term .good { color: #9fd8a3; }
+
+/* ---------- hřiště ---------- */
+.play { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
+.play-intro { display: grid; gap: 8px; }
+.hint { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--tape); padding-left: 12px; }
+.decl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; }
+.seg button { font-family: var(--f-code); font-size: 0.85rem; font-weight: 600; padding: 7px 12px; border: 0; background: var(--surface); color: var(--ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn {
+  font-family: var(--f-body); font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  padding: 8px 12px; border-radius: 8px; border: 2px solid var(--ink); background: var(--surface); color: var(--ink);
+  display: inline-flex; gap: 6px; align-items: center;
+}
+.btn code { background: none; border: 0; padding: 0; font-weight: 600; }
+.btn.go { background: var(--ink); color: var(--surface); }
+.btn.quiet { border-color: var(--line); color: var(--muted); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.play-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.stage { background: var(--surface-2); border-radius: 10px; padding: 18px 12px; display: grid; gap: 12px; justify-items: center; align-content: center; min-height: 200px; overflow-x: auto; min-width: 0; }
+.code-log { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.code-log li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); font-size: 0.9rem; }
+.code-log li code { white-space: pre-wrap; word-break: break-word; }
+.code-log li.bad { background: var(--err-soft); }
+.code-log li.bad code { text-decoration: line-through; text-decoration-color: var(--err); }
+.code-log .mark { font-family: var(--f-display); font-weight: 800; }
+.code-log li.ok .mark { color: var(--ok); }
+.code-log li.bad .mark { color: var(--err); }
+.code-log li.info .mark { color: var(--muted); }
+.code-log .why { color: var(--muted); display: block; margin-top: 2px; }
+.code-log li.bad .why b { color: var(--err); font-family: var(--f-code); }
+.side { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.closure-play { display: grid; gap: 12px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.closure-play .ctrls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.closure-play input { width: 6em; font-family: var(--f-code); font-size: 1rem; padding: 7px 10px; border: 2px solid var(--ink); border-radius: 8px; background: var(--surface); color: var(--ink); }
+
+/* ---------- tahák ---------- */
+.cheat-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table.cheat { border-collapse: collapse; width: 100%; min-width: 640px; }
+table.cheat th, table.cheat td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.cheat th { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+table.cheat tr:last-child td { border-bottom: 0; }
+table.cheat td:first-child { font-weight: 700; }
+
+footer { display: grid; gap: 8px; color: var(--muted); font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 20px; }
+footer ul { margin: 0; padding-left: 1.2em; }
+
+@media (max-width: 780px) {
+  .hero, .scene, .play-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero-fig { order: -1; }
+  .rules { grid-template-columns: 1fr; }
+  .vs { grid-template-columns: 1fr; }
+  .cell, .item, .idxs span { min-width: 58px; font-size: 0.72rem; }
+  .machine { grid-template-columns: 1fr; justify-items: center; }
+  .m-arrow { transform: rotate(90deg); }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- zavařená sklenice: víčko s pečetí, nejde otevřít -->
+    <symbol id="jar" viewBox="0 0 80 100">
+      <rect x="14" y="22" width="52" height="72" rx="10" style="fill:var(--glass);stroke:var(--glass-edge);stroke-width:2.5"/>
+      <rect x="20" y="28" width="6" height="56" rx="3" style="fill:#ffffff;opacity:.35"/>
+      <rect x="18" y="8" width="44" height="16" rx="3" style="fill:var(--ink)"/>
+      <rect x="18" y="18" width="44" height="5" style="fill:var(--tape)"/>
+    </symbol>
+    <!-- sklenice s otvíracím víčkem: víčko nadzvednuté -->
+    <symbol id="jar-open" viewBox="0 0 80 100">
+      <rect x="14" y="22" width="52" height="72" rx="10" style="fill:var(--glass);stroke:var(--glass-edge);stroke-width:2.5"/>
+      <rect x="20" y="28" width="6" height="56" rx="3" style="fill:#ffffff;opacity:.35"/>
+      <g transform="rotate(-14 18 8)"><rect x="20" y="0" width="44" height="14" rx="3" style="fill:var(--write)"/></g>
+      <path d="M68 6 a8 8 0 1 1 -6 -5" style="fill:none;stroke:var(--write);stroke-width:2.5;stroke-linecap:round"/>
+      <path d="M60 -1 l3 3 -4 2" style="fill:none;stroke:var(--write);stroke-width:2.5;stroke-linecap:round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <div>
+      <div class="eyebrow">todo-rs · lekce 01 · první program</div>
+      <h1>Štítky a sklenice</h1>
+      <p class="lead">Program je <b>spíž</b>. Hodnota je to, co leží ve <b>sklenici</b>, a proměnná je <b>štítek</b>, který na ni nalepíš. Obyčejná sklenice je zavařená, takže obsah už nevyměníš. Až <code>mut</code> jí dá otvírací víčko. Úkoly skladujeme buď na <b>platu na vajíčka</b> (pole, pevný počet míst), nebo na <b>regálu</b>, který jde prodloužit (<code>Vec</code>).</p>
+    </div>
+    <div class="hero-fig" aria-hidden="true">
+      <div class="col" style="align-items:center; gap:18px">
+        <div class="row" style="gap:28px">
+          <div class="row"><span class="tag">a</span><span class="wire"></span><div class="jar"><svg viewBox="0 0 80 100"><use href="#jar"/></svg><span class="content">5</span></div></div>
+          <div class="row"><span class="tag mut">mut b</span><span class="wire mut"></span><div class="jar"><svg viewBox="0 0 80 100" style="overflow:visible"><use href="#jar-open"/></svg><span class="content">6</span></div></div>
+        </div>
+        <div class="tray"><span class="cell"><span>Apple</span></span><span class="cell"><span>Banana</span></span><span class="cell"><span>Cherry</span></span></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="rules" aria-label="Tři pravidla">
+    <div class="rule"><span class="n">1</span><b>Proměnná je ve výchozím stavu neměnná.</b><span>Chceš-li obsah měnit, řekni to předem: <code>let mut</code>.</span></div>
+    <div class="rule"><span class="n">2</span><b>Pole má pevný počet míst, <code>Vec</code> roste.</b><span>Do plata na tři vajíčka čtvrté nedáš. Na regál ano.</span></div>
+    <div class="rule"><span class="n">3</span><b>Kompilátor kontroluje předem.</b><span>Chyby jako „měníš neměnné“ najde před spuštěním, ne až když program běží.</span></div>
+  </section>
+
+  <!-- ===== 1 MAIN + PRINTLN ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">1</span><h2>Šablona s okénky: <code>println!</code></h2><span class="sym">fn main() · println!("{}: {entry}", …)</span></div>
+    <div class="fig">
+      <div class="tpl" aria-label="Formátovací řetězec">"<span class="hole">{}</span>:&nbsp;<span class="hole named">{entry}</span>"</div>
+      <div class="feed"><span class="a">{} ← index + 1 (argument za čárkou)</span><span class="b">{entry} ← proměnná entry</span></div>
+      <div class="term">1: Apple</div>
+      <p class="fig-cap">Šablona má okénka. <code>{}</code> se vyplní dalším argumentem v pořadí, <code>{jméno}</code> rovnou proměnnou toho jména.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Razítko s okénky.</b> Text je předtištěný, do okének se dosadí hodnoty.</p>
+<pre><code><span class="r">fn</span> main() {                       <span class="c">// vstupní bod programu</span>
+    println<span class="w">!</span>("====== My ToDo List ======");
+    println<span class="w">!</span>("{}: {entry}", index + 1);
+}</code></pre>
+      <p><b><code>fn</code></b> = definice funkce, <b><code>main</code></b> = funkce, která se spustí jako první. <b><code>{ }</code></b> = blok kódu, příkazy končí <b><code>;</code></b>.</p>
+      <p><b><code>!</code></b> za jménem = <b>makro</b>, ne funkce. Makro se při překladu rozvine na delší kód, proto <code>println!</code> umí libovolný počet argumentů a šablonu kontroluje už kompilátor.</p>
+      <div class="verdict bad"><span class="code">error</span><span><code>println!("{index + 1}")</code>: invalid format string: expected <code>}</code>, found <code>+</code>. Do okénka patří jen <b>jméno</b>, výraz musí jít jako argument za čárkou.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 2 LET / MUT ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">2</span><h2>Zavařená sklenice, nebo s víčkem?</h2><span class="sym">let · let mut</span></div>
+    <div class="fig">
+      <div class="vs">
+        <div>
+          <h3><code>let a = 5;</code></h3>
+          <div class="row"><span class="tag">a</span><span class="wire"></span><div class="jar"><svg viewBox="0 0 80 100"><use href="#jar"/></svg><span class="content">5</span></div></div>
+          <p class="fig-cap">Zavařená. <code>a = 6;</code> neprojde.</p>
+        </div>
+        <div>
+          <h3><code>let mut b = 5;</code></h3>
+          <div class="row"><span class="tag mut">mut b</span><span class="wire mut"></span><div class="jar"><svg viewBox="0 0 80 100" style="overflow:visible"><use href="#jar-open"/></svg><span class="content">6</span></div></div>
+          <p class="fig-cap">Otvírací víčko. <code>b += 1;</code> projde, teď je tam 6.</p>
+        </div>
+      </div>
+      <p class="fig-cap">Štítek <code>mut</code> je vidět už na první pohled. Kdo čte kód, hned ví, které hodnoty se můžou měnit.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>V Rustu je každá sklenice zavařená</b>, dokud výslovně neřekneš, že chceš otvírací víčko.</p>
+<pre><code>let a = 5;
+a = 6;          <span class="e">// ❌ E0384</span>
+
+let <span class="w">mut</span> b = 5;
+b += 1;         <span class="k">// ✅ b = b + 1, teď 6</span>
+
+let c: i32 = 5; <span class="c">// typ napsaný ručně</span></code></pre>
+      <div class="verdict bad"><span class="code">E0384</span><span>cannot assign twice to immutable variable <code>a</code>. Kompilátor rovnou poradí: <i>consider making this binding mutable: <code>mut a</code></i>.</span></div>
+      <p><b><code>+=</code></b> = „přičti k tomu, co tam je“. <code>++</code> Rust nemá.</p>
+      <p><b><code>: i32</code></b> za jménem = typ (celé číslo, 32 bitů). Většinou ho psát nemusíš, kompilátor si ho odvodí z hodnoty.</p>
+    </div>
+  </section>
+
+  <!-- ===== 3 POLE vs VEC ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">3</span><h2>Plato na vajíčka, nebo regál?</h2><span class="sym">[a, b, c] · vec![a, b, c]</span></div>
+    <div class="fig">
+      <div class="vs">
+        <div>
+          <h3>Pole <code>[&amp;str; 3]</code></h3>
+          <div class="tray"><span class="cell"><span>Apple</span></span><span class="cell"><span>Banana</span></span><span class="cell"><span>Cherry</span></span></div>
+          <div class="item blocked">+ Milk</div>
+          <p class="fig-cap">Tři jamky, víc nebude. <code>push</code> u pole neexistuje.</p>
+        </div>
+        <div>
+          <h3><code>Vec&lt;&amp;str&gt;</code></h3>
+          <div class="shelf"><span class="item">Apple</span><span class="item">Banana</span><span class="item new">Cherry</span><span class="item slot">+</span></div>
+          <p class="fig-cap">Regál se prodlouží. <code>v.push("Cherry")</code> přidá na konec.</p>
+        </div>
+      </div>
+      <p class="fig-cap">Tvůj seznam v lekci 01 se nemění, proto stačí pole. Ve ToDo listu budeme přidávat, a tam bude <code>Vec</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Plato má pevný počet jamek</b> danou už při výrobě. <b>Regál</b> se dá kdykoli o kus prodloužit.</p>
+<pre><code>let list = ["Apple", "Banana", "Cherry"]; <span class="c">// pole</span>
+
+let <span class="w">mut</span> v = <span class="r">vec!</span>["Apple", "Banana"];      <span class="c">// Vec</span>
+v.push("Cherry");                         <span class="k">// ✅</span>
+list.push("Milk");                        <span class="e">// ❌ E0599</span></code></pre>
+      <div class="verdict bad"><span class="code">E0599</span><span>no method named <code>push</code> found for array <code>[&amp;str; 3]</code>. Pole metodu <code>push</code> vůbec nemá.</span></div>
+      <div class="verdict bad"><span class="code">E0596</span><span>cannot borrow <code>v</code> as mutable, as it is not declared as mutable. I regál musí mít <code>mut</code>, když na něj chceš přidávat.</span></div>
+      <table class="mini">
+        <thead><tr><th></th><th>pole <code>[T; N]</code></th><th><code>Vec&lt;T&gt;</code></th></tr></thead>
+        <tbody>
+          <tr><td>délka</td><td>pevná (<code>N</code>)</td><td>mění se za běhu</td></tr>
+          <tr><td>vytvoření</td><td><code>[a, b]</code></td><td><code>vec![a, b]</code>, <code>Vec::new()</code></td></tr>
+          <tr><td><code>len()</code>, <code>iter()</code></td><td>✅</td><td>✅</td></tr>
+          <tr><td><code>push</code></td><td>❌</td><td>✅ (s <code>mut</code>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 4 :: vs . ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">4</span><h2>Výrobna, nebo hotový kus?</h2><span class="sym">Vec::new() · list.push(x)</span></div>
+    <div class="fig">
+      <div class="vs">
+        <div>
+          <h3><code>Typ::funkce()</code></h3>
+          <code>Vec::new()</code>
+          <code>String::from("Apple")</code>
+          <p class="fig-cap">Funkce patří <b>typu</b>. Často vyrábí novou hodnotu.</p>
+        </div>
+        <div>
+          <h3><code>hodnota.metoda()</code></h3>
+          <code>list.len()</code>
+          <code>v.push("Cherry")</code>
+          <p class="fig-cap">Metoda se volá na <b>konkrétní hodnotě</b>, kterou už máš.</p>
+        </div>
+      </div>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b><code>::</code> mluví s výrobnou, <code>.</code> s hotovým kusem.</b> <code>Vec::new()</code> = „výrobno Vec, udělej mi nový“. <code>list.len()</code> = „sezname, kolik toho máš?“</p>
+      <p><b>Jak číst <code>::</code>:</b> „z“. <code>Vec::new</code> = funkce <code>new</code> z typu <code>Vec</code>. Říká se jim <b>asociované funkce</b>.</p>
+      <p><b><code>"Apple"</code> vs <code>String::from("Apple")</code>:</b> první je text zapečený v programu (<code>&amp;str</code>, jen ke čtení), druhý je vlastní kopie, kterou jde měnit (<code>String</code>). Podrobně v lekci 03.</p>
+    </div>
+  </section>
+
+  <!-- ===== 5 FOR + ENUMERATE ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">5</span><h2>Pás, který podává jednu věc po druhé</h2><span class="sym">for (index, entry) in list.iter().enumerate()</span></div>
+    <div class="fig">
+      <div class="belt" aria-label="Pás s očíslovanými prvky">
+        <div class="pkg done"><span class="num">0</span><span class="item">Apple</span></div>
+        <div class="pkg cur"><span class="num">1</span><span class="item">Banana</span></div>
+        <div class="pkg"><span class="num">2</span><span class="item">Cherry</span></div>
+      </div>
+      <div class="row" style="gap:10px; flex-wrap:wrap; justify-content:center">
+        <span class="tag">index = 1</span><span class="tag">entry = "Banana"</span>
+      </div>
+      <div class="term">1: Apple
+<span class="good">2: Banana</span></div>
+      <p class="fig-cap"><code>enumerate()</code> nalepí na každou věc pořadové číslo <b>od 0</b>. Proto ve výpisu <code>index + 1</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Pás u pokladny.</b> <code>for</code> ti podá jednu věc po druhé a pro každou provede tělo cyklu.</p>
+<pre><code>for (index, entry) in list.iter().enumerate() {
+    println!("{}: {entry}", index + 1);
+}
+println!("Count: {}", list.len());</code></pre>
+      <ul style="margin:0; padding-left:1.2em; display:grid; gap:6px">
+        <li><code>list.iter()</code> = pás, který postupně ukazuje na prvky (jen se dívá).</li>
+        <li><code>.enumerate()</code> = ke každému prvku přidá číslo: dvojice <code>(0, "Apple")</code>, <code>(1, "Banana")</code>…</li>
+        <li><code>(index, entry)</code> = <b>rozbalení dvojice</b> do dvou proměnných. Bez něj bys psal <code>pair.0</code> a <code>pair.1</code>.</li>
+      </ul>
+<pre><code>for entry in <span class="r">&amp;</span>list { … }   <span class="c">// &amp; = jen si půjčím, list zůstane</span></code></pre>
+      <div class="verdict bad"><span class="code">E0382</span><span>Bez <code>&amp;</code> u <code>Vec&lt;String&gt;</code> cyklus seznam <b>spotřebuje</b> a pak <code>list.len()</code> hlásí borrow of moved value: <code>list</code>. Proč, to je lekce 05.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 6 CLOSURE ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">6</span><h2>Strojek na lístečku: closure</h2><span class="sym">|x| x + 1</span></div>
+    <div class="fig">
+      <div class="machine">
+        <span class="m-in">21</span><span class="m-arrow">→</span>
+        <div class="m-body"><span class="params">|x|</span><span class="body">x * 2</span></div>
+      </div>
+      <div class="machine" style="grid-template-columns:auto"><span class="m-arrow" style="transform:none">↓</span><span class="m-out">42</span></div>
+      <p class="fig-cap">Mezi svislítky jsou vstupy (parametry), za nimi to, co strojek udělá. Jméno nemá, píše se přímo na místě, kde ho potřebuješ.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Malý strojek nakreslený na lístečku.</b> Nemá jméno ani vlastní místo v programu, přilepíš ho rovnou tam, kde ho použiješ.</p>
+<pre><code>fn plus_one(x: i32) -&gt; i32 { x + 1 } <span class="c">// funkce: ( )</span>
+let plus_one = <span class="r">|x|</span> x + 1;             <span class="c">// closure: | |</span>
+let say_hi = <span class="r">||</span> println!("ahoj");   <span class="c">// bez parametrů</span>
+
+list.iter().enumerate().for_each(<span class="r">|(index, entry)|</span> {
+    println!("{}: {}", index + 1, entry);
+});</code></pre>
+      <p><b>Jak číst <code>|x| x + 1</code>:</b> „vezmi <code>x</code>, vrať <code>x + 1</code>“. V JavaScriptu <code>x =&gt; x + 1</code>, v Pythonu <code>lambda x: x + 1</code>.</p>
+      <p><b><code>.for_each(…)</code></b> zavolá strojek pro každý prvek. Pro prosté „projdi a vypiš“ se v Rustu ale spíš píše <code>for</code>, a tak to máš i ve svém <code>main.rs</code>.</p>
+      <div class="verdict warn"><span class="code">pozor</span><span><code>|</code> má i jiné významy: <code>a || b</code> = logické „nebo“, v <code>match</code> „nebo“ mezi vzory. Na začátku výrazu (<code>|x| …</code>) je to vždy closure.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== HŘIŠTĚ ===== -->
+  <section class="play" aria-labelledby="play-h">
+    <div class="play-intro">
+      <h2 id="play-h">Hřiště: spíž a kompilátor</h2>
+      <p>Vyber, jak seznam vytvoříš, a klikej na příkazy. Každé kliknutí přidá řádek kódu. Když by ho kompilátor odmítl, uvidíš chybu a seznam zůstane, jak byl. <b>Spustit for</b> projde seznam krok po kroku jako tvůj <code>main.rs</code>.</p>
+      <p class="hint">Zkus: pole a <code>push</code>. Pak <code>Vec</code> bez <code>mut</code> a <code>push</code>. Pak <code>Vec</code> s <code>mut</code>. A u sklenice zkus <code>count += 1</code> bez <code>mut</code>.</p>
+    </div>
+    <div class="decl">
+      <span class="lbl">seznam:</span>
+      <span class="seg" id="seg-kind"><button type="button" data-kind="array" aria-pressed="true">pole [ ]</button><button type="button" data-kind="vec" aria-pressed="false">vec![ ]</button></span>
+      <span class="seg" id="seg-mut"><button type="button" data-mut="0" aria-pressed="true">let</button><button type="button" data-mut="1" aria-pressed="false">let mut</button></span>
+    </div>
+    <div class="buttons">
+      <button type="button" class="btn" id="b-push"><code>list.push("Milk")</code></button>
+      <button type="button" class="btn" id="b-len"><code>list.len()</code></button>
+      <button type="button" class="btn" id="b-count"><code>count += 1</code></button>
+      <button type="button" class="btn go" id="b-for">Spustit <code>for</code> ▸ krok</button>
+      <button type="button" class="btn quiet" id="b-reset">Začít znovu</button>
+    </div>
+    <div class="play-grid">
+      <div class="stage" id="stage" aria-live="polite"></div>
+      <div class="side">
+        <ol class="code-log" id="log"></ol>
+        <span class="lbl">Terminál</span>
+        <div class="term" id="term"></div>
+      </div>
+    </div>
+    <div class="closure-play">
+      <h3>Strojek: zkus closure</h3>
+      <div class="ctrls">
+        <span class="seg" id="seg-cl"></span>
+        <label for="cl-in" class="lbl">vstup</label><input id="cl-in" type="number" value="21">
+      </div>
+      <div class="machine" id="cl-out" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center"></div>
+    </div>
+  </section>
+
+  <!-- ===== TAHÁK ===== -->
+  <section style="display:grid; gap:16px">
+    <h2>Tahák</h2>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Zápis</th><th>Význam</th><th>Spíž</th></tr></thead>
+        <tbody>
+          <tr><td><code>fn main() { }</code></td><td>funkce, která se spustí jako první</td><td></td></tr>
+          <tr><td><code>let x = 1;</code></td><td>neměnná proměnná</td><td>zavařená sklenice se štítkem</td></tr>
+          <tr><td><code>let mut x = 1;</code></td><td>měnitelná proměnná</td><td>sklenice s otvíracím víčkem</td></tr>
+          <tr><td><code>x += 1</code></td><td><code>x = x + 1</code> (Rust nemá <code>++</code>)</td><td></td></tr>
+          <tr><td><code>let x: i32 = 1;</code></td><td>typ napsaný ručně</td><td></td></tr>
+          <tr><td><code>[a, b, c]</code></td><td>pole, pevná délka, typ <code>[T; 3]</code></td><td>plato na vajíčka</td></tr>
+          <tr><td><code>vec![a, b, c]</code> / <code>Vec::new()</code></td><td><code>Vec</code>, umí růst (<code>push</code>)</td><td>regál, který jde prodloužit</td></tr>
+          <tr><td><code>Typ::funkce()</code></td><td>asociovaná funkce typu</td><td>výrobna</td></tr>
+          <tr><td><code>hodnota.metoda()</code></td><td>metoda na hodnotě</td><td>hotový kus</td></tr>
+          <tr><td><code>nazev!(…)</code></td><td>makro (<code>println!</code>, <code>vec!</code>)</td><td>razítko s okénky</td></tr>
+          <tr><td><code>{x}</code> / <code>{}</code></td><td>vlož proměnnou <code>x</code> / další argument</td><td>okénko v šabloně</td></tr>
+          <tr><td><code>for x in &amp;list { }</code></td><td>projdi prvky, seznam si jen půjč</td><td>pás u pokladny</td></tr>
+          <tr><td><code>.iter().enumerate()</code></td><td>dvojice <code>(index od 0, prvek)</code></td><td>čísla na věcech</td></tr>
+          <tr><td><code>(a, b)</code> ve vzoru</td><td>rozbalení dvojice</td><td></td></tr>
+          <tr><td><code>|a, b| výraz</code></td><td>closure, funkce bez jména</td><td>strojek na lístečku</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Chyba</th><th>Co říká kompilátor</th><th>Spíž</th></tr></thead>
+        <tbody>
+          <tr><td><code>E0384</code></td><td>cannot assign twice to immutable variable</td><td>chceš otevřít zavařenou sklenici, chybí <code>mut</code></td></tr>
+          <tr><td><code>E0596</code></td><td>cannot borrow <code>v</code> as mutable, as it is not declared as mutable</td><td>regál bez <code>mut</code>, nejde na něj přidávat</td></tr>
+          <tr><td><code>E0599</code></td><td>no method named <code>push</code> found for array</td><td>plato nejde prodloužit</td></tr>
+          <tr><td><code>error</code></td><td>invalid format string: expected <code>}</code>, found <code>+</code></td><td>do okénka patří jen jméno, ne výraz</td></tr>
+          <tr><td><code>E0382</code></td><td>borrow of moved value</td><td><code>for</code> bez <code>&amp;</code> seznam spotřeboval (lekce 05)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Doplněk k lekci 01 projektu todo-rs. Ukázky kódu jsou ze <code>src/main.rs</code> (tag <code>lekce-01</code>).</span>
+    <ul>
+      <li><a href="../01-prvni-program.md">Lekce 01: První program (text)</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html">Rust Book 3.1: Variables and Mutability</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch03-05-control-flow.html">Rust Book 3.5: Control Flow (for)</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch08-01-vectors.html">Rust Book 8.1: Vectors</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch13-01-closures.html">Rust Book 13.1: Closures</a></li>
+      <li><a href="https://doc.rust-lang.org/std/fmt/">std::fmt: formátování</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const START = ['Apple', 'Banana', 'Cherry'];
+
+  let st, log, out;
+  const stage = document.getElementById('stage');
+  const logEl = document.getElementById('log');
+  const termEl = document.getElementById('term');
+
+  function decl() {
+    const items = START.map((s) => `"${s}"`).join(', ');
+    return `let ${st.mut ? 'mut ' : ''}list = ${st.kind === 'vec' ? 'vec!' : ''}[${items}];`;
+  }
+
+  function reset(keepKind) {
+    st = { kind: keepKind ? st.kind : 'array', mut: keepKind ? st.mut : false, items: START.slice(), count: 0, step: -1, added: -1, countMut: false };
+    out = [];
+    log = [
+      { kind: 'ok', code: decl(), why: st.kind === 'vec' ? `Vec<&str> se ${START.length} prvky, může růst.` : `pole [&str; ${START.length}]: pevně ${START.length} jamky.` },
+      { kind: 'ok', code: 'let count = 0;', why: 'Zavařená sklenice s nulou.' },
+    ];
+    render();
+  }
+
+  function push() {
+    const code = 'list.push("Milk");';
+    if (st.kind === 'array') return log.push({ kind: 'bad', code, err: 'E0599', msg: `no method named \`push\` found for array \`[&str; ${st.items.length}]\``, why: 'Plato má pevný počet jamek. Pole push vůbec nemá.' });
+    if (!st.mut) return log.push({ kind: 'bad', code, err: 'E0596', msg: 'cannot borrow `list` as mutable, as it is not declared as mutable', why: 'Regál bez mut: přidávat nejde. Přepni na let mut.' });
+    st.items.push('Milk');
+    st.added = st.items.length - 1;
+    st.step = -1;
+    log.push({ kind: 'ok', code, why: `Regál se prodloužil, počet prvků: ${st.items.length}.` });
+  }
+
+  function len() {
+    log.push({ kind: 'ok', code: 'println!("Count: {}", list.len());', why: `len() vrátí ${st.items.length}. Funguje u pole i Vec.` });
+    out.push(`Count: ${st.items.length}`);
+  }
+
+  function count() {
+    if (!st.countMut) {
+      log.push({ kind: 'bad', code: 'count += 1;', err: 'E0384', msg: 'cannot assign twice to immutable variable `count`', why: 'Zavařená sklenice. Kompilátor radí: consider making this binding mutable: `mut count`. Hřiště teď deklaraci opraví na let mut count. Klikni znovu.' });
+      st.countMut = true;
+      log.push({ kind: 'info', code: 'let mut count = 0;', why: 'Teď má sklenice otvírací víčko.' });
+      return;
+    }
+    st.count += 1;
+    log.push({ kind: 'ok', code: 'count += 1;', why: `count = count + 1, teď ${st.count}.` });
+  }
+
+  function forStep() {
+    if (st.step === -1) {
+      log.push({ kind: 'info', code: 'for (index, entry) in list.iter().enumerate() {', why: 'Pás se rozjíždí, první věc dostane číslo 0.' });
+      out.push('====== My ToDo List ======');
+    }
+    st.step += 1;
+    if (st.step >= st.items.length) {
+      log.push({ kind: 'info', code: '}', why: 'Pás je prázdný, cyklus skončil. list pořád existuje, protože iter() si ho jen půjčil.' });
+      st.step = -1;
+      return;
+    }
+    const e = st.items[st.step];
+    log.push({ kind: 'ok', code: `    println!("{}: {entry}", index + 1);`, why: `index = ${st.step}, entry = "${e}" → vypíše ${st.step + 1}: ${e}` });
+    out.push(`${st.step + 1}: ${e}`);
+  }
+
+  function render() {
+    document.querySelectorAll('#seg-kind button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kind === st.kind)));
+    document.querySelectorAll('#seg-mut button').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.mut === '1') === st.mut)));
+
+    const tag = `<span class="tag${st.mut ? ' mut' : ''}">${st.mut ? 'mut ' : ''}list</span>`;
+    let shelf;
+    if (st.kind === 'array') {
+      shelf = `<div class="tray">${st.items.map((s, i) => `<span class="cell" style="${i === st.step ? 'box-shadow: inset 0 3px 0 var(--kraft-dark), 0 0 0 3px var(--tape)' : ''}"><span>${esc(s)}</span></span>`).join('')}</div>`;
+    } else {
+      shelf = `<div class="shelf">${st.items.map((s, i) => `<span class="item${i === st.added ? ' new' : ''}" style="${i === st.step ? 'box-shadow:0 0 0 3px var(--tape)' : ''}">${esc(s)}</span>`).join('')}${st.mut ? '<span class="item slot">+</span>' : ''}</div>`;
+    }
+    const idx = `<div class="idxs">${st.items.map((_, i) => `<span>${i}</span>`).join('')}</div>`;
+    const jarSym = st.countMut ? 'jar-open' : 'jar';
+    const jar = `<div class="row"><span class="tag${st.countMut ? ' mut' : ''}">${st.countMut ? 'mut ' : ''}count</span><span class="wire${st.countMut ? ' mut' : ''}"></span><div class="jar"><svg viewBox="0 0 80 100" style="overflow:visible"><use href="#${jarSym}"/></svg><span class="content">${st.count}</span></div></div>`;
+    const typ = st.kind === 'array' ? `[&amp;str; ${st.items.length}]` : 'Vec&lt;&amp;str&gt;';
+    stage.innerHTML = `<div class="col" style="gap:6px; align-items:center; max-width:100%">${tag}<span class="wire${st.mut ? ' mut' : ''}" style="width:0; height:14px; border-top:0; border-left:2px solid ${st.mut ? 'var(--write)' : 'var(--ink)'}"></span>${shelf}${idx}</div><span class="lbl">${typ}</span>${jar}`;
+
+    logEl.innerHTML = log.map((l) => {
+      const mark = l.kind === 'ok' ? '✓' : l.kind === 'bad' ? '✗' : '·';
+      const why = l.kind === 'bad' ? `<b>${l.err}</b> ${esc(l.msg)}<br>${esc(l.why)}` : esc(l.why);
+      return `<li class="${l.kind}"><span class="mark">${mark}</span><span><code>${esc(l.code)}</code><span class="why">${why}</span></span></li>`;
+    }).join('');
+    logEl.scrollTop = logEl.scrollHeight;
+    termEl.innerHTML = out.length ? out.map(esc).join('\n') : '<span class="p">(zatím nic nevypsáno)</span>';
+  }
+
+  document.getElementById('seg-kind').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-kind]'); if (!b) return;
+    st.kind = b.dataset.kind; reset(true);
+  });
+  document.getElementById('seg-mut').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-mut]'); if (!b) return;
+    st.mut = b.dataset.mut === '1'; reset(true);
+  });
+  const on = (id, fn) => document.getElementById(id).addEventListener('click', () => { fn(); render(); });
+  on('b-push', push);
+  on('b-len', len);
+  on('b-count', count);
+  on('b-for', forStep);
+  document.getElementById('b-reset').addEventListener('click', () => reset(false));
+
+  // strojek: closure
+  const CL = [
+    { code: '|x| x * 2', f: (x) => x * 2 },
+    { code: '|x| x + 1', f: (x) => x + 1 },
+    { code: '|x| x * x', f: (x) => x * x },
+  ];
+  let cl = 0;
+  const segCl = document.getElementById('seg-cl');
+  const clIn = document.getElementById('cl-in');
+  const clOut = document.getElementById('cl-out');
+  function renderCl() {
+    segCl.innerHTML = CL.map((c, i) => `<button type="button" data-cl="${i}" aria-pressed="${i === cl}">${esc(c.code)}</button>`).join('');
+    const x = Number.parseInt(clIn.value, 10);
+    const c = CL[cl];
+    const [params, body] = c.code.split('| ');
+    clOut.innerHTML = Number.isNaN(x)
+      ? '<span class="m-in">?</span>'
+      : `<span class="m-in">${x}</span><span class="m-arrow">→</span><div class="m-body"><span class="params">${esc(params)}|</span><span class="body">${esc(body)}</span></div><span class="m-arrow">→</span><span class="m-out">${c.f(x)}</span>`;
+  }
+  segCl.addEventListener('click', (e) => { const b = e.target.closest('button[data-cl]'); if (!b) return; cl = Number(b.dataset.cl); renderCl(); });
+  clIn.addEventListener('input', renderCl);
+  renderCl();
+
+  reset(false);
+})();
+</script>
+</body>
+</html>

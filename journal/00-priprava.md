@@ -55,5 +55,6 @@ Editor: ve VS Code nainstalovat rozšíření **rust-analyzer**.
 3. Zkus `cargo fmt` a `cargo clippy` – zatím nic nehlásí, ale zapamatuj si je.
 
 ## Odkazy
+- [Infografika: Dílna na Rust](infografika/00-priprava-infografika.html) – rustup, rustc, cargo a git jako dílna, co udělá `cargo init`/`check`/`build`/`run` + hřiště s terminálem a stromem souborů (otevřít v prohlížeči)
 - [The Rust Book, kap. 1 – Getting Started](https://doc.rust-lang.org/book/ch01-00-getting-started.html)
 - [Cargo Book](https://doc.rust-lang.org/cargo/)

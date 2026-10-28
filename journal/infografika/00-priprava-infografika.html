@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>Dílna na Rust</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
+<style>
+/* Layout: dílna – rustup dodá nářadí, cargo je mistr, rustc stroj, target/ výrobní hala, git fotoalbum.
+   Barvy a písma sdílí s ostatními infografikami řady (vzor: 05-vlastnictvi-infografika.html). */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #1b2330;
+  --muted: #5b6676;
+  --line: #cfd6df;
+  --kraft: #c9975c;
+  --kraft-top: #dcb07a;
+  --kraft-dark: #a7773f;
+  --kraft-edge: #6f4c24;
+  --tape: #efc75e;
+  --label: #f7f1e3;
+  --read: #0d7480;
+  --read-soft: #d7eef0;
+  --write: #c2410c;
+  --write-soft: #fbe3d6;
+  --ok: #2e7d32;
+  --ok-soft: #dcefdc;
+  --err: #b42318;
+  --err-soft: #f9dedb;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --f-stamp: "Saira Stencil One", Impact, "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+    --kraft: #b8884f; --kraft-top: #cc9e66; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+    --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+    --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+  --kraft: #b8884f; --kraft-top: #cc9e66; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+  --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+  --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  /* bez ligatur: -- => -> musí vypadat přesně tak, jak se píšou */
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3.2vw, 2rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 code { font-size: 0.85em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+code, pre { font-family: var(--f-code); font-size: 0.86em; }
+:not(pre) > code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; white-space: nowrap; }
+a { color: var(--read); }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--write); outline-offset: 2px; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 32px; align-items: center; }
+.hero .lead { font-size: 1.2rem; color: var(--muted); margin-top: 16px; }
+.eyebrow { font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hero-fig { display: flex; justify-content: center; min-width: 0; }
+
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.rule b { font-family: var(--f-display); font-size: 1.15rem; }
+.rule span { color: var(--muted); font-size: 0.95rem; }
+.rule .n { font-family: var(--f-stamp); font-size: 1.6rem; color: var(--kraft-dark); line-height: 1; }
+
+/* ---------- postavy dílny ---------- */
+.crew { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; width: 100%; }
+.who {
+  display: grid; gap: 4px; justify-items: center; text-align: center; align-content: start;
+  padding: 12px 10px; border-radius: 10px; background: var(--surface-2); border: 2px solid var(--line);
+}
+.who svg { width: 40px; height: 40px; color: var(--kraft-dark); }
+.who code { font-weight: 600; font-size: 0.9rem; }
+.who b { font-family: var(--f-display); font-size: 1rem; }
+.who span { font-size: 0.85rem; color: var(--muted); }
+.who.main { border-color: var(--kraft-dark); background: var(--label); color: #3a2b17; }
+.who.main span { color: #5c4527; }
+.who.main code { background: rgba(255,255,255,0.6); color: #3a2b17; }
+
+/* tok: kdo komu co dává */
+.flow { display: grid; grid-template-columns: auto auto auto; gap: 8px 10px; align-items: center; justify-content: center; font-size: 0.85rem; }
+.node { font-family: var(--f-code); font-weight: 600; font-size: 0.85rem; padding: 6px 12px; border-radius: 8px; border: 2px solid var(--ink); background: var(--surface); white-space: nowrap; text-align: center; }
+.node.hot { background: var(--label); border-color: var(--kraft-dark); color: #3a2b17; }
+.node.out { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+.edge { font-family: var(--f-code); font-size: 0.75rem; color: var(--muted); text-align: center; white-space: nowrap; }
+.edge::after { content: " ⟶"; color: var(--ink); font-size: 1rem; }
+
+/* ---------- strom souborů ---------- */
+.tree { font-family: var(--f-code); font-size: 0.85rem; line-height: 1.75; display: grid; min-width: 0; }
+.tree .f { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.tree .ind { color: var(--muted); white-space: pre; }
+.tree .dir { font-weight: 600; }
+.tree .note-r { font-family: var(--f-body); font-size: 0.78rem; color: var(--muted); white-space: normal; }
+.tree .new { background: var(--ok-soft); color: var(--ok); border-radius: 4px; padding: 0 4px; font-weight: 600; }
+.tree .ign { opacity: 0.55; }
+.badge { font-family: var(--f-code); font-size: 0.68rem; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.badge.ign { border-style: dashed; }
+.empty-dir { font-family: var(--f-code); font-size: 0.85rem; color: var(--muted); padding: 10px 14px; border: 2px dashed var(--line); border-radius: 8px; }
+
+/* ---------- rozebraný příkaz ---------- */
+.cmdline { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; font-family: var(--f-code); }
+.part { display: grid; gap: 4px; justify-items: center; }
+.part > span:first-child { font-size: 1rem; font-weight: 600; padding: 6px 10px; border-radius: 6px; border: 2px solid var(--ink); background: var(--surface); white-space: nowrap; }
+.part > span:last-child { font-family: var(--f-body); font-size: 0.75rem; color: var(--muted); text-align: center; max-width: 13ch; line-height: 1.25; }
+.part.p1 > span:first-child { border-color: var(--kraft-dark); background: var(--label); color: #3a2b17; }
+.part.p2 > span:first-child { border-color: var(--read); background: var(--read-soft); color: var(--read); }
+.part.p3 > span:first-child { border-color: var(--write); background: var(--write-soft); color: var(--write); }
+
+/* ---------- výrobní linka ---------- */
+.line-rows { display: grid; gap: 10px; width: 100%; }
+.lr { display: grid; grid-template-columns: 7.5em repeat(4, minmax(0, 1fr)); gap: 6px; align-items: stretch; }
+.lr .cmd { font-family: var(--f-code); font-weight: 600; font-size: 0.82rem; align-self: center; }
+.lr .st { font-size: 0.75rem; text-align: center; padding: 6px 4px; border-radius: 6px; border: 2px solid var(--line); background: var(--surface-2); color: var(--muted); display: grid; place-items: center; line-height: 1.2; }
+.lr .st.on { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); font-weight: 700; }
+.lr .st.off { border-style: dashed; opacity: 0.45; }
+.lr.head .st { border: 0; background: none; font-family: var(--f-code); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.shelves { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
+.shelf { display: grid; gap: 6px; padding: 12px; border-radius: 8px; background: var(--surface-2); border-bottom: 6px solid var(--kraft-edge); }
+.shelf h3 { font-size: 0.95rem; font-family: var(--f-code); }
+.shelf ul { margin: 0; padding-left: 1.1em; font-size: 0.88rem; display: grid; gap: 2px; }
+.meter { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--kraft-dark); border-radius: 999px; }
+.meter-lbl { font-size: 0.75rem; color: var(--muted); display: flex; justify-content: space-between; }
+
+/* ---------- editor (rust-analyzer) ---------- */
+.editor { width: 100%; background: #10161e; color: #e6ebf1; border-radius: 10px; padding: 12px 0; font-family: var(--f-code); font-size: 0.82rem; overflow-x: auto; }
+.editor .ln { display: grid; grid-template-columns: 2.6em 1fr; white-space: pre; }
+.editor .ln > span:first-child { color: #5b6676; text-align: right; padding-right: 12px; }
+.editor .kw { color: #f2a0c4; }
+.editor .fn { color: #8cc8ff; }
+.editor .st { color: #a5d98f; }
+.editor .mac { color: #efc75e; }
+.editor .hintx { color: #7f8b99; background: #222c3a; border-radius: 3px; padding: 0 4px; font-style: italic; }
+.editor .squig { text-decoration: underline wavy #f2766b; text-underline-offset: 3px; }
+.editor .popup { display: inline-block; margin: 4px 0 4px 2.6em; padding: 6px 10px; border-radius: 6px; background: #2a1d1b; border: 1px solid #f2766b; color: #f2a59d; font-size: 0.78rem; white-space: normal; }
+
+/* ---------- scény ---------- */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.scene-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.scene-head .num { font-family: var(--f-stamp); font-size: 2rem; color: var(--kraft-dark); line-height: 1; }
+.scene-head .sym { font-family: var(--f-code); font-size: 1rem; color: var(--muted); }
+.fig {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0;
+  padding: 22px 18px; display: grid; gap: 16px; justify-items: center; align-content: center; min-height: 200px;
+  overflow-x: auto;
+}
+.fig-cap { font-size: 0.9rem; color: var(--muted); text-align: center; max-width: 46ch; }
+.lbl { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; width: 100%; align-items: center; }
+.vs > div { display: grid; gap: 8px; align-content: start; padding: 12px; border-radius: 8px; background: var(--surface-2); min-width: 0; }
+.vs .arrow { font-family: var(--f-code); font-size: 0.75rem; color: var(--muted); text-align: center; display: grid; gap: 2px; justify-items: center; }
+.vs .arrow::after { content: "⟶"; font-size: 1.5rem; line-height: 1; color: var(--ink); }
+
+.text { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.text .metaphor { font-size: 1.12rem; }
+.text .metaphor b { font-family: var(--f-display); }
+
+pre {
+  margin: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .e { color: var(--err); font-weight: 600; }
+pre .k { color: var(--ok); font-weight: 600; }
+pre .r { color: var(--read); font-weight: 600; }
+pre .w { color: var(--write); font-weight: 600; }
+
+.verdict { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+.verdict.bad { background: var(--err-soft); }
+.verdict.good { background: var(--ok-soft); }
+.verdict.warn { background: var(--write-soft); }
+.verdict .code { font-family: var(--f-code); font-weight: 600; flex: none; }
+.verdict.bad .code { color: var(--err); }
+.verdict.good .code { color: var(--ok); }
+.verdict.warn .code { color: var(--write); }
+
+.term { font-family: var(--f-code); font-size: 0.82rem; background: #10161e; color: #e6ebf1; border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; width: 100%; min-width: 0; overflow-x: auto; overflow-wrap: anywhere; }
+.term .p { color: #7f8b99; }
+.term .u { color: #efc75e; }
+.term .g { color: #8fd694; font-weight: 600; }
+.term .bad { color: #f2a59d; }
+.term .note { color: #8cc8ff; }
+
+/* ---------- hřiště ---------- */
+.play { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
+.play-intro { display: grid; gap: 8px; }
+.hint { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--tape); padding-left: 12px; }
+.cmds { display: grid; gap: 10px; }
+.cmd-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cmd-group .lbl { min-width: 6.5em; }
+.cmds button {
+  font-family: var(--f-code); font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+  padding: 7px 12px; border-radius: 8px; border: 2px solid var(--ink); background: var(--surface); color: var(--ink);
+}
+.cmds button:hover { background: var(--surface-2); }
+.cmds button.git { border-color: var(--read); color: var(--read); }
+.cmds button.sh { border-color: var(--kraft-dark); color: var(--kraft-edge); }
+.btn-reset { font-family: var(--f-body); font-size: 0.95rem; font-weight: 700; cursor: pointer; padding: 8px 14px; border-radius: 8px; border: 2px solid var(--line); background: var(--surface); color: var(--muted); justify-self: start; }
+.play-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.play .term { min-height: 260px; max-height: 420px; overflow-y: auto; }
+.side { display: grid; gap: 10px; align-content: start; min-width: 0; padding: 14px; border-radius: 10px; background: var(--surface-2); }
+.explain { font-size: 0.92rem; }
+
+/* ---------- tahák ---------- */
+.cheat-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table.cheat { border-collapse: collapse; width: 100%; min-width: 640px; }
+table.cheat th, table.cheat td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.cheat th { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+table.cheat tr:last-child td { border-bottom: 0; }
+table.cheat td:first-child { font-weight: 700; }
+
+footer { display: grid; gap: 8px; color: var(--muted); font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 20px; }
+footer ul { margin: 0; padding-left: 1.2em; }
+
+@media (max-width: 780px) {
+  .hero, .scene, .play-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero-fig { order: -1; }
+  .rules { grid-template-columns: 1fr; }
+  .vs { grid-template-columns: 1fr; }
+  .vs .arrow::after { content: "↓"; }
+  .shelves { grid-template-columns: 1fr; }
+  .lr { grid-template-columns: 6.2em repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .lr .st { font-size: 0.66rem; padding: 5px 2px; }
+  .lr .cmd { font-size: 0.72rem; }
+  .lr.head .st { font-size: 0.56rem; letter-spacing: 0; overflow-wrap: anywhere; }
+  .flow { gap: 6px 4px; }
+  .flow .node { font-size: 0.7rem; padding: 4px 6px; }
+  .flow .edge { font-size: 0.6rem; white-space: normal; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- dodávka: rustup přiváží nářadí -->
+    <symbol id="i-truck" viewBox="0 0 40 40">
+      <rect x="3" y="11" width="21" height="15" rx="2" style="fill:none;stroke:currentColor;stroke-width:2.4"/>
+      <path d="M24 16h7l5 6v4H24z" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linejoin:round"/>
+      <circle cx="10" cy="29" r="3.5" style="fill:var(--surface);stroke:currentColor;stroke-width:2.4"/>
+      <circle cx="29" cy="29" r="3.5" style="fill:var(--surface);stroke:currentColor;stroke-width:2.4"/>
+    </symbol>
+    <!-- ozubené kolo: rustc, stroj -->
+    <symbol id="i-gear" viewBox="0 0 40 40">
+      <path d="M20 5l3 4 5-1 1 5 4 3-2 4 2 4-4 3-1 5-5-1-3 4-3-4-5 1-1-5-4-3 2-4-2-4 4-3 1-5 5 1z" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round"/>
+      <circle cx="20" cy="20" r="5" style="fill:none;stroke:currentColor;stroke-width:2.4"/>
+    </symbol>
+    <!-- helma: cargo, mistr dílny -->
+    <symbol id="i-hat" viewBox="0 0 40 40">
+      <path d="M7 27a13 13 0 0 1 26 0" style="fill:none;stroke:currentColor;stroke-width:2.4"/>
+      <path d="M4 27h32v4H4z" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linejoin:round"/>
+      <path d="M17 14v-4h6v4" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linejoin:round"/>
+    </symbol>
+    <!-- bedna: crate -->
+    <symbol id="i-crate" viewBox="0 0 40 40">
+      <rect x="6" y="9" width="28" height="24" rx="1.5" style="fill:none;stroke:currentColor;stroke-width:2.4"/>
+      <path d="M6 17h28M6 25h28M6 9l28 24" style="fill:none;stroke:currentColor;stroke-width:2"/>
+    </symbol>
+    <!-- lupa: rust-analyzer kouká přes rameno -->
+    <symbol id="i-lens" viewBox="0 0 40 40">
+      <circle cx="17" cy="17" r="10" style="fill:none;stroke:currentColor;stroke-width:2.6"/>
+      <path d="M24.5 24.5L34 34" style="fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <div>
+      <div class="eyebrow">todo-rs · lekce 00 · příprava prostředí</div>
+      <h1>Dílna na Rust</h1>
+      <p class="lead">Než se dá cokoli vyrobit, potřebuješ <b>dílnu</b>. <code>rustup</code> do ní přiveze nářadí. <code>rustc</code> je <b>stroj</b>, který z textu vyrobí program. <code>cargo</code> je <b>mistr dílny</b>: řekneš mu „postav“ nebo „spusť“ a on stroj obslouží za tebe. A git je <b>fotoalbum</b>, kam si fotíš hotové stavy.</p>
+    </div>
+    <div class="hero-fig" aria-hidden="true">
+      <div class="flow">
+        <span class="node">rustup</span><span class="edge">přiveze</span><span class="node hot">rustc + cargo</span>
+        <span class="node">ty</span><span class="edge">cargo run</span><span class="node hot">cargo</span>
+        <span class="node hot">cargo</span><span class="edge">obslouží</span><span class="node hot">rustc</span>
+        <span class="node">src/main.rs</span><span class="edge">rustc</span><span class="node out">target/debug/todo</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="rules" aria-label="Tři pravidla">
+    <div class="rule"><span class="n">1</span><b>Nářadí spravuje <code>rustup</code>.</b><span>Instaluje a aktualizuje Rust (<code>rustup update</code>). Kompilátor i cargo přiveze najednou.</span></div>
+    <div class="rule"><span class="n">2</span><b>S dílnou mluvíš přes <code>cargo</code>.</b><span><code>rustc</code> skoro nikdy nevoláš sám. Cargo ví, co a v jakém pořadí přeložit.</span></div>
+    <div class="rule"><span class="n">3</span><b><code>target/</code> je výrobní hala.</b><span>Všechno v ní jde kdykoli vyrobit znovu, proto do gitu nepatří (<code>.gitignore</code>).</span></div>
+  </section>
+
+  <!-- ===== 1 KDO JE KDO ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">1</span><h2>Kdo je kdo v dílně</h2><span class="sym">rustup · rustc · cargo · crate · rust-analyzer</span></div>
+    <div class="fig">
+      <div class="crew">
+        <div class="who"><svg><use href="#i-truck"/></svg><code>rustup</code><b>dodavatel</b><span>přiveze a aktualizuje nářadí</span></div>
+        <div class="who"><svg><use href="#i-gear"/></svg><code>rustc</code><b>stroj</b><span>kompilátor: text → program</span></div>
+        <div class="who main"><svg><use href="#i-hat"/></svg><code>cargo</code><b>mistr dílny</b><span>build, spuštění, balíčky. S ním mluvíš pořád.</span></div>
+        <div class="who"><svg><use href="#i-crate"/></svg><code>crate</code><b>bedna dílů</b><span>balíček (knihovna nebo program), ze skladu crates.io</span></div>
+        <div class="who"><svg><use href="#i-lens"/></svg><code>rust-analyzer</code><b>pomocník u ramene</b><span>v editoru napovídá a hlásí chyby už při psaní</span></div>
+      </div>
+      <p class="fig-cap">Zvýrazněný je ten, se kterým mluvíš nejčastěji. Ostatní pracují hlavně „za ním“.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Nemusíš umět ovládat stroj.</b> Stačí říct mistrovi, co chceš. Cargo pak zavolá <code>rustc</code> se správnými parametry a ve správném pořadí.</p>
+<pre><code><span class="c">$</span> rustc --version
+rustc 1.95.0 (59807616e 2026-04-14)
+<span class="c">$</span> cargo --version
+cargo 1.95.0 (f2d3ce0bd 2026-03-21)</code></pre>
+      <p><b>Jak číst <code>--version</code>:</b> slova začínající <code>--</code> jsou <b>přepínače</b> (dlouhé volby). Neříkají <i>co</i> dělat, ale <i>jak</i>. Tady: „neprováděj nic, jen vypiš verzi“.</p>
+      <p><b>Verze <code>1.95.0</code></b> se čte jako hlavní.vedlejší.oprava. Nový Rust vychází každých 6 týdnů a <code>rustup update</code> ho stáhne.</p>
+    </div>
+  </section>
+
+  <!-- ===== 2 CARGO INIT ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">2</span><h2>Založení dílny: <code>cargo init</code></h2><span class="sym">cargo init --name todo</span></div>
+    <div class="fig">
+      <div class="cmdline" aria-label="Rozbor příkazu">
+        <div class="part p1"><span>cargo</span><span>program, kterému mluvíš</span></div>
+        <div class="part p2"><span>init</span><span>podpříkaz: co má udělat</span></div>
+        <div class="part p3"><span>--name todo</span><span>přepínač a jeho hodnota</span></div>
+      </div>
+      <div class="vs">
+        <div>
+          <span class="lbl">před</span>
+          <div class="tree"><div class="f"><span class="dir">todo-rs/</span></div></div>
+          <span class="empty-dir">(prázdný adresář)</span>
+        </div>
+        <div class="arrow">cargo init</div>
+        <div>
+          <span class="lbl">po</span>
+          <div class="tree">
+            <div class="f"><span class="dir">todo-rs/</span></div>
+            <div class="f"><span class="ind">├── </span><span class="new">.git/</span><span class="badge">repozitář</span></div>
+            <div class="f"><span class="ind">├── </span><span class="new">.gitignore</span></div>
+            <div class="f"><span class="ind">├── </span><span class="new">Cargo.toml</span></div>
+            <div class="f"><span class="ind">└── </span><span class="dir new">src/</span></div>
+            <div class="f"><span class="ind">    └── </span><span class="new">main.rs</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="fig-cap">Zeleně je, co vzniklo. Cargo k tomu rovnou založilo i git repozitář (skrytý adresář <code>.git/</code>).</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Mistr přijde do prázdné místnosti a rozestaví základní vybavení.</b> Hotová kostra, do které jde hned psát.</p>
+<pre><code><span class="c">$</span> cd ~/Projects/todo-rs
+<span class="c">$</span> cargo init --name todo
+    Creating binary (application) package</code></pre>
+      <p><b>Proč <code>--name todo</code>:</b> bez něj by se balíček jmenoval podle adresáře, tedy <code>todo-rs</code>. Takhle se program jmenuje kratčeji <code>todo</code> a stejně se bude jmenovat i spustitelný soubor.</p>
+      <p><b><code>init</code> vs <code>new</code>:</b> <code>cargo init</code> zakládá projekt v adresáři, kde zrovna stojíš. <code>cargo new nazev</code> dělá totéž, ale nejdřív vytvoří nový adresář <code>nazev/</code>.</p>
+      <div class="verdict bad"><span class="code">error</span><span><code>cargo init</code> cannot be run on existing Cargo packages. Podruhé ve stejném adresáři to nejde, dílna už stojí.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 3 CARGO.TOML ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">3</span><h2>Výrobní list: <code>Cargo.toml</code></h2><span class="sym">[package] · edition</span></div>
+    <div class="fig" style="justify-items:stretch">
+<pre><code><span class="r">[package]</span>             <span class="c"># sekce: údaje o balíčku</span>
+name = "todo"         <span class="c"># jméno (→ target/debug/todo)</span>
+version = "0.1.0"     <span class="c"># verze našeho programu</span>
+<span class="w">edition = "2024"</span>      <span class="c"># edice jazyka</span>
+
+<span class="r">[dependencies]</span>        <span class="c"># sekce: cizí crates (zatím nic)</span></code></pre>
+      <p class="fig-cap">Takhle ho vytvořil <code>cargo init</code>. Komentáře za <code>#</code> jsem doplnil pro vysvětlení, v souboru nejsou.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>List připíchnutý na dveřích dílny.</b> Co se tu vyrábí, jak se to jmenuje a jaké díly se objednávají zvenku.</p>
+      <p><b>Formát TOML:</b> <code>[název]</code> v hranatých závorkách začíná <b>sekci</b>. Pod ní jsou řádky <code>klíč = "hodnota"</code>. <code>#</code> začíná komentář do konce řádku.</p>
+      <p><b>Edice</b> (<code>edition = "2024"</code>) je verze <i>pravidel jazyka</i>, ne kompilátoru. Starší kód s jinou edicí jde dál přeložit, nové edice jen přidávají nebo upravují pravidla. Máme nejnovější, 2024.</p>
+      <p><b><code>[dependencies]</code></b> je zatím prázdná. Až budeme chtít hotové díly ze skladu crates.io (např. <code>serde</code> pro ukládání), objeví se tady.</p>
+    </div>
+  </section>
+
+  <!-- ===== 4 MAIN.RS ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">4</span><h2>Vstupní dveře: <code>src/main.rs</code></h2><span class="sym">fn main()</span></div>
+    <div class="fig" style="justify-items:stretch">
+      <div class="editor" aria-label="src/main.rs">
+        <div class="ln"><span>1</span><span><span class="kw">fn</span> <span class="fn">main</span>() {</span></div>
+        <div class="ln"><span>2</span><span>    <span class="mac">println!</span>(<span class="st">"Hello, world!"</span>);</span></div>
+        <div class="ln"><span>3</span><span>}</span></div>
+      </div>
+      <p class="fig-cap">Jediný soubor s kódem po lekci 00. Napsal ho <code>cargo init</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Každý program má jedny vstupní dveře.</b> Spuštění začne vždy funkcí <code>main</code>.</p>
+      <ul style="margin:0; padding-left:1.2em; display:grid; gap:6px">
+        <li><code>fn</code> = „function“, začátek definice funkce.</li>
+        <li><code>main</code> = jméno. Právě tohle jméno hledá Rust jako začátek programu.</li>
+        <li><code>()</code> = funkce nebere žádné parametry. <code>{ … }</code> = tělo funkce.</li>
+        <li><code>println!</code> vypíše řádek. <code>!</code> znamená <b>makro</b>, víc v lekci 01. <code>;</code> ukončuje příkaz.</li>
+      </ul>
+      <p>Proč <code>src/</code>: cargo čeká zdrojáky v adresáři <code>src</code> a binárka začíná v <code>src/main.rs</code>. Nemusíš mu to nikde říkat.</p>
+    </div>
+  </section>
+
+  <!-- ===== 5 BUILD / RUN / CHECK ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">5</span><h2>Výrobní linka</h2><span class="sym">cargo check · build · run</span></div>
+    <div class="fig">
+      <div class="line-rows" role="table" aria-label="Co který příkaz udělá">
+        <div class="lr head" role="row"><span></span><span class="st">kontrola chyb</span><span class="st">výroba programu</span><span class="st">uložit do target/</span><span class="st">spustit</span></div>
+        <div class="lr" role="row"><span class="cmd">cargo check</span><span class="st on">✓</span><span class="st off">—</span><span class="st off">—</span><span class="st off">—</span></div>
+        <div class="lr" role="row"><span class="cmd">cargo build</span><span class="st on">✓</span><span class="st on">✓</span><span class="st on">✓</span><span class="st off">—</span></div>
+        <div class="lr" role="row"><span class="cmd">cargo run</span><span class="st on">✓</span><span class="st on">✓</span><span class="st on">✓</span><span class="st on">✓</span></div>
+      </div>
+      <p class="fig-cap"><code>check</code> zastaví linku hned po kontrole, a proto je nejrychlejší. <code>run</code> projde celou linku a výrobek rovnou zapne.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Tři povely pro mistra:</b> „zkontroluj výkres“, „vyrob“ a „vyrob a zapni“.</p>
+<pre><code><span class="c">$</span> cargo build
+   Compiling todo v0.1.0 (/home/alex/Projects/todo-rs)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s
+<span class="c">$</span> cargo run
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.00s
+     Running `target/debug/todo`
+<span class="k">Hello, world!</span></code></pre>
+      <p>Druhý příkaz už nic nepřekládal (<code>0.00s</code>, žádné <code>Compiling</code>). Cargo si pamatuje, že se od minula nic nezměnilo.</p>
+      <p><b>Hotový program jde spustit i bez carga:</b> <code>./target/debug/todo</code>. <code>./</code> čti „odsud“: spusť soubor z tohoto adresáře, ne nějaký nainstalovaný v systému.</p>
+    </div>
+  </section>
+
+  <!-- ===== 6 DEBUG vs RELEASE ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">6</span><h2>Dvě police: debug a release</h2><span class="sym">cargo build --release</span></div>
+    <div class="fig">
+      <div class="shelves">
+        <div class="shelf">
+          <h3>target/debug/todo</h3>
+          <ul><li><code>cargo build</code>, <code>cargo run</code></li><li>rychle přeložené</li><li>s ladicími informacemi (lekce 02)</li><li>hlídá přetečení čísel</li></ul>
+          <div class="meter-lbl"><span>rychlost překladu</span></div><div class="meter"><i style="width:90%"></i></div>
+          <div class="meter-lbl"><span>rychlost programu</span></div><div class="meter"><i style="width:40%"></i></div>
+        </div>
+        <div class="shelf">
+          <h3>target/release/todo</h3>
+          <ul><li><code>cargo build --release</code></li><li>optimalizované</li><li>pro hotový výrobek</li><li>(distribuce v lekci 21)</li></ul>
+          <div class="meter-lbl"><span>rychlost překladu</span></div><div class="meter"><i style="width:40%"></i></div>
+          <div class="meter-lbl"><span>rychlost programu</span></div><div class="meter"><i style="width:95%"></i></div>
+        </div>
+      </div>
+      <p class="fig-cap">Dva různé výrobky ze stejného výkresu. Při vývoji debug, ven release. Proužky ukazují jen poměr, nejsou to měření.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Prototyp vs. sériový kus.</b> Prototyp je hotový hned a dá se rozebírat. Sériový kus se vyrábí déle, ale je vyladěný.</p>
+<pre><code><span class="c">$</span> cargo build --release
+   Compiling todo v0.1.0 (/home/alex/Projects/todo-rs)
+    Finished `release` profile [optimized] target(s) in 0.06s</code></pre>
+      <p>Porovnej hlášky: <code>`dev` profile [unoptimized + debuginfo]</code> vs <code>`release` profile [optimized]</code>. <b>Profil</b> je sada nastavení překladu. <code>--release</code> přepne cargo na ten druhý.</p>
+    </div>
+  </section>
+
+  <!-- ===== 7 CLIPPY + FMT ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">7</span><h2>Inspektor a uklízeč</h2><span class="sym">cargo clippy · cargo fmt</span></div>
+    <div class="fig">
+      <div class="crew" style="grid-template-columns: 1fr 1fr">
+        <div class="who"><svg><use href="#i-lens"/></svg><code>cargo clippy</code><b>inspektor</b><span>„linter“: radí, jak psát idiomatičtější kód. Kód nemění.</span></div>
+        <div class="who"><svg><use href="#i-crate"/></svg><code>cargo fmt</code><b>uklízeč</b><span>srovná odsazení a mezery podle standardu. Kód mění.</span></div>
+      </div>
+      <p class="fig-cap">Po lekci 00 oba mlčí: v „Hello, world!“ není co vytknout ani uklidit.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Inspektor projde dílnu a zapíše připomínky. Uklízeč rovnou srovná nářadí do šuplíků.</b></p>
+<pre><code><span class="c">$</span> cargo clippy
+    Checking todo v0.1.0 (/home/alex/Projects/todo-rs)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s
+<span class="c">$</span> cargo fmt
+<span class="c">$</span>                       <span class="c"># žádný výstup = hotovo</span></code></pre>
+      <p>Clippy se ozve později. Už jsi od něj dostal třeba <code>ptr_arg</code> (lekce 05) nebo <code>len_zero</code> (lekce 06). Formátování při ukládání v editoru se zapíná v lekci 02.</p>
+    </div>
+  </section>
+
+  <!-- ===== 8 RUST-ANALYZER ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">8</span><h2>Pomocník u ramene: rust-analyzer</h2><span class="sym">rozšíření do VS Code</span></div>
+    <div class="fig" style="justify-items:stretch">
+      <div class="editor" aria-label="Ukázka nápověd v editoru">
+        <div class="ln"><span>1</span><span><span class="kw">fn</span> <span class="fn">main</span>() {</span></div>
+        <div class="ln"><span>2</span><span>    <span class="kw">let</span> count <span class="hintx">: i32</span> = <span class="st">5</span>;</span></div>
+        <div class="ln"><span>3</span><span>    <span class="mac">println!</span>(<span class="st">"{}"</span>, <span class="squig">cuont</span>);</span></div>
+        <div class="popup">cannot find value `cuont` in this scope</div>
+        <div class="ln"><span>4</span><span>}</span></div>
+      </div>
+      <p class="fig-cap">Šedé <code>: i32</code> v kódu není, dopisuje ho editor (typ proměnné). Červená vlnovka je chyba, kterou rust-analyzer našel ještě před <code>cargo build</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Zkušený kolega, který ti kouká přes rameno.</b> Napoví, co dál, a upozorní na chybu dřív, než stroj vůbec zapneš.</p>
+      <p><b>Instalace:</b> ve VS Code rozšíření <b>rust-analyzer</b> (Extensions, Ctrl+Shift+X). Potřebuje nainstalovaný Rust přes rustup.</p>
+      <p>Umí tři věci, které budeš používat pořád: <b>napovídání</b> (doplní jméno metody), <b>chyby při psaní</b> (vlnovky) a <b>typy proměnných</b> (šedé nápovědy přímo v kódu).</p>
+      <p class="hint">Ukázka vlevo je jen ilustrace, v projektu takový kód není.</p>
+    </div>
+  </section>
+
+  <!-- ===== 9 GIT ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">9</span><h2>Fotoalbum: git a <code>.gitignore</code></h2><span class="sym">/target</span></div>
+    <div class="fig">
+      <div class="tree">
+        <div class="f"><span class="dir">todo-rs/</span><span class="note-r">po prvním <code>cargo build</code></span></div>
+        <div class="f"><span class="ind">├── </span><span>.gitignore</span><span class="badge">obsah: /target</span></div>
+        <div class="f"><span class="ind">├── </span><span>Cargo.lock</span><span class="badge">vznikl při buildu</span></div>
+        <div class="f"><span class="ind">├── </span><span>Cargo.toml</span></div>
+        <div class="f"><span class="ind">├── </span><span class="dir">src/</span></div>
+        <div class="f"><span class="ind">│   └── </span><span>main.rs</span></div>
+        <div class="f ign"><span class="ind">└── </span><span class="dir">target/</span><span class="badge ign">git ignoruje</span></div>
+        <div class="f ign"><span class="ind">    ├── </span><span>debug/todo</span></div>
+        <div class="f ign"><span class="ind">    └── </span><span>release/todo</span></div>
+      </div>
+      <p class="fig-cap">Do alba patří výkresy (zdrojáky a <code>Cargo.*</code>). Výrobky z <code>target/</code> se nefotí, protože se dají kdykoli vyrobit znovu.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Každá lekce = jedna fotka v albu.</b> Git si pamatuje, jak projekt vypadal po lekci 00, 01, 02… a dá se k těm fotkám vrátit (tagy <code>lekce-NN</code>).</p>
+<pre><code><span class="c">$</span> git status
+On branch main
+
+No commits yet
+
+Untracked files:
+  (use "git add &lt;file&gt;..." to include in what will be committed)
+	.gitignore
+	Cargo.lock
+	Cargo.toml
+	src/</code></pre>
+      <p><code>target/</code> ve výpisu chybí. Přesně to dělá řádek <code>/target</code> v <code>.gitignore</code>: „tenhle adresář nesleduj“. <code>/</code> na začátku znamená „v kořeni projektu“.</p>
+      <p><b><code>Cargo.lock</code></b> vznikne při prvním překladu a zapisuje přesné verze použitých crates. U programu (ne knihovny) patří do gitu, a proto je v commitu <code>lekce-00</code>.</p>
+    </div>
+  </section>
+
+  <!-- ===== HŘIŠTĚ ===== -->
+  <section class="play" aria-labelledby="play-h">
+    <div class="play-intro">
+      <h2 id="play-h">Hřiště: dílna v terminálu</h2>
+      <p>Začínáš v prázdném adresáři <code>~/Projects/todo-rs</code>. Klikej na příkazy a sleduj, co vypíšou a co přibude vpravo ve stromu souborů. Výstupy jsou opsané ze skutečného cargo 1.95.</p>
+      <p class="hint">Zkus to „špatně“: <code>cargo build</code> ještě před <code>cargo init</code>, <code>./target/debug/todo</code> před buildem, nebo <code>cargo init</code> dvakrát. Pak dvakrát po sobě <code>cargo build</code> a všimni si rozdílu.</p>
+    </div>
+    <div class="cmds" id="cmds"></div>
+    <div class="play-grid">
+      <div class="term" id="term" aria-live="polite"></div>
+      <div class="side">
+        <span class="lbl">Soubory</span>
+        <div class="tree" id="tree"></div>
+        <p class="explain" id="explain"></p>
+      </div>
+    </div>
+    <button type="button" class="btn-reset" id="reset">Začít znovu</button>
+  </section>
+
+  <!-- ===== TAHÁK ===== -->
+  <section style="display:grid; gap:16px">
+    <h2>Tahák</h2>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Příkaz</th><th>Co dělá</th><th>V dílně</th></tr></thead>
+        <tbody>
+          <tr><td><code>rustup update</code></td><td>aktualizuje Rust</td><td>dodavatel přiveze nové nářadí</td></tr>
+          <tr><td><code>rustc --version</code></td><td>vypíše verzi kompilátoru (máme 1.95)</td><td>štítek na stroji</td></tr>
+          <tr><td><code>cargo init --name todo</code></td><td>založí projekt v aktuálním adresáři + git</td><td>rozestavit dílnu</td></tr>
+          <tr><td><code>cargo new nazev</code></td><td>totéž, ale v novém adresáři</td><td>postavit novou dílnu vedle</td></tr>
+          <tr><td><code>cargo check</code></td><td>jen zkontroluje chyby (rychlejší než build)</td><td>zkontrolovat výkres</td></tr>
+          <tr><td><code>cargo build</code></td><td>přeloží do <code>target/debug/</code></td><td>vyrobit prototyp</td></tr>
+          <tr><td><code>cargo run</code></td><td>přeloží a spustí</td><td>vyrobit a zapnout</td></tr>
+          <tr><td><code>cargo build --release</code></td><td>optimalizovaný build do <code>target/release/</code></td><td>sériový kus</td></tr>
+          <tr><td><code>cargo clippy</code></td><td>„linter“: radí, jak psát idiomatičtější kód</td><td>inspektor</td></tr>
+          <tr><td><code>cargo fmt</code></td><td>naformátuje kód podle standardu</td><td>uklízeč</td></tr>
+          <tr><td><code>./target/debug/todo</code></td><td>spustí hotový program přímo</td><td>zapnout výrobek bez mistra</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Soubor</th><th>K čemu je</th><th>Do gitu?</th></tr></thead>
+        <tbody>
+          <tr><td><code>Cargo.toml</code></td><td>popis projektu: jméno, verze, edice, závislosti</td><td>ano</td></tr>
+          <tr><td><code>Cargo.lock</code></td><td>přesné verze závislostí (vznikne při prvním překladu)</td><td>ano (u programu)</td></tr>
+          <tr><td><code>src/main.rs</code></td><td>vstupní bod programu, funkce <code>main()</code></td><td>ano</td></tr>
+          <tr><td><code>.gitignore</code></td><td>co git nemá sledovat (<code>/target</code>)</td><td>ano</td></tr>
+          <tr><td><code>target/</code></td><td>výstupy překladu (<code>debug/</code>, <code>release/</code>)</td><td>ne</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Doplněk k lekci 00 projektu todo-rs. Stav projektu odpovídá tagu <code>lekce-00</code>.</span>
+    <ul>
+      <li><a href="../00-priprava.md">Lekce 00: Příprava prostředí (text)</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch01-00-getting-started.html">The Rust Book, kap. 1: Getting Started</a></li>
+      <li><a href="https://doc.rust-lang.org/cargo/">Cargo Book</a></li>
+      <li><a href="https://crates.io">crates.io: sklad crates</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const DIR = '/home/alex/Projects/todo-rs';
+  const DEV = 'Finished `dev` profile [unoptimized + debuginfo] target(s) in ';
+  const REL = 'Finished `release` profile [optimized] target(s) in ';
+
+  let st, log, fresh;
+  const termEl = document.getElementById('term');
+  const treeEl = document.getElementById('tree');
+  const explainEl = document.getElementById('explain');
+
+  function reset() {
+    st = { init: false, lock: false, target: false, debugBin: false, checked: false, clippied: false, relBin: false };
+    log = [];
+    fresh = new Set();
+    explainEl.innerHTML = 'Adresář je zatím prázdný. Začni třeba <code>rustc --version</code>, nebo rovnou <code>cargo init --name todo</code>.';
+    render();
+  }
+
+  // výstup: pole řádků [třída, text]
+  const say = (cmd, lines, why) => { log.push({ cmd, lines }); explainEl.innerHTML = why; };
+  const noPkg = ['bad', 'error: could not find `Cargo.toml` in `' + DIR + '` or any parent directory'];
+  // cargo zarovnává sloveso doprava na 12 znaků: '   Compiling', '    Checking'
+  const compiling = (verb) => ['', `${verb.padStart(12)} todo v0.1.0 (${DIR})`];
+  const touchTarget = () => { if (!st.target) fresh.add('target'); st.target = true; if (!st.lock) fresh.add('lock'); st.lock = true; };
+
+  const CMDS = [
+    { group: 'nářadí', items: [
+      { c: 'rustc --version', run() { say(this.c, [['', 'rustc 1.95.0 (59807616e 2026-04-14)']], 'Verze kompilátoru. Funguje kdekoli, projekt k tomu není potřeba.'); } },
+      { c: 'cargo --version', run() { say(this.c, [['', 'cargo 1.95.0 (f2d3ce0bd 2026-03-21)']], 'Cargo má vlastní číslo sestavení, ale vychází spolu s Rustem, proto taky 1.95.'); } },
+    ] },
+    { group: 'projekt', items: [
+      { c: 'cargo init --name todo', run() {
+        if (st.init) return say(this.c, [['g', '    Creating binary (application) package'], ['bad', 'error: `cargo init` cannot be run on existing Cargo packages'], ['note', 'help: use `cargo new` to create a package in a new subdirectory']], 'Dílna už stojí. <code>Cargo.toml</code> tu je, takže druhé <code>init</code> cargo odmítne a poradí <code>cargo new</code>.');
+        st.init = true; ['git', 'gitignore', 'toml', 'src'].forEach((k) => fresh.add(k));
+        say(this.c, [['g', '    Creating binary (application) package'], ['note', 'note: see more `Cargo.toml` keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html']], 'Vznikly <code>Cargo.toml</code>, <code>src/main.rs</code>, <code>.gitignore</code> a skrytý git repozitář <code>.git/</code>. „binary (application)“ znamená, že děláme spustitelný program, ne knihovnu.');
+      } },
+    ] },
+    { group: 'linka', items: [
+      { c: 'cargo check', run() {
+        if (!st.init) return say(this.c, [noPkg], 'Mistr nemá výrobní list. Bez <code>Cargo.toml</code> cargo neví, co kontrolovat. Nejdřív <code>cargo init</code>.');
+        if (st.checked) return say(this.c, [['g', '    ' + DEV + '0.00s']], 'Od minulé kontroly se nic nezměnilo, takže cargo nic nedělá.');
+        st.checked = true; touchTarget();
+        say(this.c, [['g', compiling('Checking')[1]], ['g', '    ' + DEV + '0.02s']], '<b>Checking</b>, ne Compiling: kód se jen zkontroloval. Vznikl <code>target/</code> a <code>Cargo.lock</code>, ale <b>žádný spustitelný soubor</b>.');
+      } },
+      { c: 'cargo build', run() {
+        if (!st.init) return say(this.c, [noPkg], 'Bez <code>Cargo.toml</code> není co stavět. Nejdřív <code>cargo init</code>.');
+        if (st.debugBin) return say(this.c, [['g', '    ' + DEV + '0.00s']], 'Žádné <b>Compiling</b>: program je hotový a kód se nezměnil, tak cargo nic znovu nepřekládá.');
+        st.debugBin = true; touchTarget(); fresh.add('debugBin');
+        say(this.c, [['g', compiling('Compiling')[1]], ['g', '    ' + DEV + '0.07s']], 'Hotovo: v <code>target/debug/</code> je spustitelný <code>todo</code>. Profil <code>dev</code> = rychlý překlad s ladicími informacemi.');
+      } },
+      { c: 'cargo run', run() {
+        if (!st.init) return say(this.c, [noPkg], 'Bez <code>Cargo.toml</code> není co spustit.');
+        const lines = [];
+        if (!st.debugBin) { lines.push(['g', compiling('Compiling')[1]]); lines.push(['g', '    ' + DEV + '0.04s']); st.debugBin = true; touchTarget(); fresh.add('debugBin'); }
+        else lines.push(['g', '    ' + DEV + '0.00s']);
+        lines.push(['g', '     Running `target/debug/todo`'], ['', 'Hello, world!']);
+        say(this.c, lines, '<code>run</code> = <code>build</code> + spuštění. Zelené řádky píše cargo, poslední řádek už je výstup tvého programu.');
+      } },
+      { c: './target/debug/todo', sh: true, run() {
+        if (!st.debugBin) return say(this.c, [['bad', 'bash: ./target/debug/todo: No such file or directory']], 'Program ještě neexistuje. Nejdřív <code>cargo build</code> nebo <code>cargo run</code>. (<code>cargo check</code> spustitelný soubor nevyrobí.)');
+        say(this.c, [['', 'Hello, world!']], 'Hotový program jde spustit i bez carga. Cargo do toho nemluví, proto nejsou vidět žádné zelené řádky.');
+      } },
+      { c: 'cargo build --release', run() {
+        if (!st.init) return say(this.c, [noPkg], 'Bez <code>Cargo.toml</code> není co stavět.');
+        if (st.relBin) return say(this.c, [['g', '    ' + REL + '0.00s']], 'Release verze už je hotová a kód se nezměnil.');
+        st.relBin = true; touchTarget(); fresh.add('relBin');
+        say(this.c, [['g', compiling('Compiling')[1]], ['g', '    ' + REL + '0.06s']], 'Druhá police: <code>target/release/todo</code>, profil <code>release</code> = optimalizovaný. Debug verze zůstala vedle.');
+      } },
+      { c: './target/release/todo', sh: true, run() {
+        if (!st.relBin) return say(this.c, [['bad', 'bash: ./target/release/todo: No such file or directory']], 'Release verze ještě není. <code>cargo build</code> plní jen <code>target/debug/</code>, tohle chce <code>--release</code>.');
+        say(this.c, [['', 'Hello, world!']], 'Stejný výstup jako debug verze. Rozdíl je v rychlosti a velikosti, ne v chování.');
+      } },
+    ] },
+    { group: 'kvalita', items: [
+      { c: 'cargo clippy', run() {
+        if (!st.init) return say(this.c, [noPkg], 'Bez projektu není co kontrolovat.');
+        if (st.clippied) return say(this.c, [['g', '    ' + DEV + '0.00s']], 'Nic se nezměnilo, inspektor nemá co procházet znovu.');
+        st.clippied = true; touchTarget();
+        say(this.c, [['g', compiling('Checking')[1]], ['g', '    ' + DEV + '0.04s']], 'Žádné varování = žádné připomínky. V „Hello, world!“ není co vytknout.');
+      } },
+      { c: 'cargo fmt', run() {
+        if (!st.init) return say(this.c, [noPkg], 'Bez projektu není co formátovat.');
+        say(this.c, [], 'Žádný výstup = úspěch. Kód už byl naformátovaný, takže se nic nezměnilo.');
+      } },
+    ] },
+    { group: 'git', items: [
+      { c: 'git status', git: true, run() {
+        if (!st.init) return say(this.c, [['bad', 'fatal: not a git repository (or any of the parent directories): .git']], 'Tady ještě není repozitář. Ten založí až <code>cargo init</code>.');
+        const files = ['.gitignore', ...(st.lock ? ['Cargo.lock'] : []), 'Cargo.toml', 'src/'];
+        say(this.c, [['', 'On branch main'], ['', ''], ['', 'No commits yet'], ['', ''], ['', 'Untracked files:'], ['', '  (use "git add <file>..." to include in what will be committed)'], ...files.map((f) => ['bad', '\t' + f]), ['', ''], ['', 'nothing added to commit but untracked files present (use "git add" to track)']],
+          st.target ? 'Všimni si: <code>target/</code> ve výpisu <b>není</b>, protože ho skrývá <code>.gitignore</code>. <code>Cargo.lock</code> tu je a patří do commitu.' : 'Repozitář existuje, ale ještě v něm není žádná fotka (commit). Zkus nejdřív <code>cargo build</code> a pak se sem podívej znovu.');
+      } },
+    ] },
+  ];
+
+  function render() {
+    document.getElementById('cmds').innerHTML = CMDS.map((g, gi) =>
+      `<div class="cmd-group"><span class="lbl">${esc(g.group)}</span>` +
+      g.items.map((it, ii) => `<button type="button" data-g="${gi}" data-i="${ii}" class="${it.git ? 'git' : it.sh ? 'sh' : ''}">${esc(it.c)}</button>`).join('') +
+      '</div>').join('');
+
+    termEl.innerHTML = log.map((e) =>
+      `<span class="p">~/Projects/todo-rs$</span> <span class="u">${esc(e.cmd)}</span>` +
+      e.lines.map(([k, t]) => '\n' + (k ? `<span class="${k}">${esc(t)}</span>` : esc(t))).join('')).join('\n') +
+      `${log.length ? '\n' : ''}<span class="p">~/Projects/todo-rs$</span> ▍`;
+    termEl.scrollTop = termEl.scrollHeight;
+
+    const n = (key, html) => (fresh.has(key) ? `<span class="new">${html}</span>` : `<span>${html}</span>`);
+    const rows = ['<div class="f"><span class="dir">todo-rs/</span></div>'];
+    if (!st.init) rows.push('<span class="empty-dir">(prázdný adresář)</span>');
+    else {
+      const items = [
+        `${n('git', '.git/')}<span class="badge">skrytý repozitář</span>`,
+        n('gitignore', '.gitignore'),
+        ...(st.lock ? [n('lock', 'Cargo.lock')] : []),
+        n('toml', 'Cargo.toml'),
+        `<span class="dir">${n('src', 'src/')}</span>`,
+      ];
+      items.forEach((h, i) => rows.push(`<div class="f"><span class="ind">${i === items.length - 1 && !st.target ? '└── ' : '├── '}</span>${h}</div>`));
+      rows.push(`<div class="f"><span class="ind">${st.target ? '│' : ' '}   └── </span><span>main.rs</span></div>`);
+      if (st.target) {
+        rows.push(`<div class="f ign"><span class="ind">└── </span><span class="dir">${n('target', 'target/')}</span><span class="badge ign">git ignoruje</span></div>`);
+        rows.push(`<div class="f ign"><span class="ind">    ├── </span><span>debug/</span>${st.debugBin ? n('debugBin', 'todo') : '<span class="note-r">(bez programu)</span>'}</div>`);
+        if (st.relBin) rows.push(`<div class="f ign"><span class="ind">    └── </span><span>release/</span>${n('relBin', 'todo')}</div>`);
+      }
+    }
+    treeEl.innerHTML = rows.join('');
+  }
+
+  document.getElementById('cmds').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-g]');
+    if (!b) return;
+    fresh = new Set();
+    CMDS[Number(b.dataset.g)].items[Number(b.dataset.i)].run();
+    render();
+  });
+  document.getElementById('reset').addEventListener('click', reset);
+  reset();
+})();
+</script>
+</body>
+</html>

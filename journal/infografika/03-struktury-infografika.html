@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>Kartotéka úkolů</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
+<style>
+/* Layout: struct = šablona kartotéční karty, hodnota = vyplněná karta, impl = razítko (new) a tlačítka na kartě
+   (lupa = &self, tužka = &mut self). String = vlastní sešit, &str = nápis na tabuli. Barvy a písma sdílí s lekcemi 04–06. */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #1b2330;
+  --muted: #5b6676;
+  --line: #cfd6df;
+  --kraft: #c9975c;
+  --kraft-dark: #a7773f;
+  --kraft-edge: #6f4c24;
+  --tape: #efc75e;
+  --label: #f7f1e3;
+  --read: #0d7480;
+  --read-soft: #d7eef0;
+  --write: #c2410c;
+  --write-soft: #fbe3d6;
+  --ok: #2e7d32;
+  --ok-soft: #dcefdc;
+  --err: #b42318;
+  --err-soft: #f9dedb;
+  --board: #24443a;
+  --board-ink: #eef3ea;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --f-stamp: "Saira Stencil One", Impact, "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+    --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+    --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+    --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+    --board: #1d3a31; --board-ink: #e6efe2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+  --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+  --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+  --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+  --board: #1d3a31; --board-ink: #e6efe2;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  /* bez ligatur: -> => && musí vypadat přesně tak, jak se píšou */
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 56px;
+}
+.hero > *, .scene > * { min-width: 0; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3.2vw, 2rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 code { font-size: 0.85em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+code, pre { font-family: var(--f-code); font-size: 0.86em; }
+:not(pre) > code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; white-space: nowrap; }
+a { color: var(--read); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--write); outline-offset: 2px; }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 32px; align-items: center; }
+.hero .lead { font-size: 1.2rem; color: var(--muted); margin-top: 16px; }
+.eyebrow { font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hero-fig { display: flex; justify-content: center; min-width: 0; }
+
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.rule b { font-family: var(--f-display); font-size: 1.15rem; }
+.rule span { color: var(--muted); font-size: 0.95rem; }
+.rule .n { font-family: var(--f-stamp); font-size: 1.6rem; color: var(--kraft-dark); line-height: 1; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; padding: 14px 18px; border: 1px dashed var(--line); border-radius: 10px; }
+.legend > div { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--muted); }
+.legend-title { font-family: var(--f-code); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- kartotéční karta ---------- */
+.card {
+  position: relative; display: grid; gap: 0; width: 100%; max-width: 320px; min-width: 0;
+  background: var(--label); color: #3a2b17; border: 2px solid var(--kraft-dark); border-radius: 4px 10px 10px 10px;
+  box-shadow: 3px 4px 0 var(--line); font-family: var(--f-code); font-size: 0.82rem; margin-top: 18px;
+}
+.card .tab {
+  position: absolute; top: -20px; left: -2px; padding: 1px 12px 2px; border: 2px solid var(--kraft-dark); border-bottom: 0;
+  border-radius: 6px 6px 0 0; background: var(--label); font-weight: 600; font-size: 0.78rem;
+}
+.card .f { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 7px 12px; border-top: 1px dashed var(--kraft); align-items: baseline; }
+.card .f:first-of-type { border-top: 0; }
+.card .k { color: #7a5a30; white-space: nowrap; }
+.card .v { font-weight: 600; overflow-wrap: anywhere; text-align: right; }
+.card .f.hl { background: color-mix(in srgb, var(--tape) 45%, transparent); }
+.card.tpl { background: transparent; color: var(--ink); border-style: dashed; box-shadow: none; }
+.card.tpl .tab { background: var(--bg); border-style: dashed; }
+.card.tpl .k { color: var(--ink); }
+.card.tpl .v { color: var(--read); font-weight: 600; }
+.card.tpl .f { border-top-color: var(--line); }
+.card.done::after {
+  content: "HOTOVO"; position: absolute; right: 10px; top: -26px; transform: rotate(-6deg);
+  font-family: var(--f-stamp); font-size: 0.95rem; letter-spacing: 0.06em; color: var(--ok);
+  border: 2px solid var(--ok); border-radius: 4px; padding: 0 5px; background: color-mix(in srgb, var(--label) 70%, transparent);
+}
+.card .btns { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px 10px; border-top: 2px solid var(--kraft-dark); background: color-mix(in srgb, var(--kraft) 18%, transparent); }
+.mbtn {
+  display: inline-flex; align-items: center; gap: 5px; font-family: var(--f-code); font-size: 0.75rem; font-weight: 600;
+  padding: 3px 8px; border-radius: 6px; border: 2px solid var(--ink); background: var(--surface); color: var(--ink); white-space: nowrap;
+}
+.mbtn svg { width: 14px; height: 14px; flex: none; }
+.mbtn.r { border-color: var(--read); color: var(--read); background: var(--read-soft); }
+.mbtn.w { border-color: var(--write); color: var(--write); background: var(--write-soft); }
+.mbtn.s { border-color: var(--kraft-edge); color: #3a2b17; background: var(--tape); }
+
+.stamp {
+  display: inline-grid; justify-items: center; gap: 2px; padding: 8px 14px; border: 3px solid var(--kraft-edge); border-radius: 10px 10px 4px 4px;
+  background: var(--tape); color: #3a2b17; font-family: var(--f-code); font-weight: 600; font-size: 0.85rem;
+}
+.stamp small { font-family: var(--f-body); font-weight: 400; font-size: 0.75rem; }
+
+/* sešit vs tabule */
+.notebook {
+  display: grid; gap: 4px; padding: 12px 14px 12px 26px; min-width: 0; width: 100%;
+  background: repeating-linear-gradient(var(--surface), var(--surface) 23px, var(--read-soft) 24px);
+  border: 2px solid var(--ink); border-radius: 4px 10px 10px 4px; position: relative; font-family: var(--f-code); font-size: 0.85rem;
+}
+.notebook::before { content: ""; position: absolute; left: 12px; top: 0; bottom: 0; border-left: 2px solid var(--err); opacity: 0.5; }
+.board { display: grid; gap: 4px; padding: 14px; min-width: 0; width: 100%; background: var(--board); color: var(--board-ink); border: 6px solid var(--kraft-dark); border-radius: 6px; font-family: var(--f-code); font-size: 0.9rem; }
+.who { font-family: var(--f-body); font-size: 0.8rem; opacity: 0.8; }
+
+/* ---------- scény ---------- */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.scene-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.scene-head .num { font-family: var(--f-stamp); font-size: 2rem; color: var(--kraft-dark); line-height: 1; }
+.scene-head .sym { font-family: var(--f-code); font-size: 1rem; color: var(--muted); }
+.fig {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0;
+  padding: 22px 18px; display: grid; gap: 16px; justify-items: center; align-content: center; min-height: 200px;
+  overflow-x: auto;
+}
+.fig-cap { font-size: 0.9rem; color: var(--muted); text-align: center; max-width: 46ch; }
+.lbl { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.fig-split { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 14px; align-items: center; width: 100%; justify-items: center; }
+.arrow-step { font-family: var(--f-code); font-size: 0.8rem; color: var(--muted); display: grid; justify-items: center; gap: 2px; text-align: center; }
+.arrow-step::after { content: "⟶"; font-size: 1.6rem; line-height: 1; color: var(--ink); }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+.vs > div { display: grid; gap: 10px; align-content: start; justify-items: center; padding: 12px; border-radius: 8px; background: var(--surface-2); min-width: 0; }
+.vs h3 { font-size: 0.95rem; }
+.col { display: grid; gap: 8px; justify-items: center; min-width: 0; width: 100%; }
+
+.text { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.text .metaphor { font-size: 1.12rem; }
+.text .metaphor b { font-family: var(--f-display); }
+
+pre {
+  margin: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .e { color: var(--err); font-weight: 600; }
+pre .k { color: var(--ok); font-weight: 600; }
+pre .r { color: var(--read); font-weight: 600; }
+pre .w { color: var(--write); font-weight: 600; }
+pre .s { color: var(--kraft-dark); font-weight: 600; }
+
+.verdict { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+.verdict.bad { background: var(--err-soft); }
+.verdict.good { background: var(--ok-soft); }
+.verdict .code { font-family: var(--f-code); font-weight: 600; flex: none; }
+.verdict.bad .code { color: var(--err); }
+.verdict.good .code { color: var(--ok); }
+
+.mini { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.mini th, .mini td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mini th { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.mini tr:last-child td { border-bottom: 0; }
+
+.term { font-family: var(--f-code); font-size: 0.85rem; background: #10161e; color: #e6ebf1; border-radius: 8px; padding: 12px 14px; white-space: pre; width: 100%; min-width: 0; overflow-x: auto; }
+.term .p { color: #7f8b99; }
+
+.switch { display: grid; gap: 6px; width: 100%; max-width: 360px; font-family: var(--f-code); font-size: 0.85rem; }
+.switch .cond { padding: 6px 10px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
+.switch .br { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.switch .br > div { padding: 8px; border-radius: 6px; border: 2px solid var(--line); text-align: center; background: var(--surface); }
+.switch .br > .on { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); font-weight: 600; }
+.switch .res { padding: 6px 10px; border-radius: 6px; border: 2px solid var(--ink); text-align: center; font-weight: 600; }
+
+/* ---------- hřiště ---------- */
+.play { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+.play > * { min-width: 0; }
+.play-intro { display: grid; gap: 8px; }
+.hint { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--tape); padding-left: 12px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 10px 14px; border: 1px dashed var(--line); border-radius: 10px; font-size: 0.92rem; }
+.toggles label { display: inline-flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; cursor: pointer; }
+.toggles input { width: 18px; height: 18px; accent-color: var(--write); }
+.ctrl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ctrl select, .ctrl input[type=text] {
+  font-family: var(--f-code); font-size: 0.9rem; padding: 7px 10px; border: 2px solid var(--ink); border-radius: 8px;
+  background: var(--surface); color: var(--ink); min-width: 0;
+}
+.ctrl input[type=text] { flex: 1 1 180px; }
+.btn {
+  font-family: var(--f-body); font-size: 0.92rem; font-weight: 700; cursor: pointer;
+  padding: 8px 12px; border-radius: 8px; border: 2px solid var(--ink); background: var(--surface); color: var(--ink);
+  display: inline-flex; gap: 6px; align-items: center;
+}
+.btn code { background: none; border: 0; padding: 0; font-weight: 600; }
+.btn svg { width: 16px; height: 16px; }
+.btn.r { border-color: var(--read); color: var(--read); }
+.btn.w { border-color: var(--write); color: var(--write); }
+.btn.s { border-color: var(--kraft-edge); background: var(--tape); color: #3a2b17; }
+.btn.quiet { border-color: var(--line); color: var(--muted); }
+.play-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.cards { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+.cards .card { max-width: 100%; }
+.cards .idx { font-family: var(--f-code); font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
+.vec-head { font-family: var(--f-code); font-size: 0.85rem; font-weight: 600; }
+.log { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; max-height: 420px; overflow-y: auto; }
+.log li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); font-size: 0.9rem; }
+.log li.bad { background: var(--err-soft); }
+.log li .mark { font-weight: 800; font-family: var(--f-display); }
+.log li.ok .mark { color: var(--ok); }
+.log li.bad .mark { color: var(--err); }
+.log li code { white-space: pre-wrap; word-break: break-word; }
+.log li.bad code { text-decoration: line-through; text-decoration-color: var(--err); }
+.log .why { color: var(--muted); display: block; margin-top: 2px; }
+.log li.bad .why b { color: var(--err); font-family: var(--f-code); }
+.log .ret { display: block; font-family: var(--f-code); font-size: 0.85rem; margin-top: 4px; white-space: pre-wrap; color: var(--ink); }
+
+/* ---------- tahák ---------- */
+.cheat-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table.cheat { border-collapse: collapse; width: 100%; min-width: 640px; }
+table.cheat th, table.cheat td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.cheat th { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+table.cheat tr:last-child td { border-bottom: 0; }
+table.cheat td:first-child { font-weight: 700; }
+
+footer { display: grid; gap: 8px; color: var(--muted); font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 20px; }
+footer ul { margin: 0; padding-left: 1.2em; }
+
+@media (max-width: 780px) {
+  .hero, .scene, .play-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero-fig { order: -1; }
+  .rules { grid-template-columns: 1fr; }
+  .vs { grid-template-columns: 1fr; }
+  .fig-split { grid-template-columns: minmax(0, 1fr); }
+  .arrow-step::after { content: "↓"; }
+  .play { padding: 18px 14px; }
+  .mini .opt { display: none; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-look" viewBox="0 0 24 24">
+      <circle cx="10" cy="10" r="6" style="fill:none;stroke:currentColor;stroke-width:2.4"/>
+      <path d="M14.5 14.5L21 21" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round"/>
+    </symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24">
+      <path d="M4 20l1.2-4.8L16 4.4a2 2 0 0 1 2.8 0l.8.8a2 2 0 0 1 0 2.8L8.8 18.8z" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round"/>
+      <path d="M14 6.5l3.5 3.5" style="fill:none;stroke:currentColor;stroke-width:2.2"/>
+    </symbol>
+    <symbol id="i-stamp" viewBox="0 0 24 24">
+      <path d="M9 3h6v6l3 3H6l3-3z" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round"/>
+      <path d="M4 15h16v3H4zM6 21h12" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <div>
+      <div class="eyebrow">todo-rs · lekce 03 · struktury a metody</div>
+      <h1>Kartotéka úkolů</h1>
+      <p class="lead"><code>struct</code> je <b>šablona kartotéční karty</b>: říká, jaké kolonky karta má a co do nich patří. Každý úkol je pak <b>jedna vyplněná karta</b>. V bloku <code>impl</code> ke kartě přidáš <b>razítko</b>, které vyrobí novou kartu (<code>Task::new</code>), a <b>tlačítka</b>, která s kartou něco dělají (<code>task.complete()</code>).</p>
+    </div>
+    <div class="hero-fig" aria-hidden="true">
+      <div class="col" style="max-width:320px">
+        <span class="stamp"><svg width="22" height="22"><use href="#i-stamp"/></svg>Task::new("Clean the house")</span>
+        <span style="font-size:1.4rem; line-height:1; color:var(--muted)">↓</span>
+        <div class="card done">
+          <span class="tab">Task</span>
+          <div class="f"><span class="k">title: String</span><span class="v">"Clean the house"</span></div>
+          <div class="f hl"><span class="k">done: bool</span><span class="v">true</span></div>
+          <div class="btns">
+            <span class="mbtn w"><svg><use href="#i-pen"/></svg>complete()</span>
+            <span class="mbtn w"><svg><use href="#i-pen"/></svg>rename(…)</span>
+            <span class="mbtn r"><svg><use href="#i-look"/></svg>is_done()</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="rules" aria-label="Tři pravidla">
+    <div class="rule"><span class="n">1</span><b>Šablona jednou, karet kolik chceš.</b><span><code>struct Task</code> popíše kolonky. Každé <code>Task::new(…)</code> vyrobí novou kartu.</span></div>
+    <div class="rule"><span class="n">2</span><b>Každou kolonku je potřeba vyplnit.</b><span>Při vytvoření musí dostat hodnotu všechna pole, jinak <code>E0063</code>.</span></div>
+    <div class="rule"><span class="n">3</span><b>Lupa čte, tužka píše.</b><span><code>&amp;self</code> se jen podívá, <code>&amp;mut self</code> smí kartu přepsat. Psát jde jen do karty, která je <code>mut</code>.</span></div>
+  </section>
+
+  <div class="legend" aria-label="Legenda">
+    <span class="legend-title">Legenda</span>
+    <div><span class="card tpl" style="margin:0; max-width:none; display:inline-block; padding:2px 10px">šablona</span> <code>struct</code> (jaké kolonky)</div>
+    <div><span class="card" style="margin:0; max-width:none; display:inline-block; padding:2px 10px">karta</span> hodnota typu <code>Task</code></div>
+    <div><span class="mbtn s"><svg><use href="#i-stamp"/></svg>Task::new</span> asociovaná funkce</div>
+    <div><span class="mbtn r"><svg><use href="#i-look"/></svg>&amp;self</span> metoda jen čte</div>
+    <div><span class="mbtn w"><svg><use href="#i-pen"/></svg>&amp;mut self</span> metoda mění</div>
+  </div>
+
+  <!-- ===== 1 STRUCT ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">1</span><h2><code>struct</code>: šablona karty</h2><span class="sym">struct Task { title: String, done: bool }</span></div>
+    <div class="fig">
+      <div class="fig-split">
+        <div class="col">
+          <span class="lbl">šablona (typ)</span>
+          <div class="card tpl">
+            <span class="tab">struct Task</span>
+            <div class="f"><span class="k">title</span><span class="v">String</span></div>
+            <div class="f"><span class="k">done</span><span class="v">bool</span></div>
+          </div>
+        </div>
+        <div class="arrow-step">Task { … }</div>
+        <div class="col">
+          <span class="lbl">vyplněná karta (hodnota)</span>
+          <div class="card">
+            <span class="tab">Task</span>
+            <div class="f"><span class="k">title</span><span class="v">"Buy groceries"</span></div>
+            <div class="f"><span class="k">done</span><span class="v">false</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="fig-cap">Šablona sama nic neobsahuje, jen říká, jaké kolonky karta má a jakého typu jsou. Data jsou až ve vyplněných kartách.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Formulář s předtištěnými kolonkami.</b> Šablonu navrhneš jednou, vyplněných karet může být kolik chceš.</p>
+<pre><code>#[derive(Debug)]
+struct Task {
+    title: String,    <span class="c">// pole: jméno: Typ,</span>
+    done: bool,
+}
+
+let t = Task {
+    title: String::from("Buy groceries"),
+    done: false,      <span class="c">// pořadí polí nehraje roli</span>
+};
+println!("{}", t.title);   <span class="c">// tečka = kolonka karty</span></code></pre>
+      <p><b>Jak číst:</b> <code>title: String</code> = „kolonka <code>title</code> typu <code>String</code>“. Dvojtečka odděluje jméno od typu, čárka odděluje pole.</p>
+      <p><b>Jména:</b> typy <code>CamelCase</code> (<code>Task</code>), pole a proměnné <code>snake_case</code> (<code>count_done</code>).</p>
+      <div class="verdict bad"><span class="code">E0063</span><span>missing field <code>done</code> in initializer of <code>Task</code>. Karta s prázdnou kolonkou v Rustu neexistuje, výchozí hodnoty se nedoplní samy.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 2 MUT ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">2</span><h2>Přepsat kolonku smíš jen s <code>mut</code></h2><span class="sym">let mut t · t.done = true</span></div>
+    <div class="fig">
+      <div class="vs">
+        <div>
+          <h3><code>let t</code></h3>
+          <div class="card" style="opacity:.85">
+            <span class="tab">Task</span>
+            <div class="f"><span class="k">title</span><span class="v">"Test"</span></div>
+            <div class="f"><span class="k">done</span><span class="v">false</span></div>
+          </div>
+          <p class="fig-cap">Karta zatavená do fólie: číst ano, psát ne.</p>
+        </div>
+        <div>
+          <h3><code>let mut t</code></h3>
+          <div class="card done">
+            <span class="tab">Task</span>
+            <div class="f"><span class="k">title</span><span class="v">"Test"</span></div>
+            <div class="f hl"><span class="k">done</span><span class="v">true</span></div>
+          </div>
+          <p class="fig-cap">Karta bez fólie: <code>t.done = true;</code> projde.</p>
+        </div>
+      </div>
+      <p class="fig-cap"><code>mut</code> patří celé kartě, ne jednotlivým kolonkám. Buď smíš přepsat všechno, nebo nic.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Bez <code>mut</code> je karta zalaminovaná.</b></p>
+<pre><code>let x = Task::new("b");
+x.title = String::from("c");   <span class="e">// ❌ E0594</span>
+
+let <span class="w">mut</span> y = Task::new("b");
+y.title = String::from("c");   <span class="k">// ✅</span></code></pre>
+      <div class="verdict bad"><span class="code">E0594</span><span>cannot assign to <code>x.title</code>, as <code>x</code> is not declared as mutable. Kompilátor rovnou poradí, kam <code>mut</code> dopsat.</span></div>
+      <p>Totéž platí pro <code>Vec</code>: <code>tasks[1].complete()</code> mění kartu uvnitř vektoru, proto musí být <code>let mut tasks</code>.</p>
+    </div>
+  </section>
+
+  <!-- ===== 3 DEBUG ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">3</span><h2><code>#[derive(Debug)]</code>: prosvítit kartu</h2><span class="sym">{:?} · {:#?} · dbg!</span></div>
+    <div class="fig">
+      <div class="term">println!("{:?}", t);
+<span class="p">Task { title: "Test", done: false }</span>
+
+println!("{:#?}", t);
+<span class="p">Task {
+    title: "Test",
+    done: false,
+}</span></div>
+      <p class="fig-cap"><code>{:?}</code> vypíše kartu na jeden řádek, <code>{:#?}</code> (s mřížkou) přehledně pod sebe.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Rentgen pro programátora.</b> Ukáže všechny kolonky, jak jsou. Je určený na ladění, ne pro uživatele.</p>
+<pre><code><span class="r">#[derive(Debug)]</span>   <span class="c">// atribut nad struct</span>
+struct Task { ... }</code></pre>
+      <p><b><code>#[…]</code></b> je <b>atribut</b>, pokyn pro kompilátor k položce pod ním. <code>derive(Debug)</code> = „vygeneruj sám ladicí výpis“.</p>
+      <p><b><code>{:?}</code> vs <code>{}</code></b>: otazník = ladicí výpis (<code>Debug</code>). Prázdné <code>{}</code> = výpis pro uživatele (<code>Display</code>). Ten se pro vlastní typy píše ručně, k tomu se dostaneme v lekci 12.</p>
+      <div class="verdict bad"><span class="code">E0277</span><span><code>Task</code> doesn't implement <code>Debug</code>. Bez <code>#[derive(Debug)]</code> nefunguje <code>{:?}</code> ani <code>dbg!</code>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 4 IMPL ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">4</span><h2><code>impl</code>: razítko a tlačítka</h2><span class="sym">Task::new(…) vs task.complete()</span></div>
+    <div class="fig">
+      <div class="vs">
+        <div>
+          <h3>Asociovaná funkce</h3>
+          <span class="stamp"><svg width="22" height="22"><use href="#i-stamp"/></svg>Task::new("…")</span>
+          <p class="fig-cap">Razítko visí <b>u šablony</b>. Nepotřebuje žádnou kartu, kartu teprve vyrobí. Volá se přes <code>::</code> na typu.</p>
+        </div>
+        <div>
+          <h3>Metoda</h3>
+          <div class="card" style="margin-top:22px">
+            <span class="tab">task</span>
+            <div class="btns" style="border-top:0">
+              <span class="mbtn w"><svg><use href="#i-pen"/></svg>complete()</span>
+              <span class="mbtn r"><svg><use href="#i-look"/></svg>is_done()</span>
+            </div>
+          </div>
+          <p class="fig-cap">Tlačítko je <b>na konkrétní kartě</b>. Pracuje s tou kartou, na které ho zmáčkneš. Volá se přes <code>.</code> na hodnotě.</p>
+        </div>
+      </div>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Razítko vyrábí nové karty, tlačítko pracuje s jednou kartou.</b> Poznáš je podle toho, jestli mají <code>self</code>.</p>
+<pre><code>impl Task {
+    fn new(title: &amp;str) -&gt; Self { … }   <span class="c">// bez self → razítko</span>
+    fn complete(<span class="w">&amp;mut self</span>) { … }       <span class="c">// se self → tlačítko</span>
+}
+
+let mut t = Task<span class="s">::</span>new("Test");  <span class="c">// :: na typu</span>
+t<span class="r">.</span>complete();                  <span class="c">// .  na hodnotě</span></code></pre>
+      <p><b><code>::</code> vs <code>.</code></b>: <code>::</code> čti „z typu“ (<code>Task::new</code>, <code>Vec::new</code>, <code>String::from</code>). Tečka čti „na téhle hodnotě“ (<code>t.complete()</code>, <code>t.title</code>).</p>
+      <p><b>Co je metoda doopravdy:</b> funkce, které Rust tiše předá kartu jako první parametr <code>self</code>. <code>t.complete()</code> je totéž co <code>Task::complete(&amp;mut t)</code>.</p>
+      <div class="verdict bad"><span class="code">E0061</span><span><code>Task::complete();</code> → this function takes 1 argument but 0 arguments were supplied. Tlačítko bez karty nemá s čím pracovat.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 5 SELF ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">5</span><h2>Lupa, nebo tužka?</h2><span class="sym">&amp;self · &amp;mut self</span></div>
+    <div class="fig">
+      <table class="mini">
+        <thead><tr><th>první parametr</th><th>čti</th><th>smí</th><th class="opt">v lekci</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mbtn r"><svg><use href="#i-look"/></svg>&amp;self</span></td><td>„půjč mi kartu na čtení“</td><td>číst kolonky</td><td class="opt"><code>is_done</code></td></tr>
+          <tr><td><span class="mbtn w"><svg><use href="#i-pen"/></svg>&amp;mut self</span></td><td>„půjč mi kartu na psaní“</td><td>číst i přepisovat</td><td class="opt"><code>complete</code>, <code>rename</code></td></tr>
+          <tr><td><span class="mbtn s"><svg><use href="#i-stamp"/></svg>bez self</span></td><td>„žádnou kartu nepotřebuju“</td><td>vyrobit novou</td><td class="opt"><code>new</code></td></tr>
+        </tbody>
+      </table>
+      <p class="fig-cap">Proč se nepíše všude <code>&amp;mut self</code>? Lupa slibuje, že karta zůstane, jak byla. Ten slib pak hlídá kompilátor.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>S lupou se jen díváš. S tužkou můžeš psát.</b></p>
+<pre><code>fn is_done(<span class="r">&amp;self</span>) -&gt; bool {
+    self.done                  <span class="c">// jen čtu</span>
+}
+
+fn complete(<span class="w">&amp;mut self</span>) {
+    self.done = true;          <span class="c">// přepisuju kolonku</span>
+}
+
+fn rename(<span class="w">&amp;mut self</span>, new_title: &amp;str) {
+    self.title = new_title.to_string();
+}</code></pre>
+      <p><b>Jak číst:</b> <code>&amp;</code> = „půjčené“, <code>mut</code> = „smí se měnit“. <code>self</code> = „karta, na které mě zavolali“. <code>self.done</code> je kolonka <code>done</code> téhle karty.</p>
+      <div class="verdict bad"><span class="code">E0594</span><span>cannot assign to <code>self.done</code>, which is behind a <code>&amp;</code> reference. Zkoušíš psát lupou: <code>self</code> je jen <code>&amp;</code>.</span></div>
+      <div class="verdict bad"><span class="code">E0596</span><span>cannot borrow <code>tasks</code> as mutable, as it is not declared as mutable. Tužku nedostaneš ke kartě, která není <code>mut</code>.</span></div>
+      <p>Proč <code>&amp;</code> (půjčení) a ne celá karta, rozebírá podrobně lekce 05.</p>
+    </div>
+  </section>
+
+  <!-- ===== 6 NEW + SELF ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">6</span><h2>Razítko <code>new</code> a slovo <code>Self</code></h2><span class="sym">fn new(title: &amp;str) -&gt; Self</span></div>
+    <div class="fig">
+      <div class="fig-split">
+        <div class="col">
+          <span class="lbl">vstup</span>
+          <code>"Buy groceries"</code>
+        </div>
+        <div class="arrow-step">Task::new</div>
+        <div class="col">
+          <span class="lbl">výstup: Self = Task</span>
+          <div class="card">
+            <span class="tab">Task</span>
+            <div class="f hl"><span class="k">title</span><span class="v">"Buy groceries"</span></div>
+            <div class="f hl"><span class="k">done</span><span class="v">false</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="fig-cap">Razítko vyplní všechny kolonky najednou. Volající zadá jen název, <code>done: false</code> doplní <code>new</code> sama.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Razítko s předvyplněnou kolonkou.</b> Nikdo už nemusí pamatovat, že nový úkol začíná jako nehotový.</p>
+<pre><code>fn new(title: &amp;str) <span class="r">-&gt; Self</span> {
+    <span class="r">Self</span> {
+        title: title.to_string(),
+        done: false,
+    }           <span class="c">// bez ; → tohle se vrátí</span>
+}</code></pre>
+      <ul class="plain">
+        <li><b><code>-&gt;</code></b> (tenká šipka) = „vrací“. Za ní stojí návratový typ.</li>
+        <li><b><code>Self</code></b> s velkým S = „typ, ve kterém jsem“. Uvnitř <code>impl Task</code> je to <code>Task</code>. Malé <code>self</code> je konkrétní karta.</li>
+        <li><b>Poslední výraz bez <code>;</code></b> je návratová hodnota. <code>return</code> se píše jen pro předčasný návrat.</li>
+        <li><b>Zkratka:</b> když se proměnná jmenuje stejně jako pole, stačí <code>Self { x, y }</code> místo <code>Self { x: x, y: y }</code>.</li>
+      </ul>
+      <div class="verdict bad"><span class="code">E0308</span><span>mismatched types: expected <code>Task</code>, found <code>()</code>. Za <code>Self { … }</code> je navíc <code>;</code>, takže funkce nevrací nic. Kompilátor radí: <i>remove this semicolon to return this value</i>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 7 STRING vs &str ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">7</span><h2>Vlastní sešit, nebo nápis na tabuli?</h2><span class="sym">String · &amp;str</span></div>
+    <div class="fig">
+      <div class="vs">
+        <div>
+          <h3><code>String</code></h3>
+          <div class="notebook"><span class="who">sešit patří kartě</span>"Buy groceries"</div>
+          <p class="fig-cap">Text je <b>vlastní</b>. Dá se do něj psát, přidávat, mazat.</p>
+        </div>
+        <div>
+          <h3><code>&amp;str</code></h3>
+          <div class="board"><span class="who">tabule patří někomu jinému</span>"Buy groceries"</div>
+          <p class="fig-cap">Jen <b>pohled</b> na text, který vlastní někdo jiný. Číst ano, měnit ne.</p>
+        </div>
+      </div>
+      <p class="fig-cap"><code>new</code> dostane nápis z tabule (<code>&amp;str</code>) a přes <code>.to_string()</code> si ho opíše do vlastního sešitu (<code>String</code>), který zůstane v kartě.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Karta si text opíše do vlastního sešitu.</b> Tabule se může smazat, sešit zůstane.</p>
+<pre><code>struct Task {
+    title: <span class="w">String</span>,          <span class="c">// pole: vlastní text</span>
+}
+fn new(title: <span class="r">&amp;str</span>) -&gt; Self {  <span class="c">// parametr: stačí pohled</span>
+    Self { title: title<span class="k">.to_string()</span>, … }
+}</code></pre>
+      <table class="mini">
+        <thead><tr><th>kde</th><th>použij</th><th>proč</th></tr></thead>
+        <tbody>
+          <tr><td>pole struktury</td><td><code>String</code></td><td>karta vlastní svá data (<code>&amp;str</code> v poli by chtělo lifetimes, lekce 14)</td></tr>
+          <tr><td>parametr funkce</td><td><code>&amp;str</code></td><td>přijme literál <code>"…"</code> i <code>&amp;String</code></td></tr>
+        </tbody>
+      </table>
+      <p><b>Vznik:</b> <code>String::from("a")</code> nebo <code>"a".to_string()</code> dají <code>String</code>. Literál <code>"a"</code> nebo <code>&amp;muj_string</code> dají <code>&amp;str</code>.</p>
+      <div class="verdict bad"><span class="code">E0308</span><span><code>Self { title: title, … }</code> → expected <code>String</code>, found <code>&amp;str</code>. Nápis z tabule nejde rovnou vlepit do kolonky pro sešit, musí se opsat přes <code>.to_string()</code>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 8 IF VÝRAZ ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">8</span><h2><code>if</code> vrací hodnotu</h2><span class="sym">if c { a } else { b }</span></div>
+    <div class="fig">
+      <div class="switch">
+        <div class="cond">task.is_done() == true</div>
+        <div class="br"><div class="on">{ "X" }</div><div>{ " " }</div></div>
+        <div class="res">[X] Clean the entire house</div>
+      </div>
+      <div class="switch">
+        <div class="cond">task.is_done() == false</div>
+        <div class="br"><div>{ "X" }</div><div class="on">{ " " }</div></div>
+        <div class="res">[ ] Buy groceries</div>
+      </div>
+      <p class="fig-cap">Výhybka, ze které vypadne hodnota. Obě koleje musí vézt <b>stejný typ</b>, tady <code>&amp;str</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Výhybka, která rovnou vrací výsledek.</b> Žádná pomocná proměnná se nemusí nastavovat ve dvou větvích.</p>
+<pre><code>println!(
+    "{}: [{}] {}",
+    index + 1,
+    <span class="r">if task.is_done() { "X" } else { " " }</span>,
+    task.title
+);</code></pre>
+      <ul class="plain">
+        <li>Podmínka se píše <b>bez závorek</b> a musí být <code>bool</code>.</li>
+        <li>Hodnota větve je poslední výraz <b>bez <code>;</code></b>, stejně jako u funkce.</li>
+        <li><code>else</code> je povinné, když <code>if</code> má vrátit hodnotu.</li>
+      </ul>
+      <div class="verdict bad"><span class="code">E0308</span><span><code>if 1 { }</code> → expected <code>bool</code>, found integer. Rust nepřevádí čísla na pravdu a nepravdu.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 9 VEC ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">9</span><h2>Šuplík s kartami</h2><span class="sym">Vec&lt;Task&gt; · tasks[1] · filter</span></div>
+    <div class="fig">
+      <div class="cards" style="justify-items:stretch; width:100%; max-width:340px">
+        <span class="vec-head">let mut tasks: Vec&lt;Task&gt;</span>
+        <span class="idx">tasks[0]</span>
+        <div class="card" style="margin-top:0"><div class="f"><span class="k">title</span><span class="v">"Buy groceries"</span></div><div class="f"><span class="k">done</span><span class="v">false</span></div></div>
+        <span class="idx">tasks[1]</span>
+        <div class="card done" style="margin-top:0"><div class="f hl"><span class="k">title</span><span class="v">"Clean the entire house"</span></div><div class="f hl"><span class="k">done</span><span class="v">true</span></div></div>
+        <span class="idx">tasks[2]</span>
+        <div class="card" style="margin-top:0"><div class="f"><span class="k">title</span><span class="v">"Finish Rust project"</span></div><div class="f"><span class="k">done</span><span class="v">false</span></div></div>
+      </div>
+      <p class="fig-cap">Indexy začínají nulou. <code>tasks[1]</code> je druhá karta v šuplíku.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Šuplík s kartami seřazenými za sebou.</b></p>
+<pre><code>let mut tasks: Vec&lt;Task&gt; = vec![
+    Task::new("Buy groceries"),
+    Task::new("Clean the house"),
+    Task::new("Finish Rust project"),
+];
+tasks[1].rename("Clean the entire house");
+tasks[1].complete();
+
+let count_done = tasks.iter()
+    .filter(|task| task.done)
+    .count();                <span class="c">// 1</span></code></pre>
+      <p><b><code>Vec&lt;Task&gt;</code></b>: <code>&lt;…&gt;</code> je generický parametr, čti „Vec čeho“. <b><code>tasks[i]</code></b> sáhne pro kartu, mimo rozsah program spadne (panic).</p>
+      <p><b>Proč funguje <code>task.done</code></b>, i když <code>task</code> je ve <code>filter</code> typu <code>&amp;&amp;Task</code>: tečka sama projde všemi <code>&amp;</code> až ke kartě (auto-deref). Ruční <code>*</code> přijde v lekci 05.</p>
+    </div>
+  </section>
+
+  <!-- ===== HŘIŠTĚ ===== -->
+  <section class="play" aria-labelledby="play-h">
+    <div class="play-intro">
+      <h2 id="play-h">Hřiště: mačkej tlačítka na kartách</h2>
+      <p>Vyber kartu a zmáčkni metodu. Každé zmáčknutí přidá řádek kódu. Když by ho kompilátor odmítl, uvidíš chybu a karty zůstanou, jak byly.</p>
+      <p class="hint">Zkus: vypni <code>let mut tasks</code> a zmáčkni <code>complete()</code>. Pak zapni „<code>complete</code> bere <code>&amp;self</code>“. Nakonec zkus <code>tasks[5]</code>.</p>
+    </div>
+    <div class="toggles">
+      <label><input type="checkbox" id="t-mut" checked> <code>let <b>mut</b> tasks</code></label>
+      <label><input type="checkbox" id="t-ref"> <code>complete</code> bere <code>&amp;self</code> místo <code>&amp;mut self</code></label>
+    </div>
+    <div class="ctrl">
+      <label class="lbl" for="sel">karta</label>
+      <select id="sel" aria-label="Vyber kartu"></select>
+      <input type="text" id="txt" value="Water the plants" aria-label="Text pro new / rename" spellcheck="false">
+    </div>
+    <div class="ctrl" id="buttons">
+      <button type="button" class="btn s" data-a="new"><svg><use href="#i-stamp"/></svg><code>Task::new(text)</code></button>
+      <button type="button" class="btn w" data-a="complete"><svg><use href="#i-pen"/></svg><code>.complete()</code></button>
+      <button type="button" class="btn w" data-a="rename"><svg><use href="#i-pen"/></svg><code>.rename(text)</code></button>
+      <button type="button" class="btn r" data-a="is_done"><svg><use href="#i-look"/></svg><code>.is_done()</code></button>
+      <button type="button" class="btn r" data-a="debug"><code>{:?}</code></button>
+      <button type="button" class="btn" data-a="print">vypiš seznam</button>
+      <button type="button" class="btn quiet" data-a="reset">Začít znovu</button>
+    </div>
+    <div class="play-grid">
+      <div class="cards" id="cards" aria-live="polite"></div>
+      <ol class="log" id="log"></ol>
+    </div>
+  </section>
+
+  <!-- ===== TAHÁK ===== -->
+  <section style="display:grid; gap:16px">
+    <h2>Tahák</h2>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Zápis</th><th>Význam</th><th>Kartotéka</th></tr></thead>
+        <tbody>
+          <tr><td><code>struct T { a: i32 }</code></td><td>definice struktury</td><td>šablona karty s kolonkami</td></tr>
+          <tr><td><code>T { a: 1 }</code></td><td>vytvoření hodnoty, všechna pole povinná</td><td>vyplněná karta</td></tr>
+          <tr><td><code>t.a</code> / <code>t.a = 2</code></td><td>čtení pole / zápis (jen s <code>let mut t</code>)</td><td>kolonka karty</td></tr>
+          <tr><td><code>#[derive(Debug)]</code> + <code>{:?}</code> / <code>{:#?}</code></td><td>ladicí výpis struktury</td><td>rentgen</td></tr>
+          <tr><td><code>impl T { … }</code></td><td>funkce a metody typu</td><td>razítko a tlačítka</td></tr>
+          <tr><td><code>fn new() -&gt; Self</code> + <code>T::new()</code></td><td>asociovaná funkce (bez <code>self</code>), volá se přes <code>::</code></td><td>razítko</td></tr>
+          <tr><td><code>fn f(&amp;self)</code></td><td>metoda, jen čte</td><td>lupa</td></tr>
+          <tr><td><code>fn f(&amp;mut self)</code></td><td>metoda, mění</td><td>tužka</td></tr>
+          <tr><td><code>Self</code> / <code>self</code></td><td>typ, ve kterém jsem / hodnota, na které mě volají</td><td>šablona / tahle karta</td></tr>
+          <tr><td><code>-&gt; Typ</code></td><td>návratový typ</td><td></td></tr>
+          <tr><td>výraz bez <code>;</code> na konci</td><td>návratová hodnota</td><td></td></tr>
+          <tr><td><code>if c { a } else { b }</code></td><td>výraz s hodnotou, obě větve stejný typ</td><td>výhybka</td></tr>
+          <tr><td><code>String</code> / <code>&amp;str</code></td><td>vlastní text / půjčený pohled</td><td>sešit / tabule</td></tr>
+          <tr><td><code>.to_string()</code></td><td><code>&amp;str</code> → <code>String</code></td><td>opsat do sešitu</td></tr>
+          <tr><td><code>v[i]</code></td><td>prvek na indexu (od 0)</td><td>karta v šuplíku</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Chyba</th><th>Co říká kompilátor</th><th>Kartotéka</th></tr></thead>
+        <tbody>
+          <tr><td><code>E0063</code></td><td>missing field <code>done</code> in initializer of <code>Task</code></td><td>nevyplněná kolonka</td></tr>
+          <tr><td><code>E0594</code></td><td>cannot assign to <code>x.title</code>, as <code>x</code> is not declared as mutable</td><td>zalaminovaná karta</td></tr>
+          <tr><td><code>E0594</code></td><td>cannot assign to <code>self.done</code>, which is behind a <code>&amp;</code> reference</td><td>psaní lupou</td></tr>
+          <tr><td><code>E0596</code></td><td>cannot borrow <code>tasks</code> as mutable, as it is not declared as mutable</td><td>tužka ke kartě bez <code>mut</code></td></tr>
+          <tr><td><code>E0308</code></td><td>expected <code>String</code>, found <code>&amp;str</code></td><td>nápis z tabule bez opsání</td></tr>
+          <tr><td><code>E0308</code></td><td>expected <code>Task</code>, found <code>()</code> (remove this semicolon)</td><td><code>;</code> za návratovou hodnotou</td></tr>
+          <tr><td><code>E0308</code></td><td>expected <code>bool</code>, found integer</td><td><code>if 1 { }</code></td></tr>
+          <tr><td><code>E0277</code></td><td><code>Task</code> doesn't implement <code>Debug</code></td><td>chybí <code>#[derive(Debug)]</code></td></tr>
+          <tr><td><code>E0061</code></td><td>this function takes 1 argument but 0 arguments were supplied</td><td>tlačítko bez karty (<code>Task::complete()</code>)</td></tr>
+          <tr><td><code>panic</code></td><td>index out of bounds</td><td>karta, která v šuplíku není</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Doplněk k lekci 03 projektu todo-rs. Ukázky kódu jsou ze <code>src/main.rs</code> (tag <code>lekce-03</code>).</span>
+    <ul>
+      <li><a href="../03-struktury-a-metody.md">Lekce 03: Struktury a metody (text)</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch05-00-structs.html">Rust Book 5: Structs</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch05-03-method-syntax.html">Rust Book 5.3: Method Syntax</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch03-03-how-functions-work.html">Rust Book 3.3: Functions (výrazy vs příkazy)</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch04-03-slices.html">Rust Book 4.3: The Slice Type (&amp;str)</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const dbg = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+
+  let tasks, log, changed;
+  const cardsEl = document.getElementById('cards');
+  const logEl = document.getElementById('log');
+  const sel = document.getElementById('sel');
+  const txt = document.getElementById('txt');
+  const tMut = document.getElementById('t-mut');
+  const tRef = document.getElementById('t-ref');
+
+  function reset() {
+    tasks = ['Buy groceries', 'Clean the house', 'Finish Rust project'].map((title) => ({ title, done: false }));
+    log = [{ kind: 'ok', code: 'let mut tasks: Vec<Task> = vec![Task::new(…), Task::new(…), Task::new(…)];', why: 'Tři karty v šuplíku.' }];
+    changed = null;
+    render();
+  }
+
+  const ok = (code, why, ret) => log.push({ kind: 'ok', code, why, ret });
+  const bad = (code, err, msg, why) => log.push({ kind: 'bad', code, err, msg, why });
+  const decl = () => (tMut.checked ? 'let mut tasks' : 'let tasks');
+
+  function act(a) {
+    const i = Number(sel.value);
+    const text = txt.value;
+    const target = `tasks[${i}]`;
+    changed = null;
+
+    if (a === 'reset') return reset();
+
+    if (a === 'new') {
+      const code = `tasks.push(Task::new(${dbg(text)}));`;
+      if (!tMut.checked) return bad(code, 'E0596', 'cannot borrow `tasks` as mutable, as it is not declared as mutable', `Přidat kartu do šuplíku = změnit Vec. U ${decl()} to nejde.`);
+      tasks.push({ title: text, done: false });
+      changed = { i: tasks.length - 1, f: ['title', 'done'] };
+      return ok(code, `Razítko Task::new vyrobilo kartu se title ${dbg(text)} a done false. push ji vložilo do šuplíku jako tasks[${tasks.length - 1}].`);
+    }
+
+    // chyby kompilátoru mají přednost: program s nimi se vůbec nespustí
+    const call = { complete: '.complete()', rename: `.rename(${dbg(text)})`, is_done: '.is_done()' }[a];
+    const code = a === 'debug' ? `println!("{:?}", ${target});` : `${target}${call};`;
+    if (a === 'complete' && tRef.checked) return bad(code, 'E0594', 'cannot assign to `self.done`, which is behind a `&` reference', 'complete má jen lupu (&self), ale chce přepsat kolonku done. Chyba je už v definici metody.');
+    if ((a === 'complete' || a === 'rename') && !tMut.checked) return bad(code, 'E0596', 'cannot borrow `tasks` as mutable, as it is not declared as mutable', `${a} chce tužku (&mut self), ale karta je v šuplíku bez mut.`);
+
+    // index mimo rozsah: kompilátor nic nenamítne, spadne to až za běhu
+    if (a !== 'print' && i >= tasks.length) {
+      return bad(a === 'is_done' ? `let d = ${code}` : code, 'panic', `index out of bounds: the len is ${tasks.length} but the index is ${i}`, 'Přeloží se to, ale za běhu program spadne. Karta s tímhle číslem v šuplíku není.');
+    }
+
+    if (a === 'complete') {
+      tasks[i].done = true;
+      changed = { i, f: ['done'] };
+      return ok(code, `Tužka: self.done = true na kartě tasks[${i}].`);
+    }
+    if (a === 'rename') {
+      tasks[i].title = text;
+      changed = { i, f: ['title'] };
+      return ok(code, `Tužka: self.title = new_title.to_string(). Text z tabule (&str) se opsal do vlastního sešitu (String).`);
+    }
+    if (a === 'is_done') {
+      changed = { i, f: ['done'] };
+      return ok(`let d = ${target}.is_done();`, 'Lupa (&self) jen čte. Funguje i s let tasks bez mut.', `d = ${tasks[i].done}`);
+    }
+    if (a === 'debug') {
+      const t = tasks[i];
+      return ok(`println!("{:?}", ${target});`, 'Díky #[derive(Debug)] jde kartu prosvítit.', `Task { title: ${dbg(t.title)}, done: ${t.done} }`);
+    }
+    if (a === 'print') return printAll();
+  }
+
+  function printAll() {
+    const lines = tasks.map((t, k) => `${k + 1}: [${t.done ? 'X' : ' '}] ${t.title}`);
+    lines.push(`Done: ${tasks.filter((t) => t.done).length}/${tasks.length}`);
+    ok('for_each(… if task.is_done() { "X" } else { " " } …)', 'Výpis jako v main.rs. Výhybka if vrátí "X" nebo " ".', lines.join('\n'));
+  }
+
+  function render() {
+    const prev = sel.value;
+    const opts = tasks.map((t, k) => `<option value="${k}">tasks[${k}]</option>`);
+    opts.push(`<option value="5">tasks[5] (neexistuje)</option>`);
+    sel.innerHTML = opts.join('');
+    if (prev !== '' && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+
+    cardsEl.innerHTML = `<span class="vec-head">${esc(decl())}: Vec&lt;Task&gt;</span>` + tasks.map((t, k) => {
+      const hl = (f) => (changed && changed.i === k && changed.f.includes(f) ? ' hl' : '');
+      return `<span class="idx">tasks[${k}]</span><div class="card${t.done ? ' done' : ''}" style="margin-top:0">` +
+        `<div class="f${hl('title')}"><span class="k">title: String</span><span class="v">${esc(dbg(t.title))}</span></div>` +
+        `<div class="f${hl('done')}"><span class="k">done: bool</span><span class="v">${t.done}</span></div></div>`;
+    }).join('');
+
+    logEl.innerHTML = log.map((l) => {
+      if (l.kind === 'ok') return `<li class="ok"><span class="mark">✓</span><span><code>${esc(l.code)}</code><span class="why">${esc(l.why)}</span>${l.ret ? `<span class="ret">${esc(l.ret)}</span>` : ''}</span></li>`;
+      return `<li class="bad"><span class="mark">✗</span><span><code>${esc(l.code)}</code><span class="why"><b>${esc(l.err)}</b> ${esc(l.msg)}<br>${esc(l.why)}</span></span></li>`;
+    }).join('');
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  document.getElementById('buttons').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-a]');
+    if (!b) return;
+    act(b.dataset.a);
+    render();
+  });
+  tMut.addEventListener('change', render);
+  tRef.addEventListener('change', render);
+  reset();
+})();
+</script>
+</body>
+</html>

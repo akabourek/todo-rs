@@ -166,6 +166,7 @@ fn main() {
 3. Vypiš úkoly pozpátku (hledej metodu `.rev()` na iterátoru).
 
 ## Odkazy
+- [Infografika: Štítky a sklenice](infografika/01-prvni-program-infografika.html) – proměnné jako štítky na sklenicích, pole jako plato vs `Vec` jako regál, `for` jako pás, closure jako strojek + hřiště s `push`/`mut` a krokováním `for` (otevřít v prohlížeči)
 - [Rust Book 3.1 – Variables and Mutability](https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html)
 - [Rust Book 3.5 – Control Flow (for)](https://doc.rust-lang.org/book/ch03-05-control-flow.html)
 - [Rust Book 8.1 – Vectors](https://doc.rust-lang.org/book/ch08-01-vectors.html)

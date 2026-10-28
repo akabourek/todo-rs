@@ -173,6 +173,7 @@ fn main() {
 3. Za `x * 2` v nějaké funkci schválně dej `;` a přečti si chybu kompilátoru.
 
 ## Odkazy
+- [Infografika: Kartotéka úkolů](infografika/03-struktury-infografika.html) – `struct` jako šablona karty, `impl` jako razítko a tlačítka (lupa `&self` / tužka `&mut self`), `String` vs `&str` + hřiště s metodami na kartách (otevřít v prohlížeči)
 - [Rust Book 5 – Structs](https://doc.rust-lang.org/book/ch05-00-structs.html)
 - [Rust Book 5.3 – Method Syntax](https://doc.rust-lang.org/book/ch05-03-method-syntax.html)
 - [Rust Book 3.3 – Functions (výrazy vs příkazy)](https://doc.rust-lang.org/book/ch03-03-how-functions-work.html)

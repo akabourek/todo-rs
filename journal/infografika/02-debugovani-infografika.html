@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>Pauza na dálkovém</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
+<style>
+/* Layout: debugger = dálkové ovládání k běžícímu programu. Breakpoint = značka na časové ose,
+   F10/F11/Shift+F11 = tlačítka pro krokování. Barvy a písma sdílí s ostatními infografikami řady. */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #1b2330;
+  --muted: #5b6676;
+  --line: #cfd6df;
+  --kraft: #c9975c;
+  --kraft-dark: #a7773f;
+  --kraft-edge: #6f4c24;
+  --tape: #efc75e;
+  --label: #f7f1e3;
+  --read: #0d7480;
+  --read-soft: #d7eef0;
+  --write: #c2410c;
+  --write-soft: #fbe3d6;
+  --ok: #2e7d32;
+  --ok-soft: #dcefdc;
+  --err: #b42318;
+  --err-soft: #f9dedb;
+  --bp: #e5484d;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --f-stamp: "Saira Stencil One", Impact, "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+    --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+    --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+    --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d; --bp: #f2766b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+  --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+  --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+  --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d; --bp: #f2766b;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  /* bez ligatur: => -> && musí vypadat přesně tak, jak se píšou */
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3.2vw, 2rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 code { font-size: 0.85em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+code, pre { font-family: var(--f-code); font-size: 0.86em; }
+:not(pre) > code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; white-space: nowrap; }
+a { color: var(--read); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--write); outline-offset: 2px; }
+kbd {
+  font-family: var(--f-code); font-size: 0.8em; font-weight: 600; white-space: nowrap;
+  padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); border-bottom-width: 3px;
+  background: var(--surface); color: var(--ink);
+}
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 32px; align-items: center; }
+.hero .lead { font-size: 1.2rem; color: var(--muted); margin-top: 16px; }
+.eyebrow { font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hero-fig { display: flex; justify-content: center; min-width: 0; }
+
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.rule b { font-family: var(--f-display); font-size: 1.15rem; }
+.rule span { color: var(--muted); font-size: 0.95rem; }
+.rule .n { font-family: var(--f-stamp); font-size: 1.6rem; color: var(--kraft-dark); line-height: 1; }
+
+/* ---------- dálkové ovládání ---------- */
+.remote {
+  display: grid; gap: 10px; padding: 18px 16px; width: 100%; max-width: 360px;
+  background: var(--ink); color: var(--surface); border-radius: 22px 22px 30px 30px;
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--ink) 70%, #000);
+}
+.remote .screen { background: #10161e; color: #e6ebf1; border-radius: 10px; padding: 10px 12px; font-family: var(--f-code); font-size: 0.78rem; display: grid; gap: 2px; }
+.remote .screen .cur { background: color-mix(in srgb, var(--tape) 35%, transparent); color: #fff; border-radius: 3px; }
+.remote .screen .dim { color: #7f8b99; }
+.remote .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rkey { display: grid; justify-items: center; gap: 2px; padding: 8px 2px; border-radius: 10px; background: color-mix(in srgb, var(--surface) 12%, transparent); font-family: var(--f-code); font-size: 0.7rem; }
+.rkey b { font-size: 1.15rem; line-height: 1; font-family: var(--f-display); }
+.rkey.go b { color: #74c47a; }
+.rkey.stop b { color: #f2766b; }
+
+/* ---------- editor (kód s okrajem) ---------- */
+.ed { width: 100%; min-width: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 0; font-family: var(--f-code); font-size: 0.8rem; overflow-x: auto; }
+.ln { display: grid; grid-template-columns: 22px 28px minmax(0, 1fr); align-items: center; min-height: 1.75em; white-space: pre; }
+.ln .dot { justify-self: center; width: 12px; height: 12px; border-radius: 50%; }
+.ln .dot.on { background: var(--bp); }
+.ln .dot.cond { background: var(--bp); box-shadow: inset 0 0 0 3px var(--surface-2); outline: 2px solid var(--bp); width: 11px; height: 11px; }
+.ln .no { color: var(--muted); text-align: right; padding-right: 10px; }
+.ln .src { padding-right: 12px; }
+.ln.cur { background: color-mix(in srgb, var(--tape) 40%, transparent); }
+.ln.cur .no::before { content: "➜ "; color: var(--write); font-weight: 600; }
+.ln .c { color: var(--muted); }
+.ln.done .src { opacity: 0.55; }
+
+/* ---------- řetěz nástrojů ---------- */
+.chainv { display: grid; gap: 0; width: 100%; max-width: 420px; justify-items: stretch; }
+.tool { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: center; padding: 10px 14px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface); }
+.tool .ic { grid-row: span 2; font-size: 1.4rem; }
+.tool b { font-family: var(--f-display); }
+.tool span { font-size: 0.85rem; color: var(--muted); }
+.tool.hl { border-color: var(--read); background: var(--read-soft); }
+.down { justify-self: center; font-family: var(--f-code); font-size: 0.75rem; color: var(--muted); padding: 4px 0; }
+.down::before { content: "↓ "; color: var(--ink); font-weight: 600; }
+
+/* ---------- konfigurace s popisky ---------- */
+.cfg { display: grid; gap: 4px; width: 100%; font-family: var(--f-code); font-size: 0.8rem; }
+.kv { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 10px; border-radius: 6px; background: var(--surface-2); border-left: 4px solid var(--line); }
+.kv .k { overflow-wrap: anywhere; }
+.kv .d { font-family: var(--f-body); font-size: 0.85rem; color: var(--muted); }
+.kv.hl { border-left-color: var(--write); background: var(--write-soft); }
+
+/* ---------- krokování ---------- */
+.frames { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
+.frame { border: 2px solid var(--line); border-radius: 10px; background: var(--surface-2); padding: 8px 0; font-family: var(--f-code); font-size: 0.78rem; min-width: 0; overflow-x: auto; }
+.frame .fh { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 0 10px 6px; }
+.frame .fl { padding: 3px 10px; white-space: pre; }
+.frame .fl.cur { background: color-mix(in srgb, var(--tape) 40%, transparent); }
+.moves { display: grid; gap: 8px; width: 100%; }
+.move { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); font-size: 0.9rem; }
+.move .key { font-family: var(--f-code); font-weight: 600; }
+
+/* ---------- panely ---------- */
+.panels { display: grid; gap: 8px; width: 100%; }
+.panel { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.panel .ph { font-family: var(--f-code); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.panel .pr { font-family: var(--f-code); font-size: 0.8rem; padding: 4px 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.panel .pr .t { color: var(--muted); }
+.panel .pr .v { color: var(--read); font-weight: 600; }
+.panel .pr.chg .v { color: var(--write); }
+.panel .pr.top { background: color-mix(in srgb, var(--tape) 30%, transparent); }
+.panel .pr.dim { color: var(--muted); opacity: 0.7; }
+
+/* ---------- nastavení: vnořené bloky ---------- */
+.nest { width: 100%; border: 2px solid var(--read); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; font-family: var(--f-code); font-size: 0.8rem; background: var(--surface); }
+.nest .nh { font-family: var(--f-body); font-size: 0.8rem; color: var(--read); font-weight: 700; }
+.nest .inner { border: 2px dashed var(--write); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; background: var(--write-soft); }
+.nest .inner .nh { color: var(--write); }
+.nest .item { overflow-wrap: anywhere; }
+.nest .item.bad { color: var(--err); text-decoration: line-through; }
+
+/* ---------- scény ---------- */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.scene-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.scene-head .num { font-family: var(--f-stamp); font-size: 2rem; color: var(--kraft-dark); line-height: 1; }
+.scene-head .sym { font-family: var(--f-code); font-size: 1rem; color: var(--muted); }
+.fig {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0;
+  padding: 22px 18px; display: grid; gap: 16px; justify-items: center; align-content: center; min-height: 200px;
+  overflow-x: auto;
+}
+.fig-cap { font-size: 0.9rem; color: var(--muted); text-align: center; max-width: 46ch; }
+.lbl { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+.text { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.text .metaphor { font-size: 1.12rem; }
+.text .metaphor b { font-family: var(--f-display); }
+
+pre {
+  margin: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .e { color: var(--err); font-weight: 600; }
+pre .k { color: var(--ok); font-weight: 600; }
+pre .r { color: var(--read); font-weight: 600; }
+pre .w { color: var(--write); font-weight: 600; }
+
+.verdict { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+.verdict.bad { background: var(--err-soft); }
+.verdict.good { background: var(--ok-soft); }
+.verdict.warn { background: var(--write-soft); }
+.verdict .code { font-family: var(--f-code); font-weight: 600; flex: none; }
+.verdict.bad .code { color: var(--err); }
+.verdict.good .code { color: var(--ok); }
+.verdict.warn .code { color: var(--write); }
+
+.term { font-family: var(--f-code); font-size: 0.82rem; background: #10161e; color: #e6ebf1; border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; width: 100%; min-width: 0; overflow-x: auto; }
+.term .p { color: #7f8b99; }
+.term .err { color: #f2a59d; }
+.term .u { color: #efc75e; }
+
+.mini { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.mini th, .mini td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mini th { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.mini tr:last-child td { border-bottom: 0; }
+
+/* ---------- hřiště ---------- */
+.play { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
+.play-intro { display: grid; gap: 8px; }
+.hint { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--tape); padding-left: 12px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.tb {
+  font-family: var(--f-body); font-size: 0.88rem; font-weight: 700; cursor: pointer;
+  display: inline-flex; gap: 6px; align-items: center;
+  padding: 7px 10px; border-radius: 8px; border: 2px solid var(--line); background: var(--surface); color: var(--ink);
+}
+.tb .g { font-family: var(--f-display); font-size: 1.05rem; line-height: 1; }
+.tb kbd { font-size: 0.72rem; }
+.tb.go { border-color: var(--ok); }
+.tb.go .g { color: var(--ok); }
+.tb.stop .g { color: var(--err); }
+.tb:disabled { opacity: 0.35; cursor: not-allowed; }
+.cond { display: inline-flex; gap: 6px; align-items: center; font-size: 0.88rem; color: var(--muted); margin-left: auto; }
+.cond input { width: 18px; height: 18px; accent-color: var(--bp); }
+.play-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.play .ed .ln { cursor: default; }
+.play .ed .dotbtn { justify-self: center; width: 20px; height: 20px; border-radius: 50%; border: 0; padding: 0; background: transparent; cursor: pointer; display: grid; place-items: center; }
+.play .ed .dotbtn::after { content: ""; width: 12px; height: 12px; border-radius: 50%; background: transparent; border: 1px dashed transparent; }
+.play .ed .dotbtn:hover::after { border-color: var(--bp); }
+.play .ed .dotbtn[aria-pressed="true"]::after { background: var(--bp); border: 0; }
+.play .ed .dotbtn.cnd[aria-pressed="true"]::after { background: var(--surface-2); outline: 3px solid var(--bp); outline-offset: -3px; }
+.side { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.status { font-size: 0.92rem; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); border-left: 4px solid var(--line); }
+.status.paused { border-left-color: var(--tape); }
+.status.ended { border-left-color: var(--ok); }
+.side .term { min-height: 120px; max-height: 220px; overflow-y: auto; }
+
+/* ---------- tahák ---------- */
+.cheat-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table.cheat { border-collapse: collapse; width: 100%; min-width: 600px; }
+table.cheat th, table.cheat td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.cheat th { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+table.cheat tr:last-child td { border-bottom: 0; }
+table.cheat td:first-child { font-weight: 700; white-space: nowrap; }
+
+footer { display: grid; gap: 8px; color: var(--muted); font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 20px; }
+footer ul { margin: 0; padding-left: 1.2em; }
+
+@media (max-width: 780px) {
+  .hero, .scene, .play-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero-fig { order: -1; }
+  .rules { grid-template-columns: 1fr; }
+  .frames { grid-template-columns: 1fr; }
+  .kv { grid-template-columns: 1fr; gap: 2px; }
+  .move { grid-template-columns: 1fr; gap: 2px; }
+  .cond { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <div>
+      <div class="eyebrow">todo-rs · lekce 02 · debugování ve VS Code</div>
+      <h1>Pauza na dálkovém</h1>
+      <p class="lead">Normálně program proletí od začátku do konce za zlomek sekundy a ty vidíš jen výsledek. <b>Debugger</b> je <b>dálkové ovládání</b>: program zastavíš na zvoleném řádku (<b>breakpoint</b>), podíváš se, co je v proměnných, a pak ho posouváš po jednom kroku.</p>
+    </div>
+    <div class="hero-fig" aria-hidden="true">
+      <div class="remote">
+        <div class="screen">
+          <span class="dim"> 2  let list = ["Apple", …];</span>
+          <span class="dim">10  for (index, entry) in …</span>
+          <span class="cur">11 ●println!("{}: {entry}", …</span>
+          <span class="dim">14  println!("Count: {}", …</span>
+          <span style="margin-top:6px">index = 1 · entry = "Banana"</span>
+        </div>
+        <div class="keys">
+          <span class="rkey go"><b>▶</b>F5</span>
+          <span class="rkey"><b>⤼</b>F10</span>
+          <span class="rkey"><b>↓</b>F11</span>
+          <span class="rkey stop"><b>■</b>⇧F5</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="rules" aria-label="Tři pravidla">
+    <div class="rule"><span class="n">1</span><b>Breakpoint zastaví <i>před</i> řádkem.</b><span>Žlutý řádek se ještě neprovedl. Co vypíše, uvidíš až po dalším kroku.</span></div>
+    <div class="rule"><span class="n">2</span><b>Ladí se debug build.</b><span><code>cargo build</code> bez <code>--release</code> obsahuje mapu „strojový kód ↔ řádek“. Bez ní debugger netuší, kde je.</span></div>
+    <div class="rule"><span class="n">3</span><b><code>dbg!</code> je lešení.</b><span>Rychle ukáže hodnotu, ale do hotového kódu nepatří. Po vyladění ho smaž.</span></div>
+  </section>
+
+  <!-- ===== 1 CO JE DEBUGGER ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">1</span><h2>Kdo s kým mluví</h2><span class="sym">VS Code · CodeLLDB · LLDB</span></div>
+    <div class="fig">
+      <div class="chainv">
+        <div class="tool"><span class="ic">🖥️</span><b>VS Code</b><span>tlačítka, breakpointy, panely</span></div>
+        <span class="down">rozšíření</span>
+        <div class="tool hl"><span class="ic">🔌</span><b>CodeLLDB</b><span><code>vadimcn.vscode-lldb</code>, přeloží klikání na příkazy pro LLDB</span></div>
+        <span class="down">ovládá</span>
+        <div class="tool"><span class="ic">🔍</span><b>LLDB</b><span>debugger z projektu LLVM (na LLVM stojí i kompilátor Rustu)</span></div>
+        <span class="down">spustí a zastavuje</span>
+        <div class="tool"><span class="ic">⚙️</span><b>target/debug/todo</b><span>tvůj program z <code>cargo build</code> s ladicími informacemi</span></div>
+      </div>
+      <p class="fig-cap">Ty mačkáš tlačítka ve VS Code. Program ve skutečnosti zastavuje a čte LLDB a CodeLLDB mezi nimi tlumočí.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Dálkové ovládání, přijímač, přehrávač, film.</b> Každá vrstva umí jednu věc. Rust k tomu nic zvláštního nepotřebuje, LLDB rozumí i C a C++.</p>
+      <p><b>Potřebná rozšíření:</b> <b>rust-analyzer</b> (rady, doplňování, formátování) a <b>CodeLLDB</b> (ladění). CodeLLDB si LLDB přiveze s sebou.</p>
+      <p><b>Debug vs release:</b> <code>cargo build</code> = rychlý překlad + ladicí informace (<code>target/debug/</code>). <code>cargo build --release</code> = optimalizace, které řádky přeskládají, takže krokování by skákalo divně.</p>
+      <p><b>Dva způsoby spuštění:</b> <kbd>F5</kbd> podle <code>launch.json</code>, nebo nad <code>fn main</code> kliknout na <b>▶ Debug</b>, které tam ukazuje rust-analyzer.</p>
+    </div>
+  </section>
+
+  <!-- ===== 2 LAUNCH.JSON ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">2</span><h2>Návod pro F5: <code>launch.json</code></h2><span class="sym">.vscode/launch.json</span></div>
+    <div class="fig">
+      <div class="cfg">
+        <div class="kv"><span class="k">"version": "0.2.0"</span><span class="d">verze formátu, vždy stejná</span></div>
+        <div class="kv"><span class="k">"name": "Debug executable 'todo'"</span><span class="d">jméno v roletce Run and Debug</span></div>
+        <div class="kv"><span class="k">"type": "lldb"</span><span class="d">použij CodeLLDB</span></div>
+        <div class="kv"><span class="k">"request": "launch"</span><span class="d">program spusť (<code>attach</code> = připoj se k běžícímu)</span></div>
+        <div class="kv"><span class="k">"cwd": "${workspaceFolder}"</span><span class="d">pracovní adresář = kořen projektu</span></div>
+        <div class="kv hl"><span class="k">"cargo": { "args": ["run", "--bin=todo"] }</span><span class="d">jak program sestavit: binárka <code>todo</code></span></div>
+        <div class="kv"><span class="k">"args": []</span><span class="d">argumenty pro <b>tvůj</b> program (lekce s CLI)</span></div>
+        <div class="kv hl"><span class="k">"terminal": "integrated"</span><span class="d">výstup i vstup z klávesnice v terminálu</span></div>
+        <div class="kv hl"><span class="k">"sourceLanguages": ["rust"]</span><span class="d"><code>Vec</code>, <code>String</code> čitelně, ne jako surová paměť</span></div>
+      </div>
+      <p class="fig-cap">Oranžové řádky jste dopsali ručně. Zbytek vygeneroval CodeLLDB z <code>Cargo.toml</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Recept, podle kterého VS Code po stisku <kbd>F5</kbd> program připraví a pustí.</b></p>
+      <p><b>Vytvoření:</b> <kbd>Ctrl+Shift+D</kbd> (Run and Debug) → <i>create a launch.json file</i> → <b>LLDB</b>.</p>
+<pre><code>{
+    "klic": "hodnota",       <span class="c">// dvojice oddělené čárkou</span>
+    "seznam": ["a", "b"],    <span class="c">// [ ] = seznam</span>
+    "objekt": { "x": true }  <span class="c">// { } = objekt</span>
+}</code></pre>
+      <p><b>JSONC:</b> VS Code dovoluje komentáře <code>//</code> a toleruje čárku za poslední položkou. Čistý JSON (třeba pro <code>serde_json</code> v lekci 10) ne.</p>
+      <div class="verdict warn"><span class="code">tip</span><span>Nevíš, co klíč dělá? Najeď na něj myší, nebo v souboru stiskni <kbd>Ctrl+Space</kbd> a uvidíš nabídku dalších klíčů.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 3 BREAKPOINT ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">3</span><h2>Breakpoint: stopka na řádku</h2><span class="sym">F9 · klik vlevo od čísla</span></div>
+    <div class="fig">
+      <div class="ed" aria-label="Kód zastavený na řádku 11">
+        <div class="ln done"><span></span><span class="no">2</span><span class="src">    let list = ["Apple", "Banana", "Cherry"];</span></div>
+        <div class="ln done"><span></span><span class="no">4</span><span class="src">    println!("====== My ToDo List ======");</span></div>
+        <div class="ln done"><span></span><span class="no">10</span><span class="src">    for (index, entry) in list.iter().enumerate() {</span></div>
+        <div class="ln cur"><span class="dot on"></span><span class="no">11</span><span class="src">        println!("{}: {entry}", index + 1);</span></div>
+        <div class="ln"><span></span><span class="no">12</span><span class="src">    }</span></div>
+        <div class="ln"><span></span><span class="no">14</span><span class="src">    println!("Count: {}", list.len());</span></div>
+      </div>
+      <div class="term"><span class="p">TERMINAL</span>
+====== My ToDo List ======
+<span class="p">← „1: Apple“ tu ještě není</span></div>
+      <p class="fig-cap">Program stojí na žlutém řádku 11 v prvním průchodu cyklem. Řádek se <b>ještě neprovedl</b>, proto v terminálu chybí <code>1: Apple</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Stopka na silnici.</b> Auto zastaví <i>před</i> čárou, ne za ní.</p>
+      <ul style="margin:0; padding-left:1.2em; display:grid; gap:6px">
+        <li><b>Přidat / odebrat:</b> klik vlevo od čísla řádku, nebo kurzor na řádek a <kbd>F9</kbd>. Objeví se červená tečka.</li>
+        <li><b>Breakpoint v cyklu</b> zastaví při <b>každém</b> průchodu. <kbd>F5</kbd> (Continue) doběhne k dalšímu zastavení.</li>
+        <li><b>Podmíněný breakpoint:</b> pravý klik na tečku → <i>Edit Breakpoint</i> → výraz, např. <code>index == 1</code>. Zastaví jen ve 2. průchodu (index se počítá od 0).</li>
+        <li>Na prázdném řádku nebo komentáři není žádný kód. Debugger takový breakpoint obvykle posune na nejbližší další řádek s kódem.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== 4 KROKOVÁNÍ ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">4</span><h2>Krokování: přes, do, ven</h2><span class="sym">F10 · F11 · Shift+F11 · F5</span></div>
+    <div class="fig">
+      <div class="frames">
+        <div class="frame">
+          <div class="fh">main</div>
+          <div class="fl">let tasks = vec![...];</div>
+          <div class="fl cur">print_tasks(&amp;tasks);  ← jsi tu</div>
+          <div class="fl">println!("Done…");</div>
+        </div>
+        <div class="frame">
+          <div class="fh">fn print_tasks(tasks)</div>
+          <div class="fl">for task in tasks {</div>
+          <div class="fl">    println!(…);</div>
+          <div class="fl">}</div>
+        </div>
+      </div>
+      <div class="moves">
+        <div class="move"><span class="key"><kbd>F10</kbd> Step Over</span><span>provede celé <code>print_tasks(&amp;tasks)</code> najednou a zastaví na <code>println!("Done…")</code></span></div>
+        <div class="move"><span class="key"><kbd>F11</kbd> Step Into</span><span>vleze <b>dovnitř</b> <code>print_tasks</code> na jeho první řádek</span></div>
+        <div class="move"><span class="key"><kbd>⇧F11</kbd> Step Out</span><span>zevnitř funkce: dokončí ji a vrátí se do <code>main</code> za volání</span></div>
+        <div class="move"><span class="key"><kbd>F5</kbd> Continue</span><span>pusť program naplno až k dalšímu breakpointu (nebo do konce)</span></div>
+      </div>
+      <p class="fig-cap">Funkci <code>print_tasks</code> v lekci 02 ještě nemáš (přibude v lekci 05). Krokování je ale nejlíp vidět právě na volání funkce.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Výtah v domě funkcí.</b> <kbd>F10</kbd> projede patrem dál, <kbd>F11</kbd> sjede o patro níž do volané funkce, <kbd>⇧F11</kbd> vyjede zpátky nahoru.</p>
+      <p><b>Kdy co:</b> většinou <kbd>F10</kbd>. <kbd>F11</kbd> jen tam, kde tě zajímá, co se děje uvnitř <b>tvé</b> funkce.</p>
+      <div class="verdict warn"><span class="code">pozor</span><span><kbd>F11</kbd> na řádku s <code>println!</code> vleze do vnitřností standardní knihovny (<code>std::io::_print</code>…). To není tvůj kód. Vrátíš se přes <kbd>⇧F11</kbd>.</span></div>
+      <p><b>Ukončení:</b> <kbd>⇧F5</kbd> zastaví ladění, <kbd>Ctrl+⇧F5</kbd> program spustí znovu od začátku.</p>
+    </div>
+  </section>
+
+  <!-- ===== 5 PANELY ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">5</span><h2>Co je vidět, když stojíš</h2><span class="sym">Variables · Watch · Call Stack · Debug Console</span></div>
+    <div class="fig">
+      <div class="panels" aria-label="Panely debuggeru">
+        <div class="panel"><div class="ph">Variables › Local</div>
+          <div class="pr"><span class="t">list:</span> <span class="v">[&amp;str; 3] ["Apple", "Banana", "Cherry"]</span></div>
+          <div class="pr chg"><span class="t">index:</span> <span class="v">1</span></div>
+          <div class="pr chg"><span class="t">entry:</span> <span class="v">"Banana"</span></div>
+        </div>
+        <div class="panel"><div class="ph">Watch</div>
+          <div class="pr"><span class="t">index + 1:</span> <span class="v">2</span></div>
+        </div>
+        <div class="panel"><div class="ph">Call Stack</div>
+          <div class="pr top">todo::main  <span class="t">main.rs 11</span></div>
+          <div class="pr dim">core::ops::function::FnOnce::call_once …</div>
+          <div class="pr dim">std::rt::lang_start …</div>
+        </div>
+      </div>
+      <p class="fig-cap">Stav při zastavení na řádku 11 ve druhém průchodu. Oranžové hodnoty se od minulého zastavení změnily.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Rentgen zastaveného programu.</b> Vidíš dovnitř, ale jen když stojí.</p>
+      <table class="mini">
+        <thead><tr><th>panel</th><th>k čemu</th></tr></thead>
+        <tbody>
+          <tr><td><b>Variables</b></td><td>všechny proměnné, které teď platí. Rozbalíš i <code>Vec</code> nebo strukturu.</td></tr>
+          <tr><td><b>Watch</b></td><td>vlastní výraz, který se přepočítá při každém zastavení (<code>index + 1</code>)</td></tr>
+          <tr><td><b>Call Stack</b></td><td>kdo koho zavolal. Nahoře je funkce, ve které právě stojíš. Spodní řádky jsou start programu ve <code>std</code>.</td></tr>
+          <tr><td><b>Debug Console</b></td><td>napíšeš jednoduchý výraz a hned uvidíš hodnotu (<kbd>Ctrl+⇧Y</kbd>)</td></tr>
+        </tbody>
+      </table>
+      <p><b>Proč <code>sourceLanguages: ["rust"]</code>:</b> bez toho by <code>list</code> vypadal jako adresa v paměti a délka, ne jako tři texty.</p>
+    </div>
+  </section>
+
+  <!-- ===== 6 DBG! ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">6</span><h2>Bez debuggeru: <code>dbg!</code></h2><span class="sym">dbg!(výraz)</span></div>
+    <div class="fig">
+<pre style="width:100%"><code>let x = dbg!(2 + 3);
+dbg!(&amp;list);
+for (index, entry) in list.iter().enumerate() {
+    dbg!(index);
+    …
+}</code></pre>
+      <div class="term"><span class="p">$ cargo run</span>
+<span class="err">[src/main.rs:3:13] 2 + 3 = 5
+[src/main.rs:4:5] &amp;list = [
+    "Apple",
+    "Banana",
+    "Cherry",
+]
+[src/main.rs:6:9] index = 0</span>
+1: Apple
+<span class="err">[src/main.rs:6:9] index = 1</span>
+2: Banana</div>
+      <p class="fig-cap">Skutečný výstup z <code>cargo run</code>. <code>[soubor:řádek:sloupec] výraz = hodnota</code>. Oranžové řádky jdou na <b>stderr</b>, bílé z <code>println!</code> na stdout.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Lísteček „tady jsem byl a tohle jsem viděl“.</b> Rychlejší než spouštět debugger, ale program se nezastaví.</p>
+      <ul style="margin:0; padding-left:1.2em; display:grid; gap:6px">
+        <li><b><code>!</code></b> = makro, jako <code>println!</code>.</li>
+        <li>Na rozdíl od <code>println!</code> vypíše i <b>kde</b> (soubor, řádek, sloupec) a <b>jaký výraz</b>. Nemusíš psát popisek.</li>
+        <li>Hodnotu <b>vrací</b> dál, takže jde vložit doprostřed výrazu: <code>let y = dbg!(x * 2) + 1;</code>.</li>
+        <li><b><code>dbg!(&amp;list)</code></b> s <code>&amp;</code>: jen si půjčí. Bez <code>&amp;</code> by si <code>list</code> vzal a dál by nešel použít (lekce 05).</li>
+        <li>Píše na <b>stderr</b>, takže se nemíchá do výstupu, který by se přesměroval do souboru.</li>
+      </ul>
+      <table class="mini">
+        <thead><tr><th></th><th><code>println!</code></th><th><code>dbg!</code></th><th>debugger</th></tr></thead>
+        <tbody>
+          <tr><td>zastaví program</td><td>ne</td><td>ne</td><td>ano</td></tr>
+          <tr><td>ukáže řádek</td><td>ne</td><td>ano</td><td>ano</td></tr>
+          <tr><td>všechny proměnné</td><td>ne</td><td>ne</td><td>ano</td></tr>
+          <tr><td>nutno upravit kód</td><td>ano</td><td>ano</td><td>ne</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 7 SETTINGS ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">7</span><h2>Editor, který uklízí sám</h2><span class="sym">.vscode/settings.json</span></div>
+    <div class="fig">
+      <div class="nest">
+        <span class="nh">celý projekt (nejvyšší úroveň)</span>
+        <span class="item">"rust-analyzer.check.command": "clippy"</span>
+        <div class="inner">
+          <span class="nh">"[rust]": { … } jen pro soubory .rs</span>
+          <span class="item">"editor.formatOnSave": true</span>
+          <span class="item">"editor.defaultFormatter": "rust-lang.rust-analyzer"</span>
+          <span class="item bad">"rust-analyzer.check.command": "clippy"</span>
+        </div>
+      </div>
+      <p class="fig-cap">Škrtnutý řádek je chyba, na kterou jste narazili. Uvnitř <code>"[rust]"</code> ho VS Code ignoruje.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Dvě krabice do sebe.</b> Velká platí pro celý projekt, malá <code>"[rust]"</code> jen pro soubory <code>.rs</code>.</p>
+<pre><code>{
+    "rust-analyzer.check.command": "clippy",
+    "[rust]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    }
+}</code></pre>
+      <ul style="margin:0; padding-left:1.2em; display:grid; gap:6px">
+        <li><b>formatOnSave:</b> <kbd>Ctrl+S</kbd> rovnou naformátuje kód (= <code>cargo fmt</code>).</li>
+        <li><b>check.command = clippy:</b> rady clippy se ukážou v editoru po uložení, ne až po <code>cargo clippy</code>.</li>
+        <li><b>Workspace</b> nastavení (<code>.vscode/settings.json</code>) platí jen pro tento projekt a má přednost před <b>User</b> nastavením.</li>
+      </ul>
+      <div class="verdict bad"><span class="code">ignorováno</span><span>Do jazykového bloku <code>"[rust]"</code> patří jen nastavení editoru, která jdou měnit po jazycích (formátování, odsazení…). Nastavení rozšíření jako <code>rust-analyzer.*</code> patří na nejvyšší úroveň.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== HŘIŠTĚ ===== -->
+  <section class="play" aria-labelledby="play-h">
+    <div class="play-intro">
+      <h2 id="play-h">Hřiště: odlaď svůj program z lekce 02</h2>
+      <p>Klikni vlevo od čísla řádku a přidej breakpoint (červená tečka). Pak <b>▶ Start/Continue</b> a krokuj. Vedle kódu sleduj proměnné, Watch, Call Stack a terminál. Tlačítka odpovídají klávesám ve VS Code.</p>
+      <p class="hint">Zkus: breakpoint na řádek 11 → Start → několikrát Continue a sleduj, jak se mění <code>index</code> a <code>entry</code>. Pak zapni podmínku <code>index == 1</code>. Nakonec bez breakpointů: Start → program proletí celý.</p>
+    </div>
+    <div class="toolbar" role="toolbar" aria-label="Ovládání debuggeru">
+      <button class="tb go" type="button" id="b-cont"><span class="g">▶</span><span id="b-cont-l">Start</span> <kbd>F5</kbd></button>
+      <button class="tb" type="button" id="b-over"><span class="g">⤼</span>Step Over <kbd>F10</kbd></button>
+      <button class="tb" type="button" id="b-into"><span class="g">↓</span>Step Into <kbd>F11</kbd></button>
+      <button class="tb" type="button" id="b-out"><span class="g">↑</span>Step Out <kbd>⇧F11</kbd></button>
+      <button class="tb" type="button" id="b-restart"><span class="g">⟲</span>Restart <kbd>Ctrl+⇧F5</kbd></button>
+      <button class="tb stop" type="button" id="b-stop"><span class="g">■</span>Stop <kbd>⇧F5</kbd></button>
+      <label class="cond"><input type="checkbox" id="b-cond"> podmínka <code>index == 1</code> na ř. 11</label>
+    </div>
+    <div class="play-grid">
+      <div class="ed" id="ed" aria-label="src/main.rs"></div>
+      <div class="side">
+        <div class="status" id="status" aria-live="polite"></div>
+        <div class="panels">
+          <div class="panel"><div class="ph">Variables › Local</div><div id="vars"></div></div>
+          <div class="panel"><div class="ph">Watch</div><div id="watch"></div></div>
+          <div class="panel"><div class="ph">Call Stack</div><div id="stack"></div></div>
+        </div>
+        <span class="lbl">Terminal</span>
+        <div class="term" id="term"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TAHÁK ===== -->
+  <section style="display:grid; gap:16px">
+    <h2>Tahák</h2>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Klávesa</th><th>Akce</th><th>Na dálkovém</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>F9</kbd></td><td>přepnout breakpoint na řádku s kurzorem</td><td>nalepit / sundat stopku</td></tr>
+          <tr><td><kbd>F5</kbd></td><td>spustit ladění / pokračovat k dalšímu breakpointu</td><td>▶ play</td></tr>
+          <tr><td><kbd>F10</kbd></td><td><b>Step Over</b>: provést řádek, do funkcí nevstupovat</td><td>o krok dál</td></tr>
+          <tr><td><kbd>F11</kbd></td><td><b>Step Into</b>: vstoupit do volané funkce</td><td>o patro níž</td></tr>
+          <tr><td><kbd>Shift+F11</kbd></td><td><b>Step Out</b>: dokončit funkci, vrátit se o úroveň výš</td><td>o patro výš</td></tr>
+          <tr><td><kbd>F6</kbd></td><td>pozastavit běžící program</td><td>⏸ pauza</td></tr>
+          <tr><td><kbd>Shift+F5</kbd></td><td>ukončit ladění</td><td>■ stop</td></tr>
+          <tr><td><kbd>Ctrl+Shift+F5</kbd></td><td>restart od začátku</td><td>⟲ znovu</td></tr>
+          <tr><td><kbd>Ctrl+Shift+D</kbd></td><td>panel Run and Debug</td><td></td></tr>
+          <tr><td><kbd>Ctrl+Shift+Y</kbd></td><td>Debug Console</td><td></td></tr>
+          <tr><td><kbd>Ctrl+,</kbd></td><td>nastavení (záložka <b>Workspace</b> = jen tento projekt)</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Soubor / zápis</th><th>Co dělá</th></tr></thead>
+        <tbody>
+          <tr><td><code>.vscode/launch.json</code></td><td>jak <kbd>F5</kbd> sestaví a spustí program (<code>type: "lldb"</code>, <code>cargo.args</code>, <code>terminal</code>, <code>sourceLanguages</code>)</td></tr>
+          <tr><td><code>.vscode/settings.json</code></td><td>nastavení editoru jen pro tento projekt</td></tr>
+          <tr><td><code>"[rust]": { … }</code></td><td>jazykový blok, jen pro soubory <code>.rs</code>, jen nastavení editoru</td></tr>
+          <tr><td><code>dbg!(výraz)</code></td><td>vypíše <code>[soubor:řádek:sloupec] výraz = hodnota</code> na stderr a hodnotu vrátí</td></tr>
+          <tr><td><code>dbg!(&amp;x)</code></td><td>totéž, jen si <code>x</code> půjčí (nepřesune)</td></tr>
+          <tr><td>podmíněný breakpoint</td><td>pravý klik na tečku → <i>Edit Breakpoint</i> → <code>index == 1</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Doplněk k lekci 02 projektu todo-rs. Kód v hřišti je <code>src/main.rs</code> z tagu <code>lekce-02</code>.</span>
+    <ul>
+      <li><a href="../02-debugovani.md">Lekce 02: Debugování ve VS Code (text)</a></li>
+      <li><a href="https://code.visualstudio.com/docs/editor/debugging">VS Code: Debugging</a></li>
+      <li><a href="https://github.com/vadimcn/codelldb/blob/master/MANUAL.md">CodeLLDB: User's Manual</a></li>
+      <li><a href="https://code.visualstudio.com/docs/getstarted/settings#_language-specific-editor-settings">VS Code: Language specific settings</a></li>
+      <li><a href="https://doc.rust-lang.org/std/macro.dbg.html"><code>dbg!</code> v dokumentaci std</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // src/main.rs z tagu lekce-02
+  const SRC = [
+    'fn main() {',
+    '    let list = ["Apple", "Banana", "Cherry"];',
+    '',
+    '    println!("====== My ToDo List ======");',
+    '',
+    '    // list.iter().enumerate().for_each(|(index, entry)| {',
+    '    //     println!("{}: {}", index + 1, entry);',
+    '    // });',
+    '',
+    '    for (index, entry) in list.iter().enumerate() {',
+    '        println!("{}: {entry}", index + 1);',
+    '    }',
+    '',
+    '    println!("Count: {}", list.len());',
+    '}',
+  ];
+  const LIST = ['Apple', 'Banana', 'Cherry'];
+  const CODE_LINES = new Set([2, 4, 10, 11, 14, 15]);
+
+  // Pořadí, ve kterém debugger zastavuje při krokování (k = průchod cyklem)
+  const SEQ = [
+    { l: 2 }, { l: 4 },
+    { l: 10, k: 0 }, { l: 11, k: 0 },
+    { l: 10, k: 1 }, { l: 11, k: 1 },
+    { l: 10, k: 2 }, { l: 11, k: 2 },
+    { l: 10, k: 3 },
+    { l: 14 }, { l: 15 },
+  ];
+
+  const bps = new Set();
+  let st;
+  const $ = (id) => document.getElementById(id);
+
+  function fresh() { return { mode: 'idle', pc: -1, out: [], prev: {}, note: '' }; }
+
+  // Provede krok SEQ[i] (řádek už je „za námi“)
+  function exec(i) {
+    const s = SEQ[i];
+    if (s.l === 4) st.out.push('====== My ToDo List ======');
+    if (s.l === 11) st.out.push(`${s.k + 1}: ${LIST[s.k]}`);
+    if (s.l === 14) st.out.push('Count: 3');
+  }
+  const hitsBp = (i) => {
+    const s = SEQ[i];
+    if (!bps.has(s.l)) return false;
+    if (s.l === 11 && $('b-cond').checked) return s.k === 1;
+    return true;
+  };
+  function vars(i) {
+    if (i < 0) return {};
+    const s = SEQ[i];
+    const v = {};
+    if (i > 0) v.list = '[&str; 3] ["Apple", "Banana", "Cherry"]';
+    if (s.l === 11) { v.index = String(s.k); v.entry = `"${LIST[s.k]}"`; }
+    return v;
+  }
+  function stopAt(i, why) {
+    st.prev = vars(st.pc);
+    st.pc = i;
+    st.mode = 'paused';
+    st.note = why;
+  }
+  function finish() {
+    st.prev = {};
+    st.pc = -1;
+    st.mode = 'ended';
+    st.out.push('');
+    st.note = 'Program doběhl do konce. Debugger se odpojil.';
+  }
+  // Běž od kroku `from` dál, dokud nenarazíš na breakpoint
+  function runFrom(from) {
+    for (let i = from; i < SEQ.length; i++) {
+      if (hitsBp(i)) return stopAt(i, `Breakpoint na řádku ${SEQ[i].l}${SEQ[i].l === 11 && $('b-cond').checked ? ' (podmínka index == 1 platí)' : ''}.`);
+      exec(i);
+    }
+    finish();
+  }
+
+  function cont() {
+    if (st.mode === 'ended') st = fresh();
+    if (st.mode === 'idle') { st.mode = 'running'; runFrom(0); if (st.mode === 'ended' && bps.size === 0) st.note = 'Žádný breakpoint, program proletěl celý. Přidej červenou tečku a zkus to znovu.'; }
+    else if (st.mode === 'paused') { exec(st.pc); runFrom(st.pc + 1); }
+    render();
+  }
+  function step(kind) {
+    if (st.mode !== 'paused') return;
+    const cur = SEQ[st.pc];
+    exec(st.pc);
+    if (st.pc + 1 >= SEQ.length) { finish(); render(); return; }
+    let why = 'Step Over: řádek se provedl, stojíš na dalším.';
+    if (kind === 'into' && (cur.l === 4 || cur.l === 11 || cur.l === 14)) why = 'Step Into: na řádku je jen println! (makro ze std), žádná tvoje funkce. Ve VS Code bys vlezl do std::io::_print. Tady to simulujeme jako Step Over.';
+    else if (kind === 'into') why = 'Step Into: na řádku není volání tvé funkce, chová se jako Step Over.';
+    if (cur.l === 10 && cur.k === 3) why = 'Cyklus skončil (žádný další prvek), pokračuje se za ním.';
+    stopAt(st.pc + 1, why);
+    render();
+  }
+  function stepOut() {
+    if (st.mode !== 'paused') return;
+    exec(st.pc);
+    runFrom(st.pc + 1);
+    if (st.mode === 'ended') st.note = 'Step Out z main: funkce main doběhla do konce, a tím skončil celý program.';
+    else st.note = 'Step Out: cestou ven program narazil na breakpoint. ' + st.note;
+    render();
+  }
+
+  function render() {
+    const cur = st.mode === 'paused' ? SEQ[st.pc].l : -1;
+    const passed = new Set();
+    if (st.mode === 'paused') for (let i = 0; i < st.pc; i++) passed.add(SEQ[i].l);
+    $('ed').innerHTML = SRC.map((src, i) => {
+      const n = i + 1;
+      const can = CODE_LINES.has(n);
+      const dot = can
+        ? `<button type="button" class="dotbtn${n === 11 && $('b-cond').checked ? ' cnd' : ''}" data-line="${n}" aria-pressed="${bps.has(n)}" aria-label="${bps.has(n) ? 'Odebrat' : 'Přidat'} breakpoint na řádku ${n}"></button>`
+        : '<span></span>';
+      const comment = src.trim().startsWith('//');
+      return `<div class="ln${n === cur ? ' cur' : ''}${passed.has(n) && n !== cur ? ' done' : ''}">${dot}<span class="no">${n}</span><span class="src${comment ? ' c' : ''}">${esc(src) || ' '}</span></div>`;
+    }).join('');
+
+    const v = st.mode === 'paused' ? vars(st.pc) : {};
+    const keys = Object.keys(v);
+    $('vars').innerHTML = keys.length
+      ? keys.map((k) => `<div class="pr${st.prev[k] !== v[k] ? ' chg' : ''}"><span class="t">${k}:</span> <span class="v">${esc(v[k])}</span></div>`).join('')
+      : `<div class="pr dim">${st.mode === 'paused' ? 'list ještě nevznikla (řádek 2 se neprovedl)' : 'nic, program nestojí'}</div>`;
+    $('watch').innerHTML = `<div class="pr"><span class="t">index + 1:</span> <span class="v">${v.index !== undefined ? Number(v.index) + 1 : '<i style="font-weight:400;color:var(--muted)">nedostupné</i>'}</span></div>`;
+    $('stack').innerHTML = st.mode === 'paused'
+      ? `<div class="pr top">todo::main  <span class="t">main.rs ${cur}</span></div><div class="pr dim">core::ops::function::FnOnce::call_once …</div><div class="pr dim">std::rt::lang_start …</div>`
+      : '<div class="pr dim">prázdný</div>';
+
+    const label = { idle: 'Připraveno. Přidej breakpoint a stiskni Start.', running: '', paused: '⏸ Pozastaveno na řádku ' + cur + '. ', ended: '' }[st.mode];
+    $('status').className = 'status ' + st.mode;
+    $('status').textContent = st.mode === 'idle' && st.note ? st.note : (label || '') + (st.note || '');
+    $('term').innerHTML = (st.mode === 'idle' ? '<span class="p">$ (nespuštěno)</span>' : '<span class="p">$ cargo run (debug)</span>\n') +
+      st.out.map(esc).join('\n') + (st.mode === 'ended' ? '<span class="p">Process exited with code 0.</span>' : '');
+    $('term').scrollTop = $('term').scrollHeight;
+
+    const paused = st.mode === 'paused';
+    $('b-cont-l').textContent = paused ? 'Continue' : 'Start';
+    ['b-over', 'b-into', 'b-out', 'b-stop', 'b-restart'].forEach((id) => { $(id).disabled = !paused; });
+  }
+
+  $('ed').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-line]');
+    if (!b) return;
+    const n = Number(b.dataset.line);
+    if (bps.has(n)) bps.delete(n); else bps.add(n);
+    render();
+  });
+  $('b-cont').addEventListener('click', cont);
+  $('b-over').addEventListener('click', () => step('over'));
+  $('b-into').addEventListener('click', () => step('into'));
+  $('b-out').addEventListener('click', stepOut);
+  $('b-stop').addEventListener('click', () => { st = fresh(); st.note = 'Ladění ukončeno (Shift+F5). Program nedoběhl.'; render(); });
+  $('b-restart').addEventListener('click', () => { st = fresh(); cont(); });
+  $('b-cond').addEventListener('change', render);
+
+  st = fresh();
+  render();
+})();
+</script>
+</body>
+</html>
