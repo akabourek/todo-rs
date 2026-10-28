@@ -68,7 +68,7 @@ a naučí jeden okruh Rustu. Kód slouží výuce – srozumitelnost má předno
 - ✅ 03 Struktury a metody (`struct Task`, `impl`, `String` vs `&str`)
 - ✅ 04 Enumy a `match` (stav úkolu, `Option`)
 - ✅ 05 Vlastnictví a výpůjčky (ownership, borrowing, `&` / `&mut`)
-- ⬜ 06 Vstup od uživatele (stdin, interaktivní smyčka, parsování příkazů)
+- ✅ 06 Vstup od uživatele (stdin, interaktivní smyčka, parsování příkazů)
 - ⬜ 07 Chyby (`Result`, `?`, vlastní chybový typ)
 - ⬜ 08 Moduly (rozdělení do souborů, `pub`, `mod`, `use`)
 - ⬜ 09 Testy (`cargo test`, unit testy)
