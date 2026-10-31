@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io;
 use std::io::Write;
 
@@ -7,6 +8,25 @@ enum TaskStatus {
     InProgress,
     Done,
     Canceled,
+}
+
+#[derive(Debug)]
+enum TaskError {
+    MissingArgument,
+    NotANumber(String),
+    ZeroIndex,
+    NoSuchTask(usize),
+}
+
+impl fmt::Display for TaskError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TaskError::MissingArgument => write!(f, "Missing argument"),
+            TaskError::NotANumber(arg) => write!(f, "Not a number: {}", arg),
+            TaskError::ZeroIndex => write!(f, "Task numbers start at 1"),
+            TaskError::NoSuchTask(index) => write!(f, "No task {}", index),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -96,12 +116,22 @@ fn find_task<'a>(tasks: &'a [Task], title: &str) -> Option<&'a Task> {
     tasks.iter().find(|task| task.title == title)
 }
 
-fn parse_index(arg: &str) -> Option<usize> {
-    match arg.parse::<usize>() {
-        Ok(0) => None,
-        Ok(n) => Some(n),
-        Err(_) => None,
+fn parse_index(arg: &str) -> Result<usize, TaskError> {
+    if arg.is_empty() {
+        return Err(TaskError::MissingArgument);
     }
+    let n = arg
+        .parse::<usize>()
+        .map_err(|_| TaskError::NotANumber(arg.to_string()))?;
+    if n == 0 {
+        return Err(TaskError::ZeroIndex);
+    }
+    Ok(n)
+}
+
+fn get_task<'a>(tasks: &'a mut [Task], arg: &str) -> Result<&'a mut Task, TaskError> {
+    let n = parse_index(arg)?;
+    tasks.get_mut(n - 1).ok_or(TaskError::NoSuchTask(n))
 }
 
 fn main() {
@@ -127,33 +157,18 @@ fn main() {
             "list" => print_tasks(&tasks),
             "add" => add_task(&mut tasks, arg.trim()),
             "startall" => start_all(&mut tasks),
-            "start" => {
-                if let Some(n) = parse_index(arg)
-                    && let Some(task) = tasks.get_mut(n - 1)
-                {
-                    task.start();
-                } else {
-                    println!("Invalid task no!");
-                }
-            }
-            "done" => {
-                if let Some(n) = parse_index(arg)
-                    && let Some(task) = tasks.get_mut(n - 1)
-                {
-                    task.complete();
-                } else {
-                    println!("Invalid task no!");
-                }
-            }
-            "cancel" => {
-                if let Some(n) = parse_index(arg)
-                    && let Some(task) = tasks.get_mut(n - 1)
-                {
-                    task.cancel();
-                } else {
-                    println!("Invalid task no!");
-                }
-            }
+            "start" => match get_task(&mut tasks, arg) {
+                Ok(task) => task.start(),
+                Err(err) => println!("Error: {}", err),
+            },
+            "done" => match get_task(&mut tasks, arg) {
+                Ok(task) => task.complete(),
+                Err(err) => println!("Error: {}", err),
+            },
+            "cancel" => match get_task(&mut tasks, arg) {
+                Ok(task) => task.cancel(),
+                Err(err) => println!("Error: {}", err),
+            },
             "help" => {
                 println!("quit: end of app");
                 println!("list: print all tasks");

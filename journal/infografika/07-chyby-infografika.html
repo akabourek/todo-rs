@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>Červená obálka</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
+<style>
+/* Metafora: každá funkce je patro v budově. Vrací obálku – zelenou Ok s výsledkem, nebo červenou Err
+   s formulářem TaskError. Otazník ? je potrubní pošta, která červenou obálku pošle rovnou o patro výš.
+   Nahoře v main ji hlasatel (Display) přečte uživateli. Barvy a písma sdílí s lekcemi 04–06. */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #1b2330;
+  --muted: #5b6676;
+  --line: #cfd6df;
+  --kraft: #c9975c;
+  --kraft-dark: #a7773f;
+  --kraft-edge: #6f4c24;
+  --tape: #efc75e;
+  --label: #f7f1e3;
+  --read: #0d7480;
+  --read-soft: #d7eef0;
+  --write: #c2410c;
+  --write-soft: #fbe3d6;
+  --ok: #2e7d32;
+  --ok-soft: #dcefdc;
+  --err: #b42318;
+  --err-soft: #f9dedb;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --f-stamp: "Saira Stencil One", Impact, "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+    --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+    --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+    --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+  --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+  --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+  --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  /* bez ligatur: => -> || musí vypadat přesně tak, jak se píšou */
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3.2vw, 2rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 code { font-size: 0.85em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+code, pre { font-family: var(--f-code); font-size: 0.86em; }
+:not(pre) > code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; white-space: nowrap; }
+a { color: var(--read); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--write); outline-offset: 2px; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 32px; align-items: center; }
+.hero .lead { font-size: 1.2rem; color: var(--muted); margin-top: 16px; }
+.eyebrow { font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hero-fig { display: flex; justify-content: center; min-width: 0; }
+
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.rule b { font-family: var(--f-display); font-size: 1.15rem; }
+.rule span { color: var(--muted); font-size: 0.95rem; }
+.rule .n { font-family: var(--f-stamp); font-size: 1.6rem; color: var(--kraft-dark); line-height: 1; }
+
+/* ---------- obálky ---------- */
+.env {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%; min-width: 0;
+  font-family: var(--f-code); font-size: 0.8rem; font-weight: 600; line-height: 1.3;
+  padding: 4px 10px 4px 6px; border-radius: 6px; border: 2px solid var(--line); background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.env i {
+  flex: none; width: 26px; height: 18px; border: 2px solid currentColor; border-radius: 2px;
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), currentColor calc(50% - 1px), currentColor calc(50% + 1px), transparent calc(50% + 1px)) left top / 50% 65% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 1px), currentColor calc(50% - 1px), currentColor calc(50% + 1px), transparent calc(50% + 1px)) right top / 50% 65% no-repeat;
+}
+.env.ok { color: var(--ok); border-color: var(--ok); background: var(--ok-soft); }
+.env.err { color: var(--err); border-color: var(--err); background: var(--err-soft); }
+.env.foreign { color: var(--write); border-color: var(--write); background: var(--write-soft); }
+.env.big { font-size: 0.95rem; padding: 8px 14px 8px 10px; }
+.env.big i { width: 34px; height: 24px; }
+
+/* krabice Option z lekce 04 */
+.crate {
+  display: inline-grid; place-items: center; min-width: 74px; min-height: 52px; padding: 6px 10px;
+  background: var(--kraft); border: 2px solid var(--kraft-edge); border-radius: 4px;
+  font-family: var(--f-code); font-size: 0.8rem; font-weight: 600; color: #3a2b17;
+  background-image: linear-gradient(to bottom, transparent 0 8px, var(--tape) 8px 16px, transparent 16px);
+}
+.crate.empty { background-color: var(--surface-2); background-image: none; border-style: dashed; border-color: var(--line); color: var(--muted); }
+
+/* ---------- budova (patra = funkce) ---------- */
+.bldg { display: grid; width: 100%; max-width: 440px; border: 3px solid var(--ink); border-radius: 10px 10px 4px 4px; overflow: hidden; background: var(--surface); }
+.floor { display: grid; grid-template-columns: minmax(0, 1fr) 58px; border-top: 2px solid var(--line); min-width: 0; }
+.floor:first-child { border-top: 0; }
+.floor .room { display: grid; gap: 6px; padding: 10px 12px; min-width: 0; align-content: start; }
+.floor .room .fl { font-family: var(--f-code); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.floor .room b { font-family: var(--f-display); font-size: 1rem; }
+.floor .room code { white-space: normal; overflow-wrap: anywhere; font-size: 0.78rem; }
+.floor .shaft {
+  border-left: 2px dashed var(--err); background: var(--err-soft); display: grid; place-items: center;
+  font-family: var(--f-stamp); font-size: 1.5rem; color: var(--err); position: relative;
+}
+.floor .shaft::after { content: "↑"; position: absolute; top: -2px; font-family: var(--f-code); font-size: 0.9rem; font-weight: 600; }
+.floor.top .shaft { font-family: var(--f-code); font-size: 0.75rem; font-weight: 600; text-align: center; padding: 4px; }
+.floor.top .shaft::after { content: none; }
+.floor.ground .room { background: var(--surface-2); }
+.bldg-cap { font-family: var(--f-code); font-size: 0.72rem; color: var(--muted); text-align: right; padding: 4px 8px; border-top: 2px solid var(--line); background: var(--surface-2); }
+
+/* ---------- formulář TaskError ---------- */
+.form {
+  width: 100%; max-width: 360px; background: var(--label); color: #3a2b17; border: 2px solid var(--kraft-dark);
+  border-radius: 4px; padding: 14px 16px 16px; display: grid; gap: 8px; box-shadow: 4px 4px 0 var(--kraft-dark);
+  font-family: var(--f-code); font-size: 0.85rem;
+}
+.form-h { font-family: var(--f-stamp); font-size: 1.15rem; letter-spacing: 0.04em; border-bottom: 2px solid var(--kraft-dark); padding-bottom: 4px; }
+.opt { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.cb { flex: none; width: 18px; height: 18px; border: 2px solid #3a2b17; border-radius: 3px; display: grid; place-items: center; font-weight: 700; font-size: 0.8rem; line-height: 1; }
+.opt.on .cb { background: var(--err); border-color: var(--err); color: #fff; }
+.opt.on { font-weight: 600; }
+.blank { display: inline-block; min-width: 54px; border-bottom: 2px dotted #3a2b17; text-align: center; padding: 0 4px; }
+.opt small { color: #7a6340; font-size: 0.72rem; }
+.form-foot { font-size: 0.72rem; color: #7a6340; }
+
+/* ---------- převody ---------- */
+.conv { display: grid; gap: 14px; width: 100%; }
+.conv-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; justify-items: center; }
+.conv-row .arrow { font-family: var(--f-code); font-size: 0.75rem; color: var(--muted); text-align: center; display: grid; gap: 2px; }
+.conv-row .arrow::after { content: "⟶"; font-size: 1.2rem; color: var(--ink); }
+.conv .env { white-space: nowrap; overflow-wrap: normal; font-size: 0.74rem; }
+
+.say { display: grid; gap: 6px; justify-items: center; }
+.say .out { font-family: var(--f-code); font-size: 0.9rem; font-weight: 600; padding: 6px 12px; border-radius: 8px; background: #10161e; color: #e6ebf1; overflow-wrap: anywhere; }
+
+/* ---------- scény ---------- */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.scene.wide { grid-template-columns: minmax(0, 1fr); }
+.scene-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.scene-head .num { font-family: var(--f-stamp); font-size: 2rem; color: var(--kraft-dark); line-height: 1; }
+.scene-head .sym { font-family: var(--f-code); font-size: 1rem; color: var(--muted); }
+.fig {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0;
+  padding: 22px 18px; display: grid; gap: 16px; justify-items: center; align-content: center; min-height: 200px;
+  overflow-x: auto;
+}
+.fig-cap { font-size: 0.9rem; color: var(--muted); text-align: center; max-width: 46ch; }
+.lbl { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+.vs > div { display: grid; gap: 10px; align-content: start; justify-items: center; padding: 12px; border-radius: 8px; background: var(--surface-2); min-width: 0; text-align: center; }
+.vs h3 { font-size: 0.95rem; }
+.vs .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.vs small { color: var(--muted); font-size: 0.82rem; }
+
+.text { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.text > * { min-width: 0; }
+.text .metaphor { font-size: 1.12rem; }
+.text .metaphor b { font-family: var(--f-display); }
+.text ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+
+pre {
+  margin: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .e { color: var(--err); font-weight: 600; }
+pre .k { color: var(--ok); font-weight: 600; }
+pre .r { color: var(--read); font-weight: 600; }
+pre .w { color: var(--write); font-weight: 600; }
+
+.verdict { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+.verdict > span:last-child { min-width: 0; }
+.verdict.bad { background: var(--err-soft); }
+.verdict.good { background: var(--ok-soft); }
+.verdict.warn { background: var(--write-soft); }
+.verdict .code { font-family: var(--f-code); font-weight: 600; flex: none; }
+.verdict.bad .code { color: var(--err); }
+.verdict.good .code { color: var(--ok); }
+.verdict.warn .code { color: var(--write); }
+
+.mini { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.mini th, .mini td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mini th { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.mini tr:last-child td { border-bottom: 0; }
+.mini td.ok { color: var(--ok); font-weight: 700; }
+.mini td.bad { color: var(--err); font-weight: 700; }
+.mini td code { white-space: normal; }
+
+.three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; width: 100%; }
+.three > div { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.three pre { font-size: 0.8rem; padding: 12px; }
+.three .tag { font-family: var(--f-stamp); font-size: 1.05rem; color: var(--kraft-dark); }
+
+.term { font-family: var(--f-code); font-size: 0.85rem; background: #10161e; color: #e6ebf1; border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; width: 100%; min-width: 0; overflow-x: auto; }
+.term .p { color: #7f8b99; }
+.term .u { color: #efc75e; }
+.term .bad { color: #f2a59d; }
+.term .warn { color: #fbbf77; }
+.term .okc { color: #9fd8a3; }
+
+/* ---------- hřiště ---------- */
+.play { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
+.play-intro { display: grid; gap: 8px; }
+.hint { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--tape); padding-left: 12px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 2px solid var(--line); }
+.tabs button {
+  font-family: var(--f-body); font-size: 0.95rem; font-weight: 700; cursor: pointer; padding: 8px 14px;
+  border: 2px solid var(--line); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--surface-2); color: var(--muted); margin-bottom: -2px;
+}
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); border-color: var(--ink); border-bottom: 2px solid var(--surface); }
+.pane { display: grid; gap: 16px; }
+.pane[hidden] { display: none; }
+.prompt { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.prompt label { font-family: var(--f-code); font-weight: 600; font-size: 1.1rem; }
+.prompt input {
+  flex: 1 1 220px; min-width: 0; font-family: var(--f-code); font-size: 1rem; padding: 9px 12px;
+  border: 2px solid var(--ink); border-radius: 8px; background: var(--surface); color: var(--ink);
+  white-space: pre;
+}
+.btn {
+  font-family: var(--f-body); font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  padding: 9px 14px; border-radius: 8px; border: 2px solid var(--ink); background: var(--ink); color: var(--surface);
+}
+.btn.quiet { background: var(--surface); color: var(--muted); border-color: var(--line); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.examples button {
+  font-family: var(--f-code); font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: pre;
+  padding: 5px 10px; border-radius: 999px; border: 2px solid var(--kraft-dark); background: var(--label); color: #3a2b17;
+}
+.examples button[aria-pressed="true"] { background: var(--err); border-color: var(--err); color: #fff; }
+.play-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.trace { display: grid; gap: 10px; min-width: 0; }
+.fl-box { border: 2px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
+.fl-box.hit { border-color: var(--err); }
+.fl-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; padding: 6px 10px; background: var(--surface-2); font-family: var(--f-code); font-size: 0.75rem; color: var(--muted); }
+.fl-head b { font-family: var(--f-display); font-size: 0.95rem; color: var(--ink); }
+.fl-box .rows { display: grid; gap: 4px; padding: 8px; }
+.tr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 7px 10px; border-radius: 8px; background: var(--surface-2); border-left: 5px solid var(--line); min-width: 0; }
+.tr .op { font-family: var(--f-code); font-size: 0.78rem; color: var(--muted); overflow-wrap: anywhere; }
+.tr .val { font-size: 0.88rem; overflow-wrap: anywhere; }
+.tr .val .env { font-size: 0.78rem; }
+.tr.ok { border-left-color: var(--ok); }
+.tr.bad { border-left-color: var(--err); background: var(--err-soft); }
+.tr.up { border-left-color: var(--err); border-left-style: double; border-left-width: 6px; }
+.tr.skip { opacity: 0.45; border-left-style: dashed; }
+.tr.hl { border-left-color: var(--tape); }
+.side { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.tasks { display: grid; gap: 4px; font-family: var(--f-code); font-size: 0.82rem; }
+.tasks div { padding: 5px 8px; background: var(--surface-2); border-radius: 6px; overflow-wrap: anywhere; }
+.tasks div.changed { box-shadow: 0 0 0 2px var(--tape); }
+.side .term { max-height: 280px; overflow-y: auto; }
+
+.diff { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; font-family: var(--f-code); font-size: 0.8rem; }
+.diff div { white-space: pre; padding: 3px 12px; }
+.diff .minus { background: var(--ok-soft); color: var(--ok); }
+.diff .plus { background: var(--err-soft); color: var(--err); }
+.diff .none { color: var(--muted); font-style: italic; }
+.broken-out { max-height: 420px; overflow-y: auto; }
+.broken-why { font-size: 0.95rem; }
+
+/* ---------- tahák ---------- */
+.cheat-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table.cheat { border-collapse: collapse; width: 100%; min-width: 640px; }
+table.cheat th, table.cheat td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.cheat th { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+table.cheat tr:last-child td { border-bottom: 0; }
+table.cheat td:first-child { font-weight: 700; }
+
+footer { display: grid; gap: 8px; color: var(--muted); font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 20px; }
+footer ul { margin: 0; padding-left: 1.2em; }
+
+@media (max-width: 780px) {
+  .hero, .scene, .play-grid, .three { grid-template-columns: minmax(0, 1fr); }
+  .hero-fig { order: -1; }
+  .rules { grid-template-columns: 1fr; }
+  .vs { grid-template-columns: 1fr; }
+  .conv-row { grid-template-columns: minmax(0, 1fr); }
+  .conv-row .arrow::after { content: "↓"; }
+  :not(pre) > code { white-space: normal; overflow-wrap: anywhere; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <div>
+      <div class="eyebrow">todo-rs · lekce 07 · chyby</div>
+      <h1>Červená obálka</h1>
+      <p class="lead">Každá funkce je <b>patro v budově</b>. Nahoru vrací obálku: <b>zelenou</b> <code>Ok</code> s výsledkem, nebo <b>červenou</b> <code>Err</code> s vyplněným formulářem, co se pokazilo. Otazník <code>?</code> je <b>potrubní pošta</b>: červenou obálku pošle rovnou o patro výš. Nahoře v <code>main</code> ji někdo přečte nahlas uživateli.</p>
+    </div>
+    <div class="hero-fig" aria-hidden="true">
+      <div class="bldg">
+        <div class="floor top">
+          <div class="room"><span class="fl">patro 3</span><b>main</b><span class="env err"><i></i>Error: Not a number: abc</span></div>
+          <div class="shaft">čte<br>Display</div>
+        </div>
+        <div class="floor">
+          <div class="room"><span class="fl">patro 2</span><b>get_task</b><code>let n = parse_index(arg)?;</code></div>
+          <div class="shaft">?</div>
+        </div>
+        <div class="floor">
+          <div class="room"><span class="fl">patro 1</span><b>parse_index</b><code>.map_err(…)?;</code><span class="env err"><i></i>Err(NotANumber("abc"))</span></div>
+          <div class="shaft">?</div>
+        </div>
+        <div class="floor ground">
+          <div class="room"><span class="fl">přízemí</span><b>"abc".parse::&lt;usize&gt;()</b><span class="env foreign"><i></i>Err(ParseIntError)</span></div>
+          <div class="shaft" style="background:var(--write-soft); border-color:var(--write); color:var(--write)"></div>
+        </div>
+        <div class="bldg-cap">start abc · červená obálka letí nahoru</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="rules" aria-label="Tři pravidla">
+    <div class="rule"><span class="n">1</span><b>Chyba je hodnota, ne pád.</b><span>Funkce vrátí <code>Err(…)</code> a program jede dál. Spadnout (<code>expect</code>) smí jen to, co by nastat nemělo.</span></div>
+    <div class="rule"><span class="n">2</span><b><code>?</code> pošle chybu o patro výš.</b><span>Jen do patra, které samo vrací <code>Result</code>, a se <b>stejným</b> typem chyby.</span></div>
+    <div class="rule"><span class="n">3</span><b>Chyba má druh, ne jen text.</b><span><code>enum TaskError</code> je formulář s kolonkami. Na text ho přeloží teprve <code>Display</code> nahoře.</span></div>
+  </section>
+
+  <!-- ===== 1 RESULT ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">1</span><h2><code>Result</code>: zelená, nebo červená obálka</h2><span class="sym">Result&lt;T, E&gt; · Ok(…) · Err(…)</span></div>
+    <div class="fig">
+      <div class="vs">
+        <div>
+          <h3>Lekce 06: krabice <code>Option</code></h3>
+          <div class="row"><span class="crate">Some(2)</span><span class="crate empty">None</span></div>
+          <small>Prázdná krabice. Proč je prázdná? Nikdo neví: <code>abc</code>, <code>0</code> i <code>99</code> skončily stejně.</small>
+        </div>
+        <div>
+          <h3>Teď: obálka <code>Result</code></h3>
+          <div class="row" style="flex-direction:column; align-items:center"><span class="env ok"><i></i>Ok(2)</span><span class="env err"><i></i>Err("Not a number: abc")</span></div>
+          <small>Červená obálka nese <b>vzkaz</b>, co se pokazilo.</small>
+        </div>
+      </div>
+<pre><code>enum Option&lt;T&gt;    { Some(T), None }
+enum Result&lt;T, E&gt; { Ok(T),   <span class="e">Err(E)</span> }</code></pre>
+      <p class="fig-cap">Obě jsou obyčejné enumy ze standardní knihovny. <code>Result</code> má místo prázdného <code>None</code> variantu <code>Err</code>, která nese důvod.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Z patra vždy odchází jedna obálka.</b> Zelená s výsledkem, nebo červená se zprávou, proč výsledek není.</p>
+<pre><code><span class="c">// krok 1 – chyba zatím jako text</span>
+fn parse_index(arg: &amp;str) -&gt; <span class="r">Result&lt;usize, String&gt;</span> {
+    match arg.parse::&lt;usize&gt;() {
+        Ok(0) =&gt; <span class="e">Err</span>(String::from("Task numbers start at 1")),
+        Ok(n) =&gt; <span class="k">Ok</span>(n),
+        Err(_) =&gt; <span class="e">Err</span>(format!("Not a number: {}", arg)),
+    }
+}</code></pre>
+      <ul>
+        <li><b><code>Result&lt;usize, String&gt;</code></b> čti „buď <code>usize</code>, nebo chyba typu <code>String</code>“. <code>&lt;T, E&gt;</code> jsou dva typové parametry (generika, lekce 12): <code>T</code> pro úspěch, <code>E</code> pro chybu.</li>
+        <li><b><code>Ok(…)</code>, <code>Err(…)</code></b> se píšou bez <code>Result::</code>, stejně jako <code>Some</code> a <code>None</code>.</li>
+        <li><b><code>format!("… {}", x)</code></b> funguje jako <code>println!</code>, ale text nevypíše, vrátí ho jako <code>String</code>. Pro pevný text stačí <code>String::from("…")</code>.</li>
+      </ul>
+      <div class="verdict warn"><span class="code">expect?</span><span><code>.expect("…")</code> červenou obálku nepošle dál, ale <b>shodí celý program</b>. Hodí se na „to se stát nemá“ (nejde psát na terminál). Na překlep uživatele patří <code>Err</code>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 2 RETURN ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">2</span><h2><code>return</code>: odejít z patra hned</h2><span class="sym">return Err(…); · Ok(n)</span></div>
+    <div class="fig">
+<pre style="width:100%"><code>fn parse_index(arg: &amp;str) -&gt; Result&lt;usize, TaskError&gt; {
+    if arg.is_empty() {
+        <span class="w">return</span> Err(TaskError::MissingArgument);  <span class="c">// ven hned</span>
+    }
+    <span class="c">// …</span>
+    if n == 0 {
+        <span class="w">return</span> Err(TaskError::ZeroIndex);        <span class="c">// ven hned</span>
+    }
+    <span class="k">Ok(n)</span>                       <span class="c">// poslední výraz = obálka</span>
+}</code></pre>
+      <p class="fig-cap">Obálku můžeš poslat z prostředku funkce (<code>return</code>) nebo z jejího konce (poslední výraz bez středníku).</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Výraz bez středníku na konci je obálka, která odchází sama.</b> Uprostřed patra musíš obálku <b>výslovně odeslat</b>: <code>return</code>.</p>
+      <div class="verdict bad"><span class="code">E0282</span><span><b>Tvoje chyba:</b> <code>Err(TaskError::MissingArgument);</code> bez <code>return</code>. Obálka se vyrobí a hned zahodí do koše a funkce jede dál. Kompilátor hlásí matoucí <i>type annotations needed</i>: neví, jaké <code>T</code> má ten osamělý <code>Result</code>, protože ho nikdo nepoužije. Rada <code>Err::&lt;T, TaskError&gt;</code> je slepá ulička, lék je <code>return</code>.</span></div>
+      <div class="verdict bad"><span class="code">E0308</span><span>Na konci <code>n</code> místo <code>Ok(n)</code>: <i>expected <code>Result&lt;usize, TaskError&gt;</code>, found <code>usize</code></i>. Číslo bez obálky. Funkce slíbila obálku, tak ji musí poslat.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 3 OTAZNÍK ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">3</span><h2>Operátor <code>?</code>: potrubní pošta o patro výš</h2><span class="sym">výraz?</span></div>
+    <div class="fig">
+      <div class="vs">
+        <div>
+          <h3>Zelená obálka</h3>
+          <span class="env ok"><i></i>Ok(2)</span>
+          <code>?</code>
+          <small><b>otevře ji</b>, vybalí <code>2</code> do <code>n</code> a jede se dál na další řádek</small>
+        </div>
+        <div>
+          <h3>Červená obálka</h3>
+          <span class="env err"><i></i>Err(ZeroIndex)</span>
+          <code>?</code>
+          <small><b>neotevře ji</b>, hodí ji do potrubí: funkce <b>hned skončí</b> a obálka letí o patro výš</small>
+        </div>
+      </div>
+<pre style="width:100%"><code><span class="c">// tohle:</span>
+let n = parse_index(arg)<span class="w">?</span>;
+
+<span class="c">// je zkratka za tohle:</span>
+let n = match parse_index(arg) {
+    Ok(n) =&gt; n,
+    Err(e) =&gt; <span class="w">return Err(e)</span>,
+};</code></pre>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>U každého <code>?</code> je ústí potrubní pošty.</b> Zelené obálky projdou dál po patře, červené vystřelí nahoru.</p>
+<pre><code>fn get_task&lt;'a&gt;(tasks: &amp;'a mut [Task], arg: &amp;str)
+    -&gt; Result&lt;&amp;'a mut Task, TaskError&gt; {
+    let n = parse_index(arg)<span class="w">?</span>;
+    tasks.get_mut(n - 1).ok_or(TaskError::NoSuchTask(n))
+}</code></pre>
+      <ul>
+        <li><b>Čti</b> „<code>parse_index</code>, a když chyba, vrať ji“.</li>
+        <li><b><code>…?;</code></b>: nejdřív <code>?</code>, ten patří k výrazu, pak <code>;</code>, který ukončí příkaz <code>let</code>.</li>
+        <li><b><code>?</code> není <code>expect</code>.</b> Nepadá, jen chybu předá volajícímu.</li>
+        <li><b><code>'a</code></b> znáš z <code>find_task</code> (lekce 05): vrácený <code>&amp;mut Task</code> je vypůjčený z <code>tasks</code>, ne z <code>arg</code>.</li>
+      </ul>
+      <div class="verdict bad"><span class="code">E0277</span><span><code>?</code> v <code>main</code>: <i>the <code>?</code> operator can only be used in a function that returns <code>Result</code> or <code>Option</code></i>. <code>main</code> je nejvyšší patro, nad ním potrubí nevede. Tam musí obálku otevřít <code>match</code>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 4 PŘEBALOVNA ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">4</span><h2>Přebalovna: <code>ok_or</code> a <code>map_err</code></h2><span class="sym">Option → Result · cizí Err → TaskError</span></div>
+    <div class="fig">
+      <div class="conv">
+        <span class="lbl">ok_or: krabice → obálka</span>
+        <div class="conv-row"><span class="crate">Some(&amp;mut task)</span><span class="arrow">.ok_or</span><span class="env ok"><i></i>Ok(&amp;mut task)</span></div>
+        <div class="conv-row"><span class="crate empty">None</span><span class="arrow">.ok_or</span><span class="env err"><i></i>Err(NoSuchTask(99))</span></div>
+        <span class="lbl" style="margin-top:6px">map_err: cizí obálka → naše</span>
+        <div class="conv-row"><span class="env foreign"><i></i>Err(ParseIntError)</span><span class="arrow">.map_err</span><span class="env err"><i></i>Err(NotANumber("abc"))</span></div>
+        <div class="conv-row"><span class="env ok"><i></i>Ok(5)</span><span class="arrow">.map_err</span><span class="env ok"><i></i>Ok(5)</span></div>
+      </div>
+      <p class="fig-cap">Potrubí bere jen obálky <b>našeho</b> typu. Krabici <code>Option</code> je potřeba přebalit (<code>ok_or</code>) a cizí oranžovou obálku přelepit (<code>map_err</code>). Zelenou <code>map_err</code> nechá být.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Do potrubí se vejde jen jeden druh obálky.</b> Co přijde jinak zabalené, musí projít přebalovnou.</p>
+<pre><code>let n = arg
+    .parse::&lt;usize&gt;()   <span class="c">// cizí obálka ParseIntError</span>
+    .map_err(<span class="r">|_|</span> TaskError::NotANumber(arg.to_string()))<span class="w">?</span>;</code></pre>
+      <table class="mini">
+        <thead><tr><th>Zápis</th><th>Bere</th></tr></thead>
+        <tbody>
+          <tr><td><code>ok_or(chyba)</code></td><td>hotovou chybu, vyrobí se vždy</td></tr>
+          <tr><td><code>ok_or_else(|| chyba)</code></td><td><b>closure</b>, spustí se jen při <code>None</code>. Vyplatí se u drahé výroby, třeba <code>format!</code>.</td></tr>
+          <tr><td><code>map_err(|_| jiná)</code></td><td>closure, která dostane původní chybu (<code>_</code> = zahoď ji) a vrátí novou</td></tr>
+        </tbody>
+      </table>
+      <p><b><code>|| x</code></b> je closure bez parametrů a <b><code>|_| x</code></b> closure s jedním zahozeným parametrem. Mezi svislítky jsou parametry, stejně jako u <code>|task| task.is_done()</code>.</p>
+      <div class="verdict bad"><span class="code">E0308</span><span><b>Tvoje chyba:</b> <code>ok_or(|| TaskError::NoSuchTask(n))</code>, <i>expected <code>TaskError</code>, found closure</i>. <code>ok_or</code> chce obálku, ne návod, jak ji vyrobit. Buď smaž <code>||</code>, nebo použij <code>ok_or_else</code>.</span></div>
+      <div class="verdict bad"><span class="code">E0277</span><span><b>Tvoje chyba:</b> <code>get_task</code> ještě sliboval <code>Result&lt;_, String&gt;</code>, ale <code>parse_index</code> už posílal <code>TaskError</code>: <i><code>?</code> couldn't convert the error to <code>String</code></i>. Druh obálky v potrubí musí sedět.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 5 TASKERROR ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">5</span><h2>Vlastní chyba: <code>enum TaskError</code></h2><span class="sym">varianty s daty</span></div>
+    <div class="fig">
+      <div class="form" aria-label="Formulář TaskError">
+        <div class="form-h">TaskError · hlášení</div>
+        <div class="opt"><span class="cb"></span>MissingArgument</div>
+        <div class="opt on"><span class="cb">✓</span>NotANumber(<span class="blank">"abc"</span>)<small>String</small></div>
+        <div class="opt"><span class="cb"></span>ZeroIndex</div>
+        <div class="opt"><span class="cb"></span>NoSuchTask(<span class="blank">&nbsp;</span>)<small>usize</small></div>
+        <div class="form-foot">zaškrtni právě jedno · kolonky vyplň</div>
+      </div>
+      <p class="fig-cap">Varianta je zaškrtnuté políčko, data jsou vyplněná kolonka. Na <code>start abc</code> přijde nahoru tenhle formulář.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Předtištěný formulář místo vzkazu psaného rukou.</b> Každý pozná, co je zaškrtnuté, a nikdo neudělá překlep.</p>
+<pre><code>#[derive(Debug)]
+enum TaskError {
+    MissingArgument,        <span class="c">// bez kolonky</span>
+    NotANumber(String),     <span class="c">// kolonka na text</span>
+    ZeroIndex,
+    NoSuchTask(usize),      <span class="c">// kolonka na číslo</span>
+}</code></pre>
+      <ul>
+        <li><b>Proč ne <code>String</code>:</b> s textem se nedá pracovat. <code>main</code> by musel porovnávat řetězce a stačí jeden překlep. Na enum jde <code>match</code> a kompilátor hlídá každou variantu.</li>
+        <li><b>Všechny hlášky na jednom místě</b>, v <code>Display</code> (další scéna).</li>
+        <li>Chyby se vyrábějí jako <code>Err(TaskError::ZeroIndex)</code> nebo <code>Err(TaskError::NoSuchTask(n))</code>.</li>
+      </ul>
+      <div class="verdict bad"><span class="code">E0308</span><span><b>Tvoje chyba:</b> <code>NotANumber(arg)</code>, <i>expected <code>String</code>, found <code>&amp;str</code></i>. Formulář odchází z patra, kde <code>arg</code> zanikne, takže do kolonky nejde lísteček s odkazem (výpůjčka), musí tam být vlastní opis: <code>arg.to_string()</code>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 6 DISPLAY ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">6</span><h2><code>impl fmt::Display</code>: hlasatel nahoře</h2><span class="sym">{} vs {:?}</span></div>
+    <div class="fig">
+      <span class="env err big"><i></i>TaskError::NoSuchTask(99)</span>
+      <div class="vs">
+        <div class="say"><span class="lbl">{:?} · Debug</span><span class="out">NoSuchTask(99)</span><small>pro programátora, zdarma díky <code>#[derive(Debug)]</code></small></div>
+        <div class="say"><span class="lbl">{} · Display</span><span class="out">No task 99</span><small>pro uživatele, musíš napsat sám</small></div>
+      </div>
+      <p class="fig-cap">Stejný formulář, dva způsoby, jak ho přečíst. <code>println!("Error: {}", err)</code> zavolá hlasatele <code>Display</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Hlasatel v recepci přečte formulář lidskou řečí.</b> Pro každé zaškrtnuté políčko má připravenou větu.</p>
+<pre><code>use std::fmt;
+
+impl <span class="r">fmt::Display</span> for TaskError {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; <span class="r">fmt::Result</span> {
+        match self {
+            TaskError::MissingArgument =&gt;
+                write!(f, "Missing argument"),
+            TaskError::NotANumber(arg) =&gt;
+                write!(f, "Not a number: {}", arg),
+            TaskError::ZeroIndex =&gt;
+                write!(f, "Task numbers start at 1"),
+            TaskError::NoSuchTask(index) =&gt;
+                write!(f, "No task {}", index),
+            <span class="c">// (v main.rs je každá větev na jednom řádku)</span>
+        }
+    }
+}</code></pre>
+      <ul>
+        <li><b><code>impl fmt::Display for TaskError</code></b> čti „implementuj schopnost <i>Display</i> pro typ <code>TaskError</code>“. <code>impl Task { … }</code> přidává vlastní metody, <code>impl X for Typ</code> plní <b>předepsanou</b> sadu metod, tzv. <b>trait</b> (lekce 12). Zatím recept.</li>
+        <li><b><code>fn fmt(&amp;self, f: &amp;mut fmt::Formatter)</code></b>: jméno i parametry předepisuje trait. <code>f</code> je místo, kam se píše.</li>
+        <li><b><code>-&gt; fmt::Result</code></b> je <b>jiný</b> <code>Result</code>, zkratka pro <code>Result&lt;(), fmt::Error&gt;</code>: zápis se povedl, nebo ne.</li>
+        <li><b><code>write!(f, …)</code></b> = <code>format!</code>, jen píše do <code>f</code>. Vrací <code>fmt::Result</code>, proto bez středníku.</li>
+        <li><b><code>TaskError::NotANumber(arg) =&gt;</code></b> vybalí obsah kolonky do <code>arg</code>, stejně jako <code>Some(n) =&gt;</code>.</li>
+      </ul>
+      <div class="verdict bad"><span class="code">E0004</span><span>Chybí věta pro jednu variantu: <i>non-exhaustive patterns: <code>&amp;TaskError::ZeroIndex</code> not covered</i>. Hlasatel musí umět přečíst <b>každé</b> políčko.</span></div>
+      <div class="verdict bad"><span class="code">E0277</span><span><code>{}</code> bez <code>impl Display</code>: <i><code>TaskError</code> doesn't implement <code>std::fmt::Display</code></i>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 7 TŘI VERZE ===== -->
+  <section class="scene wide">
+    <div class="scene-head"><span class="num">7</span><h2>Tři verze <code>get_task</code></h2><span class="sym">match → ? → TaskError</span></div>
+    <div class="fig" style="justify-items:stretch">
+      <div class="three">
+        <div><span class="tag">Krok 1 · match</span>
+<pre><code>match parse_index(arg) {
+    Ok(n) =&gt; match tasks.get_mut(n - 1) {
+        Some(task) =&gt; Ok(task),
+        _ =&gt; Err(format!("No task {}", n)),
+    },
+    <span class="e">Err(msg) =&gt; Err(msg),</span>
+}</code></pre>
+          <small style="color:var(--muted)">Červená řádka chybu jen přeposílá. Tohle dělá <code>?</code>.</small>
+        </div>
+        <div><span class="tag">Krok 2 · ?</span>
+<pre><code>let n = parse_index(arg)<span class="w">?</span>;
+tasks.get_mut(n - 1)
+    .ok_or_else(|| format!("No task {}", n))</code></pre>
+          <small style="color:var(--muted)">Dva řádky. <code>ok_or_else</code>, protože <code>format!</code> skládá text.</small>
+        </div>
+        <div><span class="tag">Krok 3 · TaskError</span>
+<pre><code>let n = parse_index(arg)<span class="w">?</span>;
+tasks.get_mut(n - 1)
+    .ok_or(TaskError::NoSuchTask(n))</code></pre>
+          <small style="color:var(--muted)">Varianta enumu je levná, stačí <code>ok_or</code>.</small>
+        </div>
+      </div>
+      <table class="mini">
+        <thead><tr><th>Napíšeš</th><th>Lekce 06</th><th>Lekce 07</th></tr></thead>
+        <tbody>
+          <tr><td><code>start</code></td><td class="bad">Invalid task no!</td><td class="bad">Error: Missing argument</td></tr>
+          <tr><td><code>start abc</code></td><td class="bad">Invalid task no!</td><td class="bad">Error: Not a number: abc</td></tr>
+          <tr><td><code>start 0</code></td><td class="bad">Invalid task no!</td><td class="bad">Error: Task numbers start at 1</td></tr>
+          <tr><td><code>start 99</code></td><td class="bad">Invalid task no!</td><td class="bad">Error: No task 99</td></tr>
+          <tr><td><code>start 1</code></td><td class="ok">(úkol 1 → [~])</td><td class="ok">(úkol 1 → [~])</td></tr>
+        </tbody>
+      </table>
+      <p class="fig-cap" style="justify-self:center">Lepší hlášky prozradily i starou drobnost: <code>done··2</code> (dvě mezery) teď vypíše <code>Error: Not a number:  2</code>. V <code>arg</code> zůstala mezera.</p>
+    </div>
+  </section>
+
+  <!-- ===== HŘIŠTĚ ===== -->
+  <section class="play" aria-labelledby="play-h">
+    <div class="play-intro">
+      <h2 id="play-h">Hřiště: pošli obálku budovou</h2>
+      <p>Dvě části. <b>Pošli příkaz</b> ukáže, jak obálka putuje patry tvého programu. <b>Rozbij kód</b> ukáže, co řekne kompilátor na chyby, které jsi v lekci udělal (hlášky jsou ze skutečného <code>cargo build</code>).</p>
+    </div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-run" aria-selected="true" aria-controls="pane-run">Pošli příkaz</button>
+      <button type="button" role="tab" id="tab-break" aria-selected="false" aria-controls="pane-break">Rozbij kód</button>
+    </div>
+
+    <div class="pane" id="pane-run" role="tabpanel" aria-labelledby="tab-run">
+      <p class="hint">Zkus: <code>start</code>, <code>start abc</code>, <code>start 0</code>, <code>start 99</code>, <code>start 1</code>, <code>done -1</code>, <code>cancel 1 2</code>, <code>done··2</code> se dvěma mezerami, <code>start 99999999999999999999</code>.</p>
+      <form class="prompt" id="form" autocomplete="off">
+        <label for="cmd">&gt;</label>
+        <input id="cmd" type="text" spellcheck="false" placeholder="např. start abc" aria-label="Příkaz">
+        <button class="btn" type="submit" id="send">Enter ⏎</button>
+        <button class="btn quiet" type="button" id="reset">Začít znovu</button>
+      </form>
+      <div class="examples" id="examples" aria-label="Příklady"></div>
+      <div class="play-grid">
+        <div class="trace" id="trace" aria-live="polite"></div>
+        <div class="side">
+          <span class="lbl">tasks</span>
+          <div class="tasks" id="tasks"></div>
+          <span class="lbl">Terminál</span>
+          <div class="term" id="term"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane" id="pane-break" role="tabpanel" aria-labelledby="tab-break" hidden>
+      <p class="hint">Vyber jednu změnu. Uvidíš, který řádek se změnil (zeleně správně, červeně rozbitě), a co na to řekne <code>cargo build</code>.</p>
+      <div class="examples" id="broken-list" aria-label="Rozbití"></div>
+      <div class="diff" id="broken-diff"></div>
+      <div class="term broken-out" id="broken-out"></div>
+      <div class="verdict" id="broken-why"></div>
+    </div>
+  </section>
+
+  <!-- ===== TAHÁK ===== -->
+  <section style="display:grid; gap:16px">
+    <h2>Tahák</h2>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Zápis</th><th>Význam</th><th>Obrázek</th></tr></thead>
+        <tbody>
+          <tr><td><code>Result&lt;T, E&gt;</code></td><td><code>Ok(T)</code> = úspěch, <code>Err(E)</code> = chyba s důvodem</td><td>zelená / červená obálka</td></tr>
+          <tr><td><code>return Err(…);</code></td><td>odejdi z funkce s chybou hned (uprostřed funkce povinné <code>return</code>)</td><td>odeslat obálku</td></tr>
+          <tr><td><code>Ok(n)</code> na konci</td><td>zabal úspěch, poslední výraz bez středníku</td><td></td></tr>
+          <tr><td><code>format!("… {}", x)</code></td><td>jako <code>println!</code>, ale vrátí <code>String</code></td><td></td></tr>
+          <tr><td><code>výraz?</code></td><td><code>Ok(v)</code> → <code>v</code>, <code>Err(e)</code> → <code>return Err(e)</code></td><td>potrubní pošta</td></tr>
+          <tr><td><code>opt.ok_or(chyba)</code></td><td><code>Option</code> → <code>Result</code></td><td>přebalit krabici</td></tr>
+          <tr><td><code>opt.ok_or_else(|| chyba)</code></td><td>totéž, chyba se vyrobí jen při <code>None</code></td><td></td></tr>
+          <tr><td><code>res.map_err(|_| jiná)</code></td><td>přemapuj jen <code>Err</code>, aby seděl typ pro <code>?</code></td><td>přelepit cizí obálku</td></tr>
+          <tr><td><code>|| x</code> / <code>|_| x</code></td><td>closure bez parametrů / s jedním zahozeným</td><td></td></tr>
+          <tr><td><code>enum TaskError { A, B(String) }</code></td><td>vlastní druhy chyb, varianty s daty</td><td>formulář s kolonkami</td></tr>
+          <tr><td><code>impl fmt::Display for T</code></td><td>naučí typ vypsat se přes <code>{}</code></td><td>hlasatel</td></tr>
+          <tr><td><code>write!(f, "…", …)</code></td><td>zápis do formatteru, vrací <code>fmt::Result</code></td><td></td></tr>
+          <tr><td><code>{}</code> vs <code>{:?}</code></td><td><code>Display</code> (uživatel) vs <code>Debug</code> (programátor)</td><td></td></tr>
+          <tr><td><code>s.to_string()</code></td><td><code>&amp;str</code> → vlastněný <code>String</code></td><td>vlastní opis do kolonky</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Hláška</th><th>Příčina</th><th>Lék</th></tr></thead>
+        <tbody>
+          <tr><td><code>E0282</code> type annotations needed u <code>Err(…);</code></td><td>chybí <code>return</code>, obálka se zahodí</td><td><code>return Err(…);</code></td></tr>
+          <tr><td><code>E0308</code> expected <code>Result</code>, found <code>usize</code></td><td>na konci číslo bez obálky</td><td><code>Ok(n)</code></td></tr>
+          <tr><td><code>E0277</code> <code>?</code> couldn't convert the error</td><td>typ chyby funkce ≠ typ chyby u <code>?</code></td><td>sjednotit signatury, případně <code>map_err</code></td></tr>
+          <tr><td><code>E0277</code> <code>?</code> … in a function that returns <code>Result</code></td><td><code>?</code> v <code>main</code></td><td><code>match</code> na výsledek</td></tr>
+          <tr><td><code>E0277</code> <code>?</code> … on <code>Result</code>s, not <code>Option</code>s</td><td><code>?</code> na <code>Option</code> ve funkci s <code>Result</code></td><td>nejdřív <code>ok_or</code></td></tr>
+          <tr><td><code>E0308</code> expected <code>TaskError</code>, found closure</td><td><code>ok_or(|| …)</code></td><td><code>ok_or(…)</code> nebo <code>ok_or_else(|| …)</code></td></tr>
+          <tr><td><code>E0308</code> expected <code>String</code>, found <code>&amp;str</code></td><td>výpůjčka do kolonky na vlastní text</td><td><code>.to_string()</code></td></tr>
+          <tr><td><code>E0004</code> non-exhaustive patterns</td><td>v <code>Display</code> chybí varianta</td><td>doplnit větev</td></tr>
+          <tr><td><code>E0277</code> doesn't implement <code>Display</code></td><td><code>{}</code> bez <code>impl Display</code></td><td>napsat <code>impl</code>, nebo <code>{:?}</code></td></tr>
+          <tr><td>panika <i>attempt to subtract with overflow</i></td><td>nula propuštěná do <code>n - 1</code></td><td><code>if n == 0 { return Err(…) }</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Doplněk k lekci 07 projektu todo-rs. Ukázky kódu jsou ze <code>src/main.rs</code> (tag <code>lekce-07</code>).</span>
+    <ul>
+      <li><a href="../07-chyby.md">Lekce 07: Chyby (text)</a></li>
+      <li><a href="06-vstup-infografika.html">Infografika k lekci 06: cesta příkazu a řada branek</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html">Rust Book 9.2: Recoverable Errors with Result</a></li>
+      <li><a href="https://doc.rust-lang.org/rust-by-example/error/multiple_error_types/define_error_type.html">Rust By Example: Defining an error type</a></li>
+      <li><a href="https://doc.rust-lang.org/std/result/enum.Result.html">std::result::Result</a>, <a href="https://doc.rust-lang.org/std/fmt/trait.Display.html">std::fmt::Display</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Rust Debug výpis řetězce: "abc"
+  const dbg = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  const SYM = { ToDo: ' ', InProgress: '~', Done: 'X', Canceled: 'C' };
+  const WS = /^[\s\u0085]+|[\s\u0085]+$/g;
+  const env = (kind, text) => `<span class="env ${kind}"><i></i>${esc(text)}</span>`;
+
+  let tasks, out, floors, flat, stopped, changed;
+  const traceEl = document.getElementById('trace');
+  const tasksEl = document.getElementById('tasks');
+  const termEl = document.getElementById('term');
+  const input = document.getElementById('cmd');
+
+  function reset() {
+    tasks = ['Buy groceries', 'Clean the house', 'Finish Rust project'].map((t) => ({ title: t, status: 'ToDo' }));
+    out = [];
+    floors = [];
+    flat = [];
+    stopped = false;
+    changed = -1;
+    render();
+  }
+
+  // usize::from_str: volitelné '+', pak jen číslice, max 2^64 - 1
+  function parseUsize(s) {
+    if (!/^\+?[0-9]+$/.test(s)) return { ok: false, why: 'InvalidDigit' };
+    const n = BigInt(s.replace('+', ''));
+    if (n > 18446744073709551615n) return { ok: false, why: 'PosOverflow' };
+    return { ok: true, n };
+  }
+
+  const floor = (name, sub) => { const f = { name, sub, rows: [], hit: false }; floors.push(f); return f; };
+  const r = (f, kind, op, val) => f.rows.push({ kind, op, val });
+
+  // start / done / cancel: cesta obálky patry
+  function errCmd(cmd, arg) {
+    const method = { start: 'start', done: 'complete', cancel: 'cancel' }[cmd];
+    const newSt = { start: 'InProgress', done: 'Done', cancel: 'Canceled' }[cmd];
+    let err = null, n = null;
+
+    const p1 = floor('parse_index', `patro 1 · arg = ${dbg(arg)}`);
+    if (arg === '') {
+      r(p1, 'bad', 'if arg.is_empty() { return Err(TaskError::MissingArgument); }', 'true → ' + env('err', 'Err(MissingArgument)') + ' odchází hned');
+      err = { dbg: 'MissingArgument', msg: 'Missing argument' };
+    } else {
+      r(p1, 'skip', 'if arg.is_empty()', 'false → dál');
+      const p = parseUsize(arg);
+      if (!p.ok) {
+        r(p1, 'bad', 'arg.parse::<usize>()', env('foreign', `Err(ParseIntError { kind: ${p.why} })`) + ' cizí obálka');
+        r(p1, 'bad', '.map_err(|_| TaskError::NotANumber(arg.to_string()))', 'přelepeno → ' + env('err', `Err(NotANumber(${dbg(arg)}))`));
+        r(p1, 'up', '?', 'červená → <b>return</b>, zbytek patra se přeskočí ↑');
+        err = { dbg: `NotANumber(${dbg(arg)})`, msg: `Not a number: ${arg}` };
+      } else {
+        n = p.n;
+        r(p1, 'ok', 'arg.parse::<usize>()', env('ok', `Ok(${n})`));
+        r(p1, 'ok', '.map_err(|_| …)', env('ok', `Ok(${n})`) + ' zelenou nechá být');
+        r(p1, 'ok', '?', `zelená → otevřít, n = ${n}`);
+        if (n === 0n) {
+          r(p1, 'bad', 'if n == 0 { return Err(TaskError::ZeroIndex); }', 'true → ' + env('err', 'Err(ZeroIndex)') + ' odchází hned');
+          err = { dbg: 'ZeroIndex', msg: 'Task numbers start at 1' };
+        } else {
+          r(p1, 'skip', 'if n == 0', 'false → dál');
+          r(p1, 'ok', 'Ok(n)', env('ok', `Ok(${n})`) + ' odchází nahoru');
+        }
+      }
+    }
+    if (err) {
+      p1.hit = true;
+      ['arg.parse::<usize>()…?', 'if n == 0', 'Ok(n)'].slice(arg === '' ? 0 : (n === null ? 1 : 2)).forEach((op) => r(p1, 'skip', op, 'přeskočeno'));
+    }
+
+    const p2 = floor('get_task', 'patro 2');
+    if (err) {
+      r(p2, 'up', 'let n = parse_index(arg)?;', env('err', `Err(${err.dbg})`) + ' → <b>return</b> o patro výš ↑');
+      r(p2, 'skip', 'tasks.get_mut(n - 1).ok_or(…)', 'přeskočeno');
+      p2.hit = true;
+    } else {
+      r(p2, 'ok', 'let n = parse_index(arg)?;', env('ok', `Ok(${n})`) + ` → n = ${n}`);
+      const i = n - 1n;
+      if (i < BigInt(tasks.length)) {
+        r(p2, 'ok', `tasks.get_mut(${i})`, `<span class="crate" style="min-height:0; min-width:0">Some(&amp;mut "${esc(tasks[Number(i)].title)}")</span>`);
+        r(p2, 'ok', '.ok_or(TaskError::NoSuchTask(n))', env('ok', 'Ok(&mut task)'));
+      } else {
+        r(p2, 'bad', `tasks.get_mut(${i})`, `<span class="crate empty" style="min-height:0; min-width:0">None</span> (len je ${tasks.length})`);
+        r(p2, 'bad', '.ok_or(TaskError::NoSuchTask(n))', 'přebaleno → ' + env('err', `Err(NoSuchTask(${n}))`) + ' odchází nahoru');
+        err = { dbg: `NoSuchTask(${n})`, msg: `No task ${n}` };
+        p2.hit = true;
+      }
+    }
+
+    const p3 = floor('main', 'patro 3');
+    if (err) {
+      r(p3, 'bad', `match get_task(&mut tasks, arg)`, `Err(err) =>, err = ${esc(err.dbg)}`);
+      r(p3, 'bad', 'println!("Error: {}", err)', `{} → Display::fmt → "${esc(err.msg)}"`);
+      out.push({ t: `Error: ${err.msg}` });
+      p3.hit = true;
+    } else {
+      const i = Number(n - 1n);
+      r(p3, 'ok', `match get_task(&mut tasks, arg)`, 'Ok(task) =>');
+      r(p3, 'ok', `task.${method}()`, `úkol ${n}: ${tasks[i].status} → ${newSt}`);
+      tasks[i].status = newSt;
+      changed = i;
+    }
+  }
+
+  function run(line) {
+    floors = [];
+    flat = [];
+    changed = -1;
+    out.push({ u: line });
+    const inp = (line + '\n').replace(WS, '');
+    const sp = inp.indexOf(' ');
+    const [cmd, arg] = sp >= 0 ? [inp.slice(0, sp), inp.slice(sp + 1)] : [inp, ''];
+    flat.push({ kind: 'hl', op: 'let (cmd, arg) = input.split_once(\' \').unwrap_or((input, ""));', val: `cmd = ${esc(dbg(cmd))}, arg = ${esc(dbg(arg))}` });
+
+    switch (cmd) {
+      case '':
+        flat.push({ kind: 'skip', op: '"" => {}', val: 'prázdný blok, nic se neděje' });
+        break;
+      case 'quit':
+        flat.push({ kind: 'bad', op: '"quit" => break', val: 'program skončil' });
+        stopped = true;
+        break;
+      case 'list':
+        flat.push({ kind: 'ok', op: '"list" => print_tasks(&tasks)', val: 'beze změny od lekce 06, žádná obálka' });
+        tasks.forEach((t, i) => { out.push({ t: `${i + 1}: [${SYM[t.status]}] ${t.title}` }); out.push({ t: '   Priority: None' }); });
+        out.push({ t: `Done: ${tasks.filter((t) => t.status === 'Done').length}/${tasks.length}` });
+        break;
+      case 'add': {
+        const title = arg.replace(WS, '');
+        flat.push({ kind: title ? 'ok' : 'bad', op: '"add" => add_task(&mut tasks, arg.trim())', val: title ? `úkol ${tasks.length + 1} přidán` : 'chyba se zatím hlásí po staru přímo v add_task (procvičení 1)' });
+        if (title) { tasks.push({ title, status: 'ToDo' }); changed = tasks.length - 1; } else out.push({ t: "Title can't be empty!" });
+        break;
+      }
+      case 'startall':
+        flat.push({ kind: 'ok', op: '"startall" => start_all(&mut tasks)', val: 'všechny ToDo → InProgress' });
+        tasks.forEach((t) => { if (t.status === 'ToDo') t.status = 'InProgress'; });
+        break;
+      case 'start': case 'done': case 'cancel':
+        errCmd(cmd, arg);
+        break;
+      case 'help':
+        flat.push({ kind: 'ok', op: '"help" => { println!(…); … }', val: 'vypíše nápovědu' });
+        ['quit: end of app', 'list: print all tasks', 'add <title>: add new task', 'startall: start all unfinished tasks',
+          'start <n>: start task number <n>', 'done <n>: finish task number <n>', 'cancel <n>: cancel task number <n>'].forEach((t) => out.push({ t }));
+        break;
+      default:
+        flat.push({ kind: 'bad', op: '_ => println!("Unknown command: …")', val: `${esc(dbg(cmd))} nepasuje na žádný příkaz` });
+        out.push({ t: `Unknown command: ${cmd}, try: help` });
+    }
+  }
+
+  const rowHtml = (x) => `<div class="tr ${x.kind}"><span class="op">${esc(x.op)}</span><span class="val">${x.val}</span></div>`;
+
+  function render() {
+    let html = flat.map(rowHtml).join('');
+    html += floors.map((f) => `<div class="fl-box${f.hit ? ' hit' : ''}"><div class="fl-head"><b>${f.name}</b>${esc(f.sub)}</div><div class="rows">${f.rows.map(rowHtml).join('')}</div></div>`).join('');
+    traceEl.innerHTML = html || '<div class="tr skip"><span class="op">čeká se na příkaz</span><span class="val">napiš třeba start abc a stiskni Enter</span></div>';
+    tasksEl.innerHTML = tasks.map((t, i) => `<div class="${i === changed ? 'changed' : ''}">${i + 1}: [${SYM[t.status]}] ${esc(t.title)}</div>`).join('');
+    termEl.innerHTML = out.map((o) => (o.u !== undefined ? `<span class="p">&gt;</span> <span class="u">${esc(o.u)}</span>` : (o.t.startsWith('Error: ') ? `<span class="bad">${esc(o.t)}</span>` : esc(o.t)))).join('\n') +
+      (stopped ? '\n<span class="bad">(program skončil, klikni na Začít znovu)</span>' : '\n<span class="p">&gt;</span> ');
+    termEl.scrollTop = termEl.scrollHeight;
+    document.getElementById('send').disabled = stopped;
+    input.disabled = stopped;
+  }
+
+  document.getElementById('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (stopped) return;
+    run(input.value);
+    input.value = '';
+    render();
+    input.focus();
+  });
+  document.getElementById('reset').addEventListener('click', () => { reset(); input.focus(); });
+
+  const EX = ['start', 'start abc', 'start 0', 'start 99', 'start 1', 'done 3', 'cancel x', 'done -1', 'cancel 1 2', 'done  2', 'start +2', 'start 99999999999999999999', 'list', 'help', 'quit'];
+  document.getElementById('examples').innerHTML = '<span class="lbl">příklady (· = mezera):</span>' +
+    EX.map((x, i) => `<button type="button" data-i="${i}" title="${esc(x)}">${esc(x.replace(/ /g, '·'))}</button>`).join('');
+  document.getElementById('examples').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-i]');
+    if (!b || stopped) return;
+    run(EX[Number(b.dataset.i)]);
+    render();
+  });
+
+  // ---------- Rozbij kód: skutečné výstupy cargo build (generované skriptem z rozbitých kopií main.rs) ----------
+  const BROKEN = /*BROKEN*/{"return": {"line": 121, "before": ["        return Err(TaskError::MissingArgument);"], "after": ["        Err(TaskError::MissingArgument);"], "out": ["error[E0282]: type annotations needed", "   --> src/main.rs:121:9", "    |", "121 |         Err(TaskError::MissingArgument);", "    |         ^^^ cannot infer type of the type parameter `T` declared on the enum `Result`", "    |", "help: consider specifying the generic arguments", "    |", "121 |         Err::<T, TaskError>(TaskError::MissingArgument);", "    |            ++++++++++++++++", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "okn": {"line": 129, "before": ["    Ok(n)"], "after": ["    n"], "out": ["error[E0308]: mismatched types", "   --> src/main.rs:129:5", "    |", "119 | fn parse_index(arg: &str) -> Result<usize, TaskError> {", "    |                              ------------------------ expected `Result<usize, TaskError>` because of return type", "...", "129 |     n", "    |     ^ expected `Result<usize, TaskError>`, found `usize`", "    |", "    = note: expected enum `Result<usize, TaskError>`", "               found type `usize`", "help: try wrapping the expression in `Ok`", "    |", "129 |     Ok(n)", "    |     +++ +", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "tostring": {"line": 125, "before": ["        .map_err(|_| TaskError::NotANumber(arg.to_string()))?;"], "after": ["        .map_err(|_| TaskError::NotANumber(arg))?;"], "out": ["error[E0308]: mismatched types", "   --> src/main.rs:125:44", "    |", "125 |         .map_err(|_| TaskError::NotANumber(arg))?;", "    |                      --------------------- ^^^ expected `String`, found `&str`", "    |                      |", "    |                      arguments to this enum variant are incorrect", "    |", "note: tuple variant defined here", "   --> src/main.rs:16:5", "    |", " 16 |     NotANumber(String),", "    |     ^^^^^^^^^^", "help: try using a conversion method", "    |", "125 |         .map_err(|_| TaskError::NotANumber(arg.to_string()))?;", "    |                                               ++++++++++++", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "sigstring": {"line": 132, "before": ["fn get_task<'a>(tasks: &'a mut [Task], arg: &str) -> Result<&'a mut Task, TaskError> {"], "after": ["fn get_task<'a>(tasks: &'a mut [Task], arg: &str) -> Result<&'a mut Task, String> {"], "out": ["error[E0277]: `?` couldn't convert the error to `String`", "   --> src/main.rs:133:29", "    |", "132 | fn get_task<'a>(tasks: &'a mut [Task], arg: &str) -> Result<&'a mut Task, String> {", "    |                                                      ---------------------------- expected `String` because of this", "133 |     let n = parse_index(arg)?;", "    |             ----------------^ the trait `From<TaskError>` is not implemented for `String`", "    |             |", "    |             this can't be annotated with `?` because it has type `Result<_, TaskError>`", "    |", "note: `TaskError` needs to implement `Into<String>`", "   --> src/main.rs:14:1", "    |", " 14 | enum TaskError {", "    | ^^^^^^^^^^^^^^", "    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait", "    = help: the following other types implement trait `From<T>`:", "…", "", "error: could not compile `todo` (bin \"todo\") due to 2 previous errors"]}, "okorclosure": {"line": 134, "before": ["    tasks.get_mut(n - 1).ok_or(TaskError::NoSuchTask(n))"], "after": ["    tasks.get_mut(n - 1).ok_or(|| TaskError::NoSuchTask(n))"], "out": ["error[E0308]: mismatched types", "    --> src/main.rs:134:32", "     |", " 134 |     tasks.get_mut(n - 1).ok_or(|| TaskError::NoSuchTask(n))", "     |                          ----- ^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `TaskError`, found closure", "     |                          |", "     |                          arguments to this method are incorrect", "     |", "     = note: expected enum `TaskError`", "             found closure `{closure@src/main.rs:134:32: 134:34}`", "help: the return type of this call is `{closure@src/main.rs:134:32: 134:34}` due to the type of the argument passed", "    --> src/main.rs:134:5", "     |", " 134 |     tasks.get_mut(n - 1).ok_or(|| TaskError::NoSuchTask(n))", "     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^---------------------------^", "     |                                |", "     |                                this argument influences the return type of `ok_or`", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "qmain": {"line": 160, "before": ["            \"start\" => match get_task(&mut tasks, arg) {", "                Ok(task) => task.start(),", "                Err(err) => println!(\"Error: {}\", err),", "            },"], "after": ["            \"start\" => get_task(&mut tasks, arg)?.start(),"], "out": ["error[E0277]: the `?` operator can only be used in a function that returns `Result` or `Option` (or another type that implements `FromResidual`)", "   --> src/main.rs:160:49", "    |", "137 | fn main() {", "    | --------- this function should return `Result` or `Option` to accept `?`", "...", "160 |             \"start\" => get_task(&mut tasks, arg)?.start(),", "    |                                                 ^ cannot use the `?` operator in a function that returns `()`", "    |", "help: consider adding return type", "    |", "137 | fn main() -> Result<(), Box<dyn std::error::Error>> {", "    |           +++++++++++++++++++++++++++++++++++++++++", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "display": {"line": 26, "before": ["            TaskError::ZeroIndex => write!(f, \"Task numbers start at 1\"),"], "after": [], "out": ["error[E0004]: non-exhaustive patterns: `&TaskError::ZeroIndex` not covered", "  --> src/main.rs:23:15", "   |", "23 |         match self {", "   |               ^^^^ pattern `&TaskError::ZeroIndex` not covered", "   |", "note: `TaskError` defined here", "  --> src/main.rs:14:6", "   |", "14 | enum TaskError {", "   |      ^^^^^^^^^", "...", "17 |     ZeroIndex,", "   |     --------- not covered", "   = note: the matched value is of type `&TaskError`", "help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown", "   |", "…", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "nozero": {"line": 126, "before": ["    if n == 0 {", "        return Err(TaskError::ZeroIndex);", "    }"], "after": [], "out": ["warning: variant `ZeroIndex` is never constructed", "  --> src/main.rs:17:5", "   |", "14 | enum TaskError {", "   |      --------- variant in this enum", "...", "17 |     ZeroIndex,", "   |     ^^^^^^^^^", "   |", "   = note: `TaskError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis", "   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default"], "run": "> \nthread 'main' (442582) panicked at src/main.rs:131:19:\nattempt to subtract with overflow\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n", "built": true}}/*/BROKEN*/;
+  const BROKEN_INFO = [
+    ['return', 'Err(…); bez return', 'bad', 'E0282', 'Tvoje chyba z kroku 3. Obálka se vyrobí a zahodí, takže kompilátor neví, jaké <code>T</code> má mít, a radí nesmysl <code>Err::&lt;T, TaskError&gt;</code>. Skutečný lék: <code>return Err(…);</code>.'],
+    ['okn', 'n místo Ok(n)', 'bad', 'E0308', 'Číslo bez obálky. Tady kompilátor radí přesně: <i>try wrapping the expression in <code>Ok</code></i>.'],
+    ['tostring', 'NotANumber(arg)', 'bad', 'E0308', 'Tvoje chyba z kroku 3. Do kolonky <code>String</code> nejde výpůjčka <code>&amp;str</code>. Rada <code>arg.to_string()</code> sedí.'],
+    ['sigstring', 'get_task vrací String', 'bad', 'E0277', 'Tvoje chyba z kroku 3. <code>parse_index</code> posílá <code>TaskError</code>, <code>get_task</code> slibuje <code>String</code>. <code>?</code> by obálku musel převést (trait <code>From</code>), a to neumí. Lék: změnit signaturu <code>get_task</code>.'],
+    ['okorclosure', 'ok_or(|| …)', 'bad', 'E0308', 'Tvoje chyba z kroku 3. <code>ok_or</code> chce hodnotu, ne closure. Smaž <code>||</code>, nebo použij <code>ok_or_else</code>.'],
+    ['qmain', '? v main', 'bad', 'E0277', '<code>main</code> nic nevrací, nad ním potrubí nevede. Rada s <code>Box&lt;dyn std::error::Error&gt;</code> je pokročilá cesta (traity, lekce 12). Teď stačí <code>match</code>.'],
+    ['display', 'chybí větev v Display', 'bad', 'E0004', 'Hlasatel neumí přečíst políčko <code>ZeroIndex</code>. <code>match</code> musí pokrýt všechny varianty.'],
+    ['nozero', 'bez kontroly nuly', 'warn', 'přeloží se!', 'Stejná past jako tvůj mezikrok v kroku 2: nula projde jako <code>Ok(0)</code>. Kompilátor jen varuje, že <code>ZeroIndex</code> nikdo nevyrábí. Program se přeloží, ale <code>start 0</code> spadne v <code>n - 1</code> (past z lekce 06). Varování si všímej, tady prozradilo chybu dřív než běh.'],
+  ];
+  const bList = document.getElementById('broken-list');
+  bList.innerHTML = '<span class="lbl">rozbij:</span>' + BROKEN_INFO.map((b, i) => `<button type="button" data-b="${i}" aria-pressed="false">${esc(b[1])}</button>`).join('');
+  function showBroken(i) {
+    const [key, , kind, code, why] = BROKEN_INFO[i];
+    const d = BROKEN[key];
+    bList.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.b) === i)));
+    const lines = [];
+    lines.push(`<div class="none">src/main.rs, řádek ${d.line}</div>`);
+    d.before.forEach((l) => lines.push(`<div class="minus">- ${esc(l)}</div>`));
+    if (d.after.length) d.after.forEach((l) => lines.push(`<div class="plus">+ ${esc(l)}</div>`));
+    else lines.push('<div class="plus none">+ (řádky smazány)</div>');
+    document.getElementById('broken-diff').innerHTML = lines.join('');
+    let o = '<span class="p">$</span> <span class="u">cargo build</span>\n' + d.out.map((l) => {
+      const e = esc(l);
+      if (/^error/.test(l)) return `<span class="bad">${e}</span>`;
+      if (/^warning/.test(l)) return `<span class="warn">${e}</span>`;
+      if (/^help/.test(l)) return `<span class="okc">${e}</span>`;
+      return e;
+    }).join('\n');
+    if (d.built) o += '\n\n<span class="p">$</span> <span class="u">cargo run</span>\n<span class="p">&gt;</span> <span class="u">start 0</span>' +
+      esc(d.run.replace(/^> /, '')).replace(/(thread[\s\S]*?overflow)/, '<span class="bad">$1</span>');
+    document.getElementById('broken-out').innerHTML = o;
+    const w = document.getElementById('broken-why');
+    w.className = 'verdict broken-why ' + kind;
+    w.innerHTML = `<span class="code">${esc(code)}</span><span>${why}</span>`;
+  }
+  bList.addEventListener('click', (e) => { const b = e.target.closest('button[data-b]'); if (b) showBroken(Number(b.dataset.b)); });
+  showBroken(0);
+
+  // ---------- záložky ----------
+  const tabs = [['tab-run', 'pane-run'], ['tab-break', 'pane-break']];
+  tabs.forEach(([t, p]) => document.getElementById(t).addEventListener('click', () => {
+    tabs.forEach(([t2, p2]) => {
+      document.getElementById(t2).setAttribute('aria-selected', String(t2 === t));
+      document.getElementById(p2).hidden = p2 !== p;
+    });
+  }));
+
+  reset();
+})();
+</script>
+</body>
+</html>
