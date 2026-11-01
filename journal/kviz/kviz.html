@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
 <style>
-/* Opakovací kvíz k lekcím 00–07. Zkouší krab Ferris a každou odpověď vyhodnotí jako Ok nebo Err.
+/* Opakovací kvíz, který roste s lekcemi. Zkouší krab Ferris a každou odpověď vyhodnotí jako Ok nebo Err.
    Barvy a písma sdílí s infografikami. */
 :root {
   --bg: #e9edf2;
@@ -235,7 +235,6 @@ footer { color: var(--muted); font-size: 0.9rem; display: grid; gap: 6px; }
 <div class="wrap">
 
   <nav aria-label="Navigace">
-    <a href="../07-chyby.md">← Lekce 07: Chyby</a>
     <a href="../README.md">Obsah</a>
     <a href="https://github.com/akabourek/todo-rs">GitHub</a>
   </nav>
@@ -244,9 +243,9 @@ footer { color: var(--muted); font-size: 0.9rem; display: grid; gap: 6px; }
   <section class="screen" id="start">
     <header class="hero">
       <div>
-        <div class="eyebrow">todo-rs · opakování · lekce 00–07</div>
+        <div class="eyebrow">todo-rs · opakování lekcí</div>
         <h1>Ferrisova zkouška</h1>
-        <p class="lead">Krab <b>Ferris</b> tě prozkouší ze všeho, co zatím umíš: od <code>cargo</code> přes vlastnictví až po <code>?</code>. Na každou odpověď ti vrátí <code>Ok</code>, nebo <code>Err</code> a řekne proč.</p>
+        <p class="lead">Krab <b>Ferris</b> tě prozkouší ze všeho, co zatím umíš. Na každou odpověď ti vrátí <code>Ok</code>, nebo <code>Err</code> a řekne proč.</p>
       </div>
       <div class="hero-fig"><svg class="ferris" viewBox="0 0 200 150" role="img" aria-label="Krab Ferris přemýšlí, nad hlavou má otazník"><use href="#ferris-think"/></svg></div>
     </header>
@@ -260,6 +259,10 @@ footer { color: var(--muted); font-size: 0.9rem; display: grid; gap: 6px; }
     <form class="card" id="setup">
       <fieldset>
         <legend>Z kterých lekcí?</legend>
+        <div class="actions">
+          <button class="btn link" type="button" id="select-all">Vybrat všechny</button>
+          <button class="btn link" type="button" id="select-none">Zrušit výběr</button>
+        </div>
         <div class="chips" id="lessons"></div>
       </fieldset>
       <fieldset>
@@ -323,7 +326,7 @@ footer { color: var(--muted); font-size: 0.9rem; display: grid; gap: 6px; }
   </section>
 
   <footer>
-    <p>Kvíz shrnuje lekce 00–07 a nepředbíhá další lekce. Text lekcí najdeš v <a href="../README.md">obsahu</a>.</p>
+    <p>Kvíz shrnuje hotové lekce a přibývá s nimi. Text lekcí najdeš v <a href="../README.md">obsahu</a>.</p>
     <p>Ferris je neoficiální maskot Rustu. Původní návrh: Karen Rustad Tölva, volně k užití (<a href="https://rustacean.net/">rustacean.net</a>). Tady je překreslený zjednodušeně.</p>
   </footer>
 </div>
@@ -433,6 +436,12 @@ function initSetup() {
     const ids = quick ? shuffle(pool).slice(0, QUICK).sort((a, b) => a - b) : pool;
     begin(ids);
   });
+  $('select-all').addEventListener('click', () => setAllLessons(true));
+  $('select-none').addEventListener('click', () => setAllLessons(false));
+  updateCounts();
+}
+function setAllLessons(on) {
+  document.querySelectorAll('input[name=lesson]').forEach((c) => { c.checked = on; });
   updateCounts();
 }
 function selectedPool() {
