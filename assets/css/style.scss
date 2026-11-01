@@ -22,6 +22,9 @@
     pre, .highlight, .highlight pre { background-color: #1b2330; color: #e6ebf1; }
     pre code, pre tt { background-color: transparent; }
 
+    // Téma dává obrázkům bílé pozadí, Ferris je průhledný.
+    img { background-color: transparent; }
+
     table {
       th, td { border-color: #2f3b4c; }
       tr { background-color: #1b2330; border-top-color: #2f3b4c; }
