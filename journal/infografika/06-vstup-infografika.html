@@ -780,5 +780,9 @@ attempt to subtract with overflow</span></div>
   reset();
 })();
 </script>
+<script>
+// Na webu (GitHub Pages) jsou lekce jako .html, při otevření ze souboru zůstávají .md.
+if (location.protocol !== 'file:') document.querySelectorAll('a[href^="../"][href$=".md"]').forEach((a) => { a.href = a.getAttribute('href').replace(/\.md$/, '.html'); });
+</script>
 </body>
 </html>
