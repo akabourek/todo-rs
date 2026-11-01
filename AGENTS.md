@@ -15,16 +15,16 @@ Projekt je znovupoužitelný: kdokoli si ho může naklonovat a projít od lekce
 a popisují jeho kód.
 
 Jde o **nového studenta**, když chybí `src/`, když existuje `journal/student/stav.md`, nebo když to sám řekne.
-Jinak pokračuje původní průchod a tato sekce se neuplatní. Pro nového studenta platí:
+Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato sekce se neuplatní. Pro nového studenta platí:
 
 - **Průběh:** Agent ho vede v `journal/student/stav.md` (hotové lekce, kde student skončil). Při prvním setkání
-  soubor založí. Značky ✅ v osnově níže popisují původní průchod, ne postup nového studenta. Začíná se lekcí 00, pokud student
+  soubor založí. Značky ✅ v osnově níže říkají, které lekce už v učebnici jsou, ne co má student hotové. Začíná se lekcí 00, pokud student
   neřekne jinak.
 - **Hotové lekce jsou učebnice:** lekce a infografiky, které už v `journal/` jsou, se nepřepisují. Agent z nich učí,
   ale zadání a kontrolu přizpůsobuje skutečnému kódu studenta. Formulace „tvoje chyba“ v nich popisují chyby z původního průchodu.
 - **Krok 4 postupu:** u lekce, která v `journal/` už je, se zápis ani infografika nedělají, jen se aktualizuje `stav.md`.
   Lekci, která v `journal/` chybí, agent sepíše běžným postupem.
-- **Tagy:** `lekce-NN` v klonu už existují a ukazují kód původního průchodu, nový student používá `student-NN`.
+- **Tagy:** `lekce-NN` v klonu už existují a ukazují kód učebnice, nový student používá `student-NN`.
   Porovnání: `git diff lekce-03 student-03`.
 
 ## Jazyk
@@ -93,7 +93,8 @@ Jinak pokračuje původní průchod a tato sekce se neuplatní. Pro nového stud
 
 ## Osnova (stav: ✅ hotovo, ⬜ čeká)
 
-Stav popisuje původní průchod. Nový student má svůj v `journal/student/stav.md`.
+✅ = lekce je v učebnici (`journal/`), ⬜ = ještě čeká na sepsání. Další lekce autora učebnice je první s ⬜.
+Nový student má svůj postup v `journal/student/stav.md`.
 
 ### Část I – Základy (konzole)
 - ✅ 00 Příprava prostředí (rustup, cargo, git, editor)

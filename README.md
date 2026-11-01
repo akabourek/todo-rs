@@ -6,6 +6,16 @@ a terminálové rozhraní (TUI) až po GUI aplikaci.
 
 Kód slouží hlavně k učení, proto má srozumitelnost přednost před chytrostí a nejde o hotový produkt.
 
+## Předpoklady
+
+- **Linux:** projekt je navržený primárně pro uživatele Linuxu. Na macOS a Windows nebyl testovaný, příkazy a návody
+  v lekcích tam můžou vyžadovat úpravy.
+- **Git:** na stažení projektu a práci s lekcemi.
+- **AI agent:** nástroj, který umí pracovat se soubory v projektu a číst `AGENTS.md`, např. Claude Code nebo Codex.
+- **Rust:** předem ho instalovat nemusíš, instalaci i nastavení editoru řeší lekce 00.
+- **Psaní nových lekcí:** skripty pro ověřování infografik navíc potřebují Google Chrome a Python s knihovnou Pillow.
+  Při procházení hotových lekcí je nepotřebuješ.
+
 ## Jak začít s výukou
 
 Projekt je určený k procházení s AI agentem (např. Claude Code nebo Codex), který podle [AGENTS.md](AGENTS.md)
