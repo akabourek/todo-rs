@@ -1,0 +1,10 @@
+const log=[];const n=()=>document.querySelectorAll('input[name=lesson]:checked').length;
+const c=()=>document.getElementById('count-all').textContent+' / '+document.getElementById('count-quick').textContent+' / start vypnutý='+document.getElementById('go').disabled;
+log.push('výchozí '+n()+' | '+c());
+document.getElementById('select-none').click();log.push('zrušit '+n()+' | '+c());
+document.getElementById('select-none').click();log.push('zrušit znovu '+n());
+document.getElementById('select-all').click();log.push('vše '+n()+' | '+c());
+document.getElementById('select-none').click();document.querySelector('input[name=lesson][value="3"]').click();log.push('jen 03 '+n()+' | '+c());
+log.push('na obrazovce pořád výběr='+!document.getElementById('start').hidden);
+document.getElementById('setup').requestSubmit();log.push('běh ids='+st.ids.length+' lekce='+[...new Set(st.ids.map(i=>QUESTIONS[i].l))].join());
+document.title=log.join(' || ');

@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>Ferrisova zkouška</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
+<style>
+/* Opakovací kvíz, který roste s lekcemi. Zkouší krab Ferris a každou odpověď vyhodnotí jako Ok nebo Err.
+   Barvy a písma sdílí s infografikami. */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #1b2330;
+  --muted: #5b6676;
+  --line: #cfd6df;
+  --stamp: #8a5f2e;
+  --read: #0d7480;
+  --read-soft: #d7eef0;
+  --write: #c2410c;
+  --ok: #2e7d32;
+  --ok-soft: #dcefdc;
+  --err: #b42318;
+  --err-soft: #f9dedb;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --f-stamp: "Saira Stencil One", Impact, "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+    --stamp: #d9a866;
+    --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e;
+    --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+  --stamp: #d9a866;
+  --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e;
+  --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  /* bez ligatur: => -> || musí vypadat přesně tak, jak se píšou */
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+.wrap {
+  max-width: 820px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+  display: grid;
+  gap: 32px;
+}
+.wrap > *, .screen > *, .card > * { min-width: 0; }
+.screen { display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.5rem, 7vw, 4rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.25rem, 3vw, 1.5rem); font-weight: 800; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+code, pre, .opt-code { font-family: var(--f-code); font-size: 0.88em; }
+:not(pre) > code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; overflow-wrap: anywhere; }
+pre { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; line-height: 1.5; }
+a { color: var(--read); }
+a:focus-visible, button:focus-visible, input:focus-visible, h2:focus-visible, summary:focus-visible { outline: 3px solid var(--write); outline-offset: 2px; }
+h2:focus { outline: none; }
+
+nav { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 0.95rem; }
+
+/* ---------- Ferris ---------- */
+.ferris { display: block; width: 100%; height: auto; overflow: visible; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; align-items: center; }
+.hero .lead { font-size: 1.15rem; color: var(--muted); margin-top: 14px; }
+.eyebrow { font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+@media (prefers-reduced-motion: no-preference) {
+  .hop { animation: hop 0.5s ease-out; }
+  .droop { animation: droop 0.6s ease-out; }
+  @keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
+  @keyframes droop { 0% { transform: translateY(-5px); } 100% { transform: translateY(0); } }
+}
+
+/* ---------- start ---------- */
+.rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.rule b { font-family: var(--f-display); font-size: 1.05rem; }
+.rule span { color: var(--muted); font-size: 0.93rem; }
+.rule .n { font-family: var(--f-stamp); font-size: 1.4rem; color: var(--stamp); line-height: 1; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: clamp(16px, 3.5vw, 26px); display: grid; gap: 18px; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; min-width: 0; }
+legend { font-family: var(--f-display); font-weight: 600; font-size: 1.1rem; padding: 0; margin-bottom: 10px; }
+.chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.chip { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); cursor: pointer; min-width: 0; }
+.chip:has(input:checked) { border-color: var(--read); background: var(--read-soft); }
+.chip:has(input:focus-visible) { outline: 3px solid var(--write); outline-offset: 2px; }
+.chip input { flex: none; margin: 0; accent-color: var(--read); width: 18px; height: 18px; }
+.chip .count { margin-left: auto; color: var(--muted); font-size: 0.85rem; flex: none; }
+.modes { display: flex; flex-wrap: wrap; gap: 8px; }
+.modes .chip { flex: 1 1 200px; }
+
+.btn { font: inherit; font-family: var(--f-display); font-weight: 600; padding: 11px 20px; border-radius: 8px; border: 2px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { border-color: var(--ink); }
+.btn.link { padding: 4px 0; border: 0; background: none; color: var(--read); font-family: var(--f-body); font-weight: 400; font-size: 0.93rem; text-decoration: underline; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* ---------- otázka ---------- */
+.status { display: grid; gap: 8px; }
+.status-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; align-items: baseline; color: var(--muted); font-size: 0.95rem; }
+.bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--read); transition: width 0.25s; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-family: var(--f-code); font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.tags b { font-family: var(--f-stamp); font-weight: 400; font-size: 1rem; letter-spacing: 0; color: var(--stamp); text-transform: none; }
+.opts { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.opt { width: 100%; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; text-align: left; font: inherit; color: inherit; padding: 10px 12px; background: var(--surface-2); border: 2px solid var(--line); border-radius: 8px; cursor: pointer; }
+.opt:hover:not(:disabled) { border-color: var(--read); }
+.opt:disabled { cursor: default; color: inherit; }
+.opt .key { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); font-family: var(--f-code); font-size: 0.8rem; font-weight: 600; }
+.opt-text { align-self: center; min-width: 0; }
+.opt-code { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+.opt.dim { opacity: 0.55; }
+.opt.right { background: var(--ok-soft); border-color: var(--ok); opacity: 1; }
+.opt.right .key { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+.opt.wrong { background: var(--err-soft); border-color: var(--err); opacity: 1; }
+.opt.wrong .key { background: var(--err); border-color: var(--err); color: var(--surface); }
+
+/* ---------- Ferrisova odpověď ---------- */
+.fb { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 16px; align-items: start; padding: 16px; border-radius: 10px; border: 2px solid var(--line); background: var(--surface-2); }
+.fb.is-ok { border-color: var(--ok); background: var(--ok-soft); }
+.fb.is-err { border-color: var(--err); background: var(--err-soft); }
+.fb-body { display: grid; gap: 8px; min-width: 0; }
+.fb-head { font-family: var(--f-code); font-weight: 600; }
+.is-ok .fb-head { color: var(--ok); }
+.is-err .fb-head { color: var(--err); }
+.fb-links { font-size: 0.93rem; color: var(--muted); }
+.fb :not(pre) > code { background: var(--surface); }
+
+/* ---------- výsledek ---------- */
+.score { font-family: var(--f-stamp); font-size: clamp(3rem, 12vw, 5rem); line-height: 1; color: var(--stamp); }
+table { border-collapse: collapse; width: 100%; font-size: 0.97rem; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--f-display); font-weight: 600; }
+td.num { white-space: nowrap; font-family: var(--f-code); font-size: 0.9rem; }
+.weak { color: var(--err); font-weight: 700; white-space: nowrap; }
+.good { color: var(--ok); white-space: nowrap; }
+details { border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); padding: 10px 14px; }
+details[open] { display: grid; gap: 10px; }
+details[open] > * { min-width: 0; }
+summary { cursor: pointer; font-weight: 700; }
+details pre { background: var(--surface); }
+.miss-list { display: grid; gap: 10px; }
+.tiny { font-size: 0.9rem; color: var(--muted); }
+
+footer { color: var(--muted); font-size: 0.9rem; display: grid; gap: 6px; }
+
+@media (max-width: 640px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .hero-fig { order: -1; max-width: 170px; }
+  .rules { grid-template-columns: minmax(0, 1fr); }
+  .chips { grid-template-columns: minmax(0, 1fr); }
+  .fb { grid-template-columns: minmax(0, 1fr); }
+  .fb .ferris { max-width: 88px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Ferris je nakreslený přímo tady, aby stránka zůstala jeden soubor. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+__FERRIS_SYMBOLS__
+</svg>
+
+<div class="wrap">
+
+  <nav aria-label="Navigace">
+    <a href="../README.md">Obsah</a>
+    <a href="https://github.com/akabourek/todo-rs">GitHub</a>
+  </nav>
+
+  <!-- ===== START ===== -->
+  <section class="screen" id="start">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">todo-rs · opakování lekcí</div>
+        <h1>Ferrisova zkouška</h1>
+        <p class="lead">Krab <b>Ferris</b> tě prozkouší ze všeho, co zatím umíš. Na každou odpověď ti vrátí <code>Ok</code>, nebo <code>Err</code> a řekne proč.</p>
+      </div>
+      <div class="hero-fig"><svg class="ferris" viewBox="0 0 200 150" role="img" aria-label="Krab Ferris přemýšlí, nad hlavou má otazník"><use href="#ferris-think"/></svg></div>
+    </header>
+
+    <div class="rules">
+      <div class="rule"><span class="n">1</span><b>Nejdřív v hlavě</b><span>Zkus si odpověď nejdřív říct v duchu, teprve pak klikni.</span></div>
+      <div class="rule"><span class="n">2</span><b>Ověřeno na <code>rustc</code></b><span>Každá ukázka kódu i hláška prošla skutečným kompilátorem.</span></div>
+      <div class="rule"><span class="n">3</span><b>Klávesy</b><span><code>1</code>–<code>4</code> nebo <code>A</code>–<code>D</code> vybere odpověď, <code>Enter</code> jde dál.</span></div>
+    </div>
+
+    <form class="card" id="setup">
+      <fieldset>
+        <legend>Z kterých lekcí?</legend>
+        <div class="actions">
+          <button class="btn link" type="button" id="select-all">Vybrat všechny</button>
+          <button class="btn link" type="button" id="select-none">Zrušit výběr</button>
+        </div>
+        <div class="chips" id="lessons"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Jak dlouho?</legend>
+        <div class="modes">
+          <label class="chip"><input type="radio" name="mode" value="all" checked> <span>Celá zkouška</span><span class="count" id="count-all"></span></label>
+          <label class="chip"><input type="radio" name="mode" value="quick"> <span>Rychlá náhodná</span><span class="count" id="count-quick"></span></label>
+        </div>
+      </fieldset>
+      <div class="actions"><button class="btn" type="submit" id="go">Začít zkoušku</button></div>
+    </form>
+  </section>
+
+  <!-- ===== OTÁZKA ===== -->
+  <section class="screen" id="quiz" hidden>
+    <div class="status">
+      <div class="status-row">
+        <span id="progress-text"></span>
+        <span id="score-text"></span>
+      </div>
+      <div class="bar" role="progressbar" aria-label="Postup kvízem" aria-valuemin="0" id="bar"><i id="bar-fill"></i></div>
+    </div>
+    <div class="card">
+      <div class="tags"><b id="q-lesson"></b><span id="q-kind"></span></div>
+      <h2 id="q-text" tabindex="-1"></h2>
+      <pre id="q-code" tabindex="0" hidden></pre>
+      <ol class="opts" id="q-opts"></ol>
+      <div id="q-fb" aria-live="polite"></div>
+      <div class="actions">
+        <button class="btn" type="button" id="next" hidden></button>
+        <button class="btn link" type="button" id="stop">Ukončit a vyhodnotit</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== VÝSLEDEK ===== -->
+  <section class="screen" id="result" hidden>
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Ferris dozkoušel</div>
+        <div class="score" id="r-score"></div>
+        <p class="lead" id="r-text"></p>
+      </div>
+      <div class="hero-fig"><svg class="ferris" viewBox="0 0 200 150" aria-hidden="true"><use id="r-ferris" href="#ferris-happy"/></svg></div>
+    </header>
+    <div class="actions">
+      <button class="btn" type="button" id="retry"></button>
+      <button class="btn ghost" type="button" id="restart">Zpět na výběr lekcí</button>
+    </div>
+    <div class="card">
+      <h2>Po lekcích</h2>
+      <table>
+        <thead><tr><th scope="col">Lekce</th><th scope="col">Správně</th><th scope="col">Co dál</th></tr></thead>
+        <tbody id="r-table"></tbody>
+      </table>
+    </div>
+    <div class="card" id="r-miss-card">
+      <h2>Kde Ferris řekl <code>Err</code></h2>
+      <div class="miss-list" id="r-miss"></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Kvíz shrnuje hotové lekce a přibývá s nimi. Text lekcí najdeš v <a href="../README.md">obsahu</a>.</p>
+    <p>Ferris je neoficiální maskot Rustu. Původní návrh: Karen Rustad Tölva, volně k užití (<a href="https://rustacean.net/">rustacean.net</a>). Tady je překreslený zjednodušeně.</p>
+  </footer>
+</div>
+
+<script>
+// Lekce: název, soubor textu a infografika.
+const LESSONS = [
+  { title: 'Příprava', md: '00-priprava.md', info: '00-priprava-infografika.html' },
+  { title: 'První program', md: '01-prvni-program.md', info: '01-prvni-program-infografika.html' },
+  { title: 'Debugování', md: '02-debugovani.md', info: '02-debugovani-infografika.html' },
+  { title: 'Struktury a metody', md: '03-struktury-a-metody.md', info: '03-struktury-infografika.html' },
+  { title: 'Enumy a match', md: '04-enumy-a-match.md', info: '04-enumy-infografika.html' },
+  { title: 'Vlastnictví a výpůjčky', md: '05-vlastnictvi-a-vypujcky.md', info: '05-vlastnictvi-infografika.html' },
+  { title: 'Vstup od uživatele', md: '06-vstup-od-uzivatele.md', info: '06-vstup-infografika.html' },
+  { title: 'Chyby', md: '07-chyby.md', info: '07-chyby-infografika.html' },
+];
+const QUESTIONS = __QUESTIONS__;
+const QUICK = 15;
+
+const $ = (id) => document.getElementById(id);
+const nn = (l) => String(l).padStart(2, '0');
+
+// Na webu (GitHub Pages) jsou lekce jako .html a obsah je adresář, při otevření ze souboru zůstávají .md.
+const pageUrl = (href) => (location.protocol === 'file:' ? href : href.replace(/README\.md$/, '').replace(/\.md$/, '.html'));
+const lessonUrl = (l) => pageUrl('../' + LESSONS[l].md);
+const infoUrl = (l) => '../infografika/' + LESSONS[l].info;
+
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// Text otázek: `kód`, **tučně**, *kurzíva*. Uvnitř kódu se nic dalšího nezpracovává.
+function md(text) {
+  return text.split('`').map((part, i) => {
+    if (i % 2) return '<code>' + esc(part) + '</code>';
+    return esc(part).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>');
+  }).join('');
+}
+const optHtml = (o) => (o.code !== undefined ? '<span class="opt-code">' + esc(o.code) + '</span>' : md(o.t));
+function shuffle(list) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+let st = null;   // { ids, pos, answers: [{ id, picked, ok }], opts, answered }
+
+// ---------- start ----------
+function initSetup() {
+  $('lessons').innerHTML = LESSONS.map((L, l) => {
+    const n = QUESTIONS.filter((q) => q.l === l).length;
+    return `<label class="chip"><input type="checkbox" name="lesson" value="${l}" checked> <span>${nn(l)} ${esc(L.title)}</span><span class="count">${n}</span></label>`;
+  }).join('');
+  $('setup').addEventListener('change', updateCounts);
+  $('setup').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const pool = selectedPool();
+    const quick = $('setup').elements.mode.value === 'quick';
+    const ids = quick ? shuffle(pool).slice(0, QUICK).sort((a, b) => a - b) : pool;
+    begin(ids);
+  });
+  $('select-all').addEventListener('click', () => setAllLessons(true));
+  $('select-none').addEventListener('click', () => setAllLessons(false));
+  updateCounts();
+}
+function setAllLessons(on) {
+  document.querySelectorAll('input[name=lesson]').forEach((c) => { c.checked = on; });
+  updateCounts();
+}
+function selectedPool() {
+  const on = [...document.querySelectorAll('input[name=lesson]:checked')].map((c) => Number(c.value));
+  return QUESTIONS.map((q, i) => (on.includes(q.l) ? i : -1)).filter((i) => i >= 0);
+}
+function countWord(n) {
+  if (n === 1) return '1 otázka';
+  return n >= 2 && n <= 4 ? n + ' otázky' : n + ' otázek';
+}
+function updateCounts() {
+  const n = selectedPool().length;
+  $('count-all').textContent = countWord(n);
+  $('count-quick').textContent = countWord(Math.min(QUICK, n));
+  $('go').disabled = n === 0;
+}
+
+// ---------- průběh ----------
+function show(screen) {
+  ['start', 'quiz', 'result'].forEach((s) => { $(s).hidden = s !== screen; });
+  window.scrollTo(0, 0);
+}
+function begin(ids) {
+  st = { ids, pos: 0, answers: [], opts: [], answered: false };
+  show('quiz');
+  renderQuestion();
+}
+function renderQuestion() {
+  const q = QUESTIONS[st.ids[st.pos]];
+  st.answered = false;
+  st.opts = shuffle(q.opts);
+  $('progress-text').textContent = `Otázka ${st.pos + 1} z ${st.ids.length}`;
+  $('score-text').textContent = `Správně ${st.answers.filter((a) => a.ok).length} z ${st.answers.length}`;
+  $('bar').setAttribute('aria-valuemax', st.ids.length);
+  $('bar').setAttribute('aria-valuenow', st.pos);
+  $('bar-fill').style.width = (st.pos / st.ids.length) * 100 + '%';
+  $('q-lesson').textContent = 'Lekce ' + nn(q.l);
+  $('q-kind').textContent = q.kind;
+  $('q-text').innerHTML = md(q.q);
+  $('q-code').hidden = !q.code;
+  $('q-code').textContent = q.code || '';
+  $('q-opts').innerHTML = st.opts.map((o, i) =>
+    `<li><button class="opt" type="button" data-i="${i}"><span class="key" aria-hidden="true">${'ABCD'[i]}</span><span class="opt-text">${optHtml(o)}</span></button></li>`).join('');
+  $('q-fb').innerHTML = '';
+  $('next').hidden = true;
+  window.scrollTo(0, 0);
+  $('q-text').focus({ preventScroll: true });
+}
+function answer(i) {
+  if (st.answered) return;
+  st.answered = true;
+  const id = st.ids[st.pos];
+  const q = QUESTIONS[id];
+  const picked = st.opts[i];
+  const ok = !!picked.ok;
+  st.answers.push({ id, picked: q.opts.indexOf(picked), ok });
+  document.querySelectorAll('#q-opts .opt').forEach((b, j) => {
+    b.disabled = true;
+    const o = st.opts[j];
+    if (o.ok) { b.classList.add('right'); b.querySelector('.key').textContent = '✓'; }
+    else if (j === i) { b.classList.add('wrong'); b.querySelector('.key').textContent = '✗'; }
+    else b.classList.add('dim');
+  });
+  const why = !ok && picked.why ? `<p>${md(picked.why)}</p>` : '';
+  $('q-fb').innerHTML = `<div class="fb ${ok ? 'is-ok' : 'is-err'}">
+    <svg class="ferris ${ok ? 'hop' : 'droop'}" viewBox="0 0 200 150" aria-hidden="true"><use href="#ferris-${ok ? 'happy' : 'sad'}"/></svg>
+    <div class="fb-body">
+      <div class="fb-head">${ok ? 'Ok(()) · Správně' : 'Err(…) · Vedle'}</div>
+      ${why}
+      <p>${md(q.ex)}</p>
+      <div class="fb-links">Připomenout si: <a href="${lessonUrl(q.l)}" target="_blank" rel="noopener">lekce ${nn(q.l)}</a> · <a href="${infoUrl(q.l)}" target="_blank" rel="noopener">infografika</a></div>
+    </div>
+  </div>`;
+  $('score-text').textContent = `Správně ${st.answers.filter((a) => a.ok).length} z ${st.answers.length}`;
+  $('bar').setAttribute('aria-valuenow', st.pos + 1);
+  $('bar-fill').style.width = ((st.pos + 1) / st.ids.length) * 100 + '%';
+  const last = st.pos === st.ids.length - 1;
+  $('next').textContent = last ? 'Vyhodnotit' : 'Další otázka →';
+  $('next').hidden = false;
+  $('stop').hidden = last;
+  $('next').focus({ preventScroll: true });
+  $('q-fb').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function next() {
+  if (st.pos === st.ids.length - 1) return finish();
+  st.pos++;
+  $('stop').hidden = false;
+  renderQuestion();
+}
+
+// ---------- výsledek ----------
+function finish() {
+  const { answers } = st;
+  const good = answers.filter((a) => a.ok).length;
+  const total = answers.length;
+  const ratio = total ? good / total : 0;
+  $('r-score').textContent = `${good} / ${total}`;
+  let mood = 'happy', text;
+  if (total === 0) { mood = 'think'; text = 'Ještě nepadla žádná odpověď. Ferris počká.'; }
+  else if (ratio === 1) text = 'Bez jediné chyby. Ferris tleská oběma klepety a posílá tě na další lekci.';
+  else if (ratio >= 0.85) text = 'Základy sedí. Projdi si pár chyb níže a můžeš na další lekci.';
+  else if (ratio >= 0.6) { mood = 'think'; text = 'Slušný základ. V tabulce níže je vidět, ke kterým lekcím se vrátit.'; }
+  else { mood = 'sad'; text = 'Tady se ještě vyplatí vrátit do lekcí. Chyba v kvízu nic nestojí, zkus to pak znovu.'; }
+  $('r-text').textContent = text;
+  $('r-ferris').setAttribute('href', '#ferris-' + mood);
+
+  $('r-table').innerHTML = LESSONS.map((L, l) => {
+    const rows = answers.filter((a) => QUESTIONS[a.id].l === l);
+    if (!rows.length) return '';
+    const g = rows.filter((a) => a.ok).length;
+    const weak = g / rows.length < 0.8;
+    return `<tr><td><a href="${lessonUrl(l)}" target="_blank" rel="noopener">${nn(l)} ${esc(L.title)}</a></td><td class="num">${g} / ${rows.length}</td><td>${weak
+      ? `<span class="weak">Zopakovat</span> · <a href="${infoUrl(l)}" target="_blank" rel="noopener">infografika</a>`
+      : '<span class="good">V pořádku</span>'}</td></tr>`;
+  }).join('');
+
+  const missed = answers.filter((a) => !a.ok);
+  $('r-miss-card').hidden = !missed.length;
+  $('r-miss').innerHTML = missed.map((a) => {
+    const q = QUESTIONS[a.id];
+    const right = q.opts.find((o) => o.ok);
+    const mine = q.opts[a.picked];
+    return `<details>
+      <summary>Lekce ${nn(q.l)}: ${md(q.q)}</summary>
+      ${q.code ? `<pre tabindex="0">${esc(q.code)}</pre>` : ''}
+      <div><b>Tvoje odpověď:</b> ${optHtml(mine)}</div>
+      ${mine.why ? `<p class="tiny">${md(mine.why)}</p>` : ''}
+      <div><b>Správně:</b> ${optHtml(right)}</div>
+      <p>${md(q.ex)}</p>
+    </details>`;
+  }).join('');
+  $('retry').hidden = !missed.length;
+  $('retry').textContent = `Zopakovat chybné (${missed.length})`;
+  st.missed = missed.map((a) => a.id);
+  show('result');
+}
+
+// ---------- ovládání ----------
+$('q-opts').addEventListener('click', (e) => {
+  const b = e.target.closest('.opt');
+  if (b) answer(Number(b.dataset.i));
+});
+$('next').addEventListener('click', next);
+$('stop').addEventListener('click', finish);
+$('retry').addEventListener('click', () => begin(shuffle(st.missed)));
+$('restart').addEventListener('click', () => show('start'));
+document.addEventListener('keydown', (e) => {
+  if ($('quiz').hidden || st.answered || e.ctrlKey || e.metaKey || e.altKey) return;
+  const i = '1234'.indexOf(e.key) >= 0 ? '1234'.indexOf(e.key) : 'abcd'.indexOf(e.key.toLowerCase());
+  if (e.key.length === 1 && i >= 0 && i < st.opts.length) answer(i);
+});
+initSetup();
+</script>
+<script>
+// Na webu (GitHub Pages) jsou lekce jako .html a obsah je adresář, při otevření ze souboru zůstávají .md.
+if (location.protocol !== 'file:') document.querySelectorAll('a[href^="../"][href$=".md"]').forEach((a) => { a.href = a.getAttribute('href').replace(/README\.md$/, '').replace(/\.md$/, '.html'); });
+</script>
+</body>
+</html>

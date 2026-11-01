@@ -22,7 +22,7 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
   neřekne jinak.
 - **Hotové lekce jsou učebnice:** lekce a infografiky, které už v `journal/` jsou, se nepřepisují. Agent z nich učí,
   ale zadání a kontrolu přizpůsobuje skutečnému kódu studenta. Formulace „tvoje chyba“ v nich popisují chyby z původního průchodu.
-- **Krok 4 postupu:** u lekce, která v `journal/` už je, se zápis ani infografika nedělají, jen se aktualizuje `stav.md`.
+- **Krok 4 postupu:** u lekce, která v `journal/` už je, se zápis, infografika ani otázky do kvízu nedělají, jen se aktualizuje `stav.md`.
   Lekci, která v `journal/` chybí, agent sepíše běžným postupem.
 - **Tagy:** `lekce-NN` v klonu už existují a ukazují kód učebnice, nový student používá `student-NN`.
   Porovnání: `git diff lekce-03 student-03`.
@@ -41,7 +41,8 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
   2. **Nové pojmy a syntaxe** – krátké vysvětlení s mini-příklady; rozebrat i každý nový zápis
      (symboly jako `|x|`, `&`, `::`, `!`, `?`, `'a`…), ne jen koncept
   3. **Postup** – co jsme udělali, příkazy, klíčové kusy kódu
-  4. **Tahák** – shrnutí v bodech / tabulce
+  4. **Tahák** – shrnutí v bodech / tabulce; pod nadpisem je Ferris s předmětem z metafory lekce a krátkou radou
+     (skript `ferris-tahak.js` ze skillu `infografika`)
   5. **Procvičení** – 2–3 malé úkoly pro samostatnou práci
   6. **Odkazy** – kapitoly z The Rust Book apod.
 - Lekce popisuje stav kódu odpovídající git tagu `lekce-NN`.
@@ -67,6 +68,13 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
   `rustc-check.sh` (ukázky a hlášky na skutečném `rustc`), `overflow.sh` (přetékání na mobilu),
   `shot.sh` (screenshoty desktop/mobil), `playtest.sh` (test hřiště). Při tvorbě infografiky skill vždy načíst.
 
+## Kvíz
+
+- `journal/kviz/kviz.html` je **jeden kvíz, který roste s lekcemi**: ke každé nové lekci agent doplní otázky (krok 4 postupu).
+  Adresa se nemění, vede na ni i Ferris v obsahu.
+- Stránka se nepíše ručně, skládá se z `questions.js` a `template.html`. Postup, zásady pro otázky a ověření na `rustc` jsou
+  ve skillu **`kviz`** (`.agents/skills/kviz/SKILL.md`). Při přidávání otázek skill vždy načíst.
+
 ## Kdo co dělá
 
 - **Agent nedělá nic za studenta.** Student se učí tím, že věci dělá sám. Agent nic nevytváří, neupravuje,
@@ -76,7 +84,7 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
   konfigurace (`.vscode/`, `.gitignore`, `rustfmt.toml`…), i příkazy, které něco mění (`cargo add`, `cargo fmt`…).
   Agent místo toho řekne, co a kde udělat (návod, ne hotový soubor).
 - Agent sám zapisuje **jen** do `journal/` (včetně `journal/infografika/`), `AGENTS.md`
-  a svých pomocných nástrojů v `.agents/skills/` (skilly a skripty pro psaní journalu a infografik). Git commit/tag dělá, když o to student požádá.
+  a svých pomocných nástrojů v `.agents/skills/` (skilly a skripty pro psaní journalu, infografik a kvízu). Git commit/tag dělá, když o to student požádá.
 - Agent: vysvětluje pojmy, zadává úkoly, kontroluje kód (build, clippy, testy – jen čtení/ověření),
   radí s chybami.
 - **Vždy vysvětlovat i syntaxi a jazykové konstrukce**, nejen co kód dělá. Každý nový symbol
@@ -91,7 +99,7 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
 3. Agent ověří: `cargo build`, `cargo run`, `cargo clippy`, od lekce s testy i `cargo test`;
    okomentuje kód, navrhne vylepšení.
 4. Agent napíše lekci do `journal/` podle skutečného kódu studenta, vytvoří k ní infografiku
-   v `journal/infografika/`, aktualizuje `journal/README.md` a stav osnovy níže.
+   v `journal/infografika/`, doplní Ferrise k taháku a otázky do kvízu, aktualizuje `journal/README.md` a stav osnovy níže.
 5. Na pokyn studenta: commit (česká zpráva) + tag `lekce-NN` (nový student `student-NN`).
 
 ## Technické volby

@@ -19,7 +19,11 @@ obrázky a nechá si ji „osahat“ na hřišti. Je to doplněk textu lekce, ne
    `<head>`, CSS tokeny a základní třídy z `06-vstup-infografika.html` (nejnovější a nejčistší),
    pak přidej třídy specifické pro metaforu.
 4. **Ověř** kód, hlášky i vzhled (níže), oprav, co najdeš.
-5. **Odkazy:** do sekce `## Odkazy` lekce jako první položku
+5. **Ferris u taháku:** do pole `LESSONS` ve `scripts/ferris-tahak.js` přidej lekci: předmět z metafory (SVG v rámečku
+   x 70–130, y 8–48), jeho název ve 4. pádu a radu na jeden řádek. Skript vytvoří `journal/ferris/tahak-NN.svg` a doplní Ferrise
+   pod nadpis Tahák v lekci i infografice. Když kopíruješ šablonu z jiné infografiky, Ferrise z ní smaž, skript pozná hotovou
+   stránku podle textu „Ferris radí“.
+6. **Odkazy:** do sekce `## Odkazy` lekce jako první položku
    `- [Infografika: <Titulek>](infografika/<soubor>.html) – <co v ní je> + hřiště … (otevřít v prohlížeči)`
    a stejný řádek odsazeně (`  - …`) pod lekci v `journal/README.md`.
    V patičce infografiky odkaz na text lekce vede o adresář výš: `../NN-….md`.
@@ -38,7 +42,7 @@ obrázky a nechá si ji „osahat“ na hřišti. Je to doplněk textu lekce, ne
 4. **Hřiště** (`.play`): interaktivní simulace nad kódem studenta – hodnoty/příkazy na kliknutí,
    vidět mezistavy, proměnné, výstup terminálu a **hlášky kompilátoru**, když něco nejde.
    Simulace se musí chovat jako skutečný program (stejné texty výstupu).
-5. **Tahák** (`table.cheat`) a tabulka chyb / „co se pokazí“.
+5. **Tahák** (Ferris s radou, `table.cheat`) a tabulka chyb / „co se pokazí“.
 6. **Footer:** odkaz na text lekce (`../…md`), Rust Book, std dokumentace.
 
 Jazyk: česky, identifikátory anglicky. Rozebírat **každý symbol syntaxe** (jak se čte, s čím
@@ -62,12 +66,19 @@ nezaměnit), stejně jako v lekcích.
 | `scripts/rustc-check.sh soubor.rs` nebo `- <<'EOF' … EOF` | přeloží ukázku `rustc --edition 2024`, vypíše hlavičky chyb (`error[E0384]: …`) a celý výpis; když se přeloží, spustí a vypíše výstup / paniku |
 | `scripts/overflow.sh journal/infografika/*.html` | najde prvky přetékající na šířce mobilu 390 px (exit 1, pokud něco přetéká) |
 | `scripts/shot.sh soubor.html [adresář]` | screenshot na 1200 a 390 px rozřezaný na dílky ≤ 2000 px; dílky prohlédni nástrojem Read |
+| `node scripts/ferris-tahak.js` | vygeneruje Ferrise (`journal/ferris/`) a doplní ho k tahákům, kde ještě není; hotové stránky nechá být |
 | `scripts/playtest.sh soubor.html test.js` | spustí stránku s testovacím skriptem (klikání na hřišti), výsledek z `document.title` |
 
 Skripty potřebují `google-chrome` a Python s PIL. Výstupy dávej do scratchpadu, ne do repa.
 
 Každou hlášku kompilátoru, výstup programu, `dbg!`, `cargo` nebo `git`, kterou infografika cituje,
 ověř skutečným spuštěním. Nic nepiš zpaměti.
+
+## Ferris
+
+Kresba je v `scripts/ferris.js`, používá ji i kvíz. Tmavý režim řeší sama, barvy jsou pevné. `journal/ferris/ferris.svg` v obsahu
+drží oficiální logo Rustu z `assets/rust-logo-blk.svg`: © Rust Foundation, CC-BY, smí se použít jen **beze změny** (žádné
+překreslování, přebarvování ani zakrývání) a s uvedením autora, které je v `journal/README.md`. Nesmí to vypadat jako oficiální projekt Rustu.
 
 ## Pasti, na které jsme narazili
 
