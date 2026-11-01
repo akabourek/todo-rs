@@ -168,6 +168,10 @@ Z názvu metody se dá poznat, co dělá se `self` (konvence standardní knihovn
 
 ## Tahák
 
+<img src="ferris/tahak-05.svg" alt="Krab Ferris drží nad hlavou krabici" width="110" align="right">
+
+**Ferris radí:** Mnoho `&`, nebo jedna `&mut`, nikdy obojí. A výpůjčka končí posledním použitím.
+
 | situace | zápis |
 |---|---|
 | předat a už nepotřebovat | `f(x)`, parametr `x: T` (přesun) |

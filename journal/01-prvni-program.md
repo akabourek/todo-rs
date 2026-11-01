@@ -149,6 +149,10 @@ fn main() {
 
 ## Tahák
 
+<img src="ferris/tahak-01.svg" alt="Krab Ferris drží nad hlavou sklenici se štítkem" width="110" align="right">
+
+**Ferris radí:** Hodnota se má měnit? Přidej `mut`. Výraz do výpisu patří za čárku, do `{…}` jen jméno proměnné.
+
 | Zápis | Význam |
 |---|---|
 | `let x = 1;` / `let mut x = 1;` | neměnná / měnitelná proměnná |

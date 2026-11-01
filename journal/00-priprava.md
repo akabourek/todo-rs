@@ -52,6 +52,10 @@ Editor: ve VS Code nainstalovat rozšíření **rust-analyzer**.
 
 ## Tahák
 
+<img src="ferris/tahak-00.svg" alt="Krab Ferris drží nad hlavou kufřík s nářadím" width="110" align="right">
+
+**Ferris radí:** `cargo check` je rychlá kontrola chyb, `cargo run` program přeloží a rovnou spustí.
+
 | Příkaz | Co dělá |
 |---|---|
 | `cargo build` | přeloží do `target/debug/` |

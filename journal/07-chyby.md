@@ -254,6 +254,10 @@ Poznámky:
 
 ## Tahák
 
+<img src="ferris/tahak-07.svg" alt="Krab Ferris drží nad hlavou červenou obálku" width="110" align="right">
+
+**Ferris radí:** Chyba uživatele? `Result` a hláška. Předat o patro výš? `?`. Nemělo by to nastat? `.expect()`.
+
 | Zápis | Význam |
 |---|---|
 | `Result<T, E>` | `Ok(T)` = úspěch, `Err(E)` = chyba s důvodem |

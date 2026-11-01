@@ -154,6 +154,10 @@ fn main() {
 
 ## Tahák
 
+<img src="ferris/tahak-03.svg" alt="Krab Ferris drží nad hlavou kartu úkolu" width="110" align="right">
+
+**Ferris radí:** Metoda jen čte? `&self`. Mění? `&mut self`. A poslední výraz bez `;` je návratová hodnota.
+
 | Zápis | Význam |
 |---|---|
 | `struct T { a: i32 }` | definice struktury |

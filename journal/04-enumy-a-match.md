@@ -246,6 +246,10 @@ Poznámky:
 
 ## Tahák
 
+<img src="ferris/tahak-04.svg" alt="Krab Ferris drží nad hlavou žeton" width="110" align="right">
+
+**Ferris radí:** Každá varianta jinak? Plný `match`. Jen ano, nebo ne? `matches!`. Index zadal uživatel? `.get()`.
+
 | Zápis | Význam |
 |---|---|
 | `enum E { A, B }` | typ s vyjmenovanými variantami |

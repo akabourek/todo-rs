@@ -116,6 +116,10 @@ odsazení…). Nastavení rozšíření platí pro celý projekt → patří na 
 
 ## Tahák
 
+<img src="ferris/tahak-02.svg" alt="Krab Ferris drží nad hlavou dálkové ovládání" width="110" align="right">
+
+**Ferris radí:** `F9` breakpoint, `F5` spustit, `F10` přes řádek, `F11` dovnitř funkce.
+
 | Klávesa | Akce |
 |---|---|
 | F9 | přepnout breakpoint na řádku |

@@ -271,6 +271,10 @@ Poznámky:
 
 ## Tahák
 
+<img src="ferris/tahak-06.svg" alt="Krab Ferris drží nad hlavou terminál" width="110" align="right">
+
+**Ferris radí:** `read_line` text připisuje a nechá v něm `\n`. Proto `String` uvnitř smyčky a pak `.trim()`.
+
 | Zápis | Význam |
 |---|---|
 | `use std::io;` | zkratka: `io::…` místo `std::io::…` |
