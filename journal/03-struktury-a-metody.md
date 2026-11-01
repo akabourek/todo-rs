@@ -165,7 +165,7 @@ fn main() {
 | `String` / `&str` | vlastní text / půjčený pohled |
 | `.to_string()` | `&str` → `String` |
 | `v[i]` | prvek na indexu (od 0) |
-| `.filter(\|x\| podmínka).count()` | počet prvků splňujících podmínku |
+| <code>.filter(&#124;x&#124; podmínka).count()</code> | počet prvků splňujících podmínku |
 
 ## Procvičení
 1. Přidej metodu `fn is_done(&self) -> bool` a použij ji místo přímého `task.done`.

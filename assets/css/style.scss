@@ -1,0 +1,47 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+// Tmavý režim podle nastavení zařízení, barvy jako v infografikách.
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark; }
+
+  body { background-color: #121820; color: #e6ebf1; }
+  a { color: #57c6cf; }
+
+  .markdown-body {
+    color: #e6ebf1;
+
+    a { color: #57c6cf; }
+    h1, h2 { border-bottom-color: #2f3b4c; }
+    h6, blockquote { color: #9ba7b6; }
+    blockquote { border-left-color: #2f3b4c; }
+    hr { background-color: #2f3b4c; }
+    code, tt { background-color: #222c3a; }
+    pre, .highlight, .highlight pre { background-color: #1b2330; color: #e6ebf1; }
+    pre code, pre tt { background-color: transparent; }
+
+    table {
+      th, td { border-color: #2f3b4c; }
+      tr { background-color: #1b2330; border-top-color: #2f3b4c; }
+      tr:nth-child(2n) { background-color: #222c3a; }
+    }
+  }
+
+  // Zvýraznění kódu (Rouge)
+  .highlight {
+    color: #e6ebf1;
+
+    .n, .nb, .nc, .nl, .nn, .nt, .nv, .nx, .na, .p, .w, .o, .ow, .err {
+      color: #e6ebf1; background-color: transparent; font-weight: normal;
+    }
+    .c, .c1, .cm, .cp, .cs { color: #9ba7b6; }
+    .k, .kc, .kd, .kn, .kp, .kr, .kt { color: #fb8c4e; }
+    .nb, .nc, .nn, .nt { color: #57c6cf; }
+    .nf, .fm { color: #efc75e; }
+    .s, .s1, .s2, .sb, .sc, .se, .sh, .si, .sx, .dl { color: #74c47a; }
+    .m, .mi, .mf, .mh, .mo, .il { color: #f2a59d; }
+    .gp, .go { color: #9ba7b6; }
+  }
+}

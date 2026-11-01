@@ -44,6 +44,7 @@ Totéž platí pro funkce – `fn print_tasks(tasks: Vec<Task>)` si vektor **vez
 - `derive(A, B)` = víc odvozených schopností najednou, oddělených čárkou.
 
 ### Výpůjčka (borrow) – `&` a `&mut`
+
 | zápis | čti | význam |
 |---|---|---|
 | `&x` | „reference na x“ | půjčka jen pro čtení, vlastník se nemění |
@@ -82,6 +83,7 @@ add_task(&mut tasks, "Another task"); // ✅ teď už je zapisovatel sám
   Funkce, která mění **délku** (`push`), potřebuje `&mut Vec<T>` – slice umí jen existující prvky.
 
 ### Co jsme už používali a teď tomu rozumíme
+
 | zápis | znamená |
 |---|---|
 | `fn symbol(&self)` | metoda si Task půjčí na čtení |
@@ -163,6 +165,7 @@ Z názvu metody se dá poznat, co dělá se `self` (konvence standardní knihovn
      nezmění), `allow` = „povol, nevaruj“.
 
 ## Tahák
+
 | situace | zápis |
 |---|---|
 | předat a už nepotřebovat | `f(x)`, parametr `x: T` (přesun) |

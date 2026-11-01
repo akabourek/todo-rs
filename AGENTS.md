@@ -45,6 +45,8 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
   5. **Procvičení** – 2–3 malé úkoly pro samostatnou práci
   6. **Odkazy** – kapitoly z The Rust Book apod.
 - Lekce popisuje stav kódu odpovídající git tagu `lekce-NN`.
+- Web (GitHub Pages) používá kramdown: před tabulkou musí být prázdný řádek a svislítko v kódu uvnitř tabulky
+  se píše `<code>a &#124;&#124; b</code>` (zápis `\|` by se zobrazil doslova).
 
 ## Infografiky
 

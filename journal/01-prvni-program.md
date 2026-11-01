@@ -49,6 +49,7 @@ let list = ["Apple", "Banana", "Cherry"];   // pole: typ [&str; 3] – pevně 3 
 let mut v = vec!["Apple", "Banana"];        // Vec<&str> – může růst
 v.push("Cherry");                            // u pole push neexistuje
 ```
+
 | | pole `[T; N]` | `Vec<T>` |
 |---|---|---|
 | délka | pevná, známá při kompilaci (`N`) | mění se za běhu |
@@ -156,7 +157,7 @@ fn main() {
 | `nazev!(...)` | makro (`println!`, `vec!`) |
 | `{x}` / `{}` ve formátu | vlož proměnnou x / další argument |
 | `&list` | půjčka – nepřebírá vlastnictví |
-| `\|a, b\| výraz` | closure (anonymní funkce) |
+| <code>&#124;a, b&#124; výraz</code> | closure (anonymní funkce) |
 | `(a, b)` ve vzoru | rozbalení dvojice |
 | `.iter().enumerate()` | prvky s pořadím `(index, prvek)` |
 

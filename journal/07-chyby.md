@@ -28,6 +28,7 @@ enum Result<T, E> { Ok(T),   Err(E) }   // „povedlo se / nepovedlo se, protož
   ```
 
 ### `expect` vs `Result`
+
 | Situace | Řešení |
 |---|---|
 | chyba, která by neměla nastat (nejde psát na terminál) | `.expect("…")` – program spadne se zprávou |
@@ -261,9 +262,9 @@ Poznámky:
 | `výraz?` | `Ok(v)` → `v`, `Err(e)` → `return Err(e)` |
 | `…?;` | nejdřív `?`, pak `;` |
 | `opt.ok_or(chyba)` | `Option` → `Result`, chyba hotová hodnota |
-| `opt.ok_or_else(\|\| chyba)` | totéž, chyba se vyrobí jen při `None` |
-| `res.map_err(\|_\| jiná)` | přemapuj jen `Err` (aby seděl typ pro `?`) |
-| `\|\| x` / `\|_\| x` | closure bez parametrů / s jedním zahozeným |
+| <code>opt.ok_or_else(&#124;&#124; chyba)</code> | totéž, chyba se vyrobí jen při `None` |
+| <code>res.map_err(&#124;_&#124; jiná)</code> | přemapuj jen `Err` (aby seděl typ pro `?`) |
+| <code>&#124;&#124; x</code> / <code>&#124;_&#124; x</code> | closure bez parametrů / s jedním zahozeným |
 | `enum TaskError { A, B(String) }` | vlastní druhy chyb, varianty s daty |
 | `impl fmt::Display for T { fn fmt(…) }` | naučí typ vypsat se přes `{}` |
 | `write!(f, "…", …)` | zápis do formatteru, vrací `fmt::Result` |
@@ -278,7 +279,7 @@ Poznámky:
 | `E0277 ? couldn't convert the error to String` | typ chyby funkce nesedí s typem u `?` |
 | `E0277 ? operator can only be used in a function that returns Result` | `?` v `main` / funkci bez `Result` |
 | `E0277 ? … on Results, not Options` | `?` na `Option` – nejdřív `ok_or` |
-| `E0308 expected TaskError, found closure` | `ok_or(\|\| …)` místo `ok_or_else` |
+| `E0308 expected TaskError, found closure` | <code>ok_or(&#124;&#124; …)</code> místo `ok_or_else` |
 | `E0308 expected String, found &str` | chybí `.to_string()` |
 | `E0004 non-exhaustive patterns` | v `Display` chybí varianta |
 | `E0277 doesn't implement std::fmt::Display` | `{}` bez `impl Display` |

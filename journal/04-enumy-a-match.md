@@ -96,6 +96,7 @@ if let Some(priority) = task.priority {
 - Zkrácený `match`, kde ostatní případy nedělají nic. Může mít `else { ... }`.
 
 ### `v[i]` vs `v.get(i)`
+
 | Zápis | Vrací | Index mimo rozsah |
 |---|---|---|
 | `tasks[10]` | `Task` (prvek) | **panika** – program spadne: `index out of bounds: the len is 3 but the index is 10` |
@@ -250,7 +251,7 @@ Poznámky:
 | `match x { A => 1, B => 2 }` | rozvětvení podle vzoru, výraz s hodnotou |
 | `=>` | „pak“ ve větvi `match` (≠ `->` návratový typ) |
 | `_ => ...` | všechno ostatní (vypíná kontrolu úplnosti) |
-| `A \| B => ...` | víc vzorů v jedné větvi |
+| <code>A &#124; B =&gt; ...</code> | víc vzorů v jedné větvi |
 | `matches!(x, Vzor)` | `true`/`false`, zda `x` odpovídá vzoru |
 | `'X'` / `"X"` | `char` (jeden znak) / `&str` (text) |
 | `Option<T>` | `Some(hodnota)` nebo `None` – náhrada za `null` |
