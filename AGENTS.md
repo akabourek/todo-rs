@@ -47,8 +47,14 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
 - Lekce popisuje stav kódu odpovídající git tagu `lekce-NN`.
 - Pod nadpisem a na konci každé lekce je stejný řádek s navigací: předchozí lekce, `[Obsah](README.md)`, další lekce a odkaz
   na GitHub. Po přidání nové lekce doplnit odkaz na ni i do lekce předchozí. `journal/README.md` odkazuje na GitHub pod nadpisem.
-- Web (GitHub Pages) používá kramdown: před tabulkou musí být prázdný řádek a svislítko v kódu uvnitř tabulky
-  se píše `<code>a &#124;&#124; b</code>` (zápis `\|` by se zobrazil doslova).
+- Lekce (`*.md`) překládá na webu (GitHub Pages) Jekyll. Ukázky kódu se tam musí zobrazit přesně tak, jak jsou ve zdroji,
+  proto v lekcích dbát na znaky, které má Jekyll vyhrazené:
+  - `{{` a `{%` jsou značky šablon Liquid a zpracují se **i uvnitř kódu**. Text se tiše ztratí nebo selže sestavení webu. Rust je
+    používá např. v `format!("{{}}")`, takový kód obalit do `{% raw %}` … `{% endraw %}`.
+  - `{:` mimo kód může kramdown považovat za své atributy, `{:?}` proto psát jen v kódu.
+  - Před tabulkou musí být prázdný řádek a svislítko v kódu uvnitř tabulky se píše `<code>a &#124;&#124; b</code>`
+    (zápis `\|` by se zobrazil doslova).
+  - Infografiky (`*.html`) bez front matter Jekyll jen kopíruje, tyto zásady se jich netýkají.
 
 ## Infografiky
 
