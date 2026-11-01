@@ -3,7 +3,7 @@
 // Vytvoří journal/ferris/tahak-NN.svg a doplní ho pod nadpis Tahák v lekci i infografice.
 // Co už Ferrise má, nechá být. Novou lekci stačí přidat do pole LESSONS a spustit znovu.
 const fs = require('fs'), path = require('path');
-const { holding, rustLogo } = require('./ferris.js');
+const { holding, moodSvg } = require('./ferris.js');
 const J = path.resolve(__dirname, '../../../../journal');
 
 const LESSONS = [
@@ -37,8 +37,8 @@ const tipHtml = (t) => t.split('`').map((p, i) => (i % 2 ? `<code>${esc(p)}</cod
 const nn = (l) => String(l).padStart(2, '0');
 
 fs.mkdirSync(path.join(J, 'ferris'), { recursive: true });
-// Ferris v obsahu journalu drží logo Rustu.
-fs.writeFileSync(path.join(J, 'ferris', 'ferris.svg'), holding(rustLogo(), 'role="img" aria-label="Krab Ferris drží nad hlavou logo Rustu"', true));
+// Ferris v obsahu journalu se raduje.
+fs.writeFileSync(path.join(J, 'ferris', 'ferris.svg'), moodSvg('happy', 'role="img" aria-label="Krab Ferris se raduje, obě klepeta má nad hlavou"'));
 
 LESSONS.forEach((x, l) => {
   const alt = `Krab Ferris drží nad hlavou ${x.thing}`;

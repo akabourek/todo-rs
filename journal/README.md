@@ -1,6 +1,6 @@
 # Journal – Rust od nuly přes ToDo list
 
-<a href="kviz/kviz.html" title="Kvíz: Ferrisova zkouška"><img src="ferris/ferris.svg" alt="Krab Ferris drží logo Rustu, odkaz na kvíz" width="120" align="right"></a>
+<a href="kviz/kviz.html" title="Kvíz: Ferrisova zkouška"><img src="ferris/ferris.svg" alt="Krab Ferris, odkaz na kvíz" width="120" align="right"></a>
 
 [Zdrojový kód na GitHubu](https://github.com/akabourek/todo-rs)
 
@@ -39,4 +39,4 @@ Celá plánovaná osnova je v [AGENTS.md](../AGENTS.md#osnova-stav--hotovo--ček
 
 ---
 
-Logo Rustu, které Ferris drží: © Rust Foundation, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), beze změny. Ferris je neoficiální maskot Rustu (původní návrh Karen Rustad Tölva, [rustacean.net](https://rustacean.net/)), tady překreslený zjednodušeně. Tento výukový projekt není oficiální ani spojený s Rust Project nebo Rust Foundation.
+Ferris je neoficiální maskot Rustu (původní návrh Karen Rustad Tölva, [rustacean.net](https://rustacean.net/)), tady překreslený zjednodušeně.

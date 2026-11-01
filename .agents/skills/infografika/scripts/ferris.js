@@ -1,6 +1,4 @@
 // Ferris nakreslený jako SVG: nálady pro kvíz a póza, ve které drží nad hlavou předmět.
-const fs = require('fs'), path = require('path');
-
 const ORANGE = '#f74c00', DARK = '#a52b00';
 const f = (n) => Math.round(n * 10) / 10;
 
@@ -55,31 +53,24 @@ const moodSymbols = () => Object.entries(MOODS).map(([k, parts]) =>
   `  <symbol id="ferris-${k}" viewBox="0 0 200 150">\n    ${parts.join('\n    ')}\n  </symbol>`).join('\n');
 
 // Ferris drží předmět nad hlavou. Předmět se vejde do x 70–130, y 8–48 a klepeta ho svírají z boků.
-// Spodek předmětu překrývá krunýř, s `inFront` je předmět vidět celý.
-function holding(object, attrs, inFront = false) {
+function holding(object, attrs) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" ${attrs}>
   ${legs}
   ${arm('M46 84 Q28 62 50 42')}
   ${arm('M154 84 Q172 62 150 42')}
-  ${inFront ? '' : object}
+  ${object}
   ${claw(58, 30, 15, 0)}
   ${claw(142, 30, 15, 180)}
   ${shell()}
-  ${inFront ? object : ''}
   ${eye(80, 82)}${eye(120, 82)}
   ${smile}${tongue}
 </svg>
 `;
 }
 
-// Oficiální logo Rustu beze změny, černé na bílém kotouči, aby bylo vidět i v tmavém režimu.
-// Podmínky: © Rust Foundation, CC-BY, uvést autora a nevypadat oficiálně (viz journal/README.md).
-function rustLogo() {
-  const svg = fs.readFileSync(path.join(__dirname, '../assets/rust-logo-blk.svg'), 'utf8');
-  const inner = svg.match(/<svg[^>]*>([\s\S]*)<\/svg>/)[1].trim();   // všechny cesty, logo má ozubení zvlášť
-  // Změřeno v prohlížeči: střed loga (71.06, 70.94), poloměr i s obrysem 52.3 z plátna 144.
-  const r = 25, cx = 100, cy = 27, scale = r / 52.3;
-  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff"/><g transform="translate(${f(cx - 71.06 * scale)} ${f(cy - 70.94 * scale)}) scale(${Math.round(scale * 1000) / 1000})">${inner}</g>`;
+// Samostatný obrázek v dané náladě.
+function moodSvg(mood, attrs) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" ${attrs}>\n  ${MOODS[mood].join('\n  ')}\n</svg>\n`;
 }
 
-module.exports = { moodSymbols, holding, rustLogo };
+module.exports = { moodSymbols, moodSvg, holding };

@@ -76,9 +76,8 @@ ověř skutečným spuštěním. Nic nepiš zpaměti.
 
 ## Ferris
 
-Kresba je v `scripts/ferris.js`, používá ji i kvíz. Tmavý režim řeší sama, barvy jsou pevné. `journal/ferris/ferris.svg` v obsahu
-drží oficiální logo Rustu z `assets/rust-logo-blk.svg`: © Rust Foundation, CC-BY, smí se použít jen **beze změny** (žádné
-překreslování, přebarvování ani zakrývání) a s uvedením autora, které je v `journal/README.md`. Nesmí to vypadat jako oficiální projekt Rustu.
+Kresba je v `scripts/ferris.js`, používá ji i kvíz. Tmavý režim řeší sama, barvy jsou pevné. Ferris v obsahu je
+`journal/ferris/ferris.svg`, u taháků `journal/ferris/tahak-NN.svg`.
 
 ## Pasti, na které jsme narazili
 
