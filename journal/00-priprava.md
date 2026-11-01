@@ -18,6 +18,16 @@ přeložit, nové edice jen přidávají/upravují pravidla.
 
 ## Postup
 
+Instalace Rustu přes `rustup` (pokud ho ještě nemáš):
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Instalátor se zeptá na volby, stačí výchozí. Potom otevři nový terminál, aby se načetla cesta k `cargo`.
+Rust ke spojení programu potřebuje i linker z překladače C. Pokud pak `cargo build` hlásí `linker cc not found`,
+nainstaluj `gcc` (Fedora: `sudo dnf install gcc`, Debian/Ubuntu: `sudo apt install build-essential`).
+
 ```bash
 rustc --version            # ověření instalace (máme 1.95)
 cd ~/Projects/todo-rs
