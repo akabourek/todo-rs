@@ -1,5 +1,7 @@
 # 03 – Struktury a metody
 
+[← 02 – Debugování ve VS Code](02-debugovani.md) · [Obsah](README.md) · [04 – Enumy a `match` →](04-enumy-a-match.md) · [GitHub](https://github.com/akabourek/todo-rs)
+
 ## Cíl
 Úkol už není jen text, ale vlastní typ `Task` s názvem a stavem hotovo/nehotovo. Umíme k typu napsat
 konstruktor a metody, a víme, kdy použít `String` a kdy `&str`.
@@ -178,3 +180,7 @@ fn main() {
 - [Rust Book 5.3 – Method Syntax](https://doc.rust-lang.org/book/ch05-03-method-syntax.html)
 - [Rust Book 3.3 – Functions (výrazy vs příkazy)](https://doc.rust-lang.org/book/ch03-03-how-functions-work.html)
 - [Rust Book 4.3 – The Slice Type (&str)](https://doc.rust-lang.org/book/ch04-03-slices.html)
+
+---
+
+[← 02 – Debugování ve VS Code](02-debugovani.md) · [Obsah](README.md) · [04 – Enumy a `match` →](04-enumy-a-match.md) · [GitHub](https://github.com/akabourek/todo-rs)

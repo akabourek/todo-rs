@@ -1,5 +1,7 @@
 # 02 – Debugování ve VS Code
 
+[← 01 – První program](01-prvni-program.md) · [Obsah](README.md) · [03 – Struktury a metody →](03-struktury-a-metody.md) · [GitHub](https://github.com/akabourek/todo-rs)
+
 ## Cíl
 Umět zastavit program na řádku, prohlížet proměnné a krokovat. Mít editor nastavený tak, aby sám formátoval
 a ukazoval rady clippy.
@@ -137,3 +139,7 @@ Pravým klikem na breakpoint → **Edit Breakpoint** → podmínka, např. `inde
 - [VS Code – Debugging](https://code.visualstudio.com/docs/editor/debugging)
 - [VS Code – Language specific settings](https://code.visualstudio.com/docs/getstarted/settings#_language-specific-editor-settings)
 - [`dbg!` v dokumentaci std](https://doc.rust-lang.org/std/macro.dbg.html)
+
+---
+
+[← 01 – První program](01-prvni-program.md) · [Obsah](README.md) · [03 – Struktury a metody →](03-struktury-a-metody.md) · [GitHub](https://github.com/akabourek/todo-rs)

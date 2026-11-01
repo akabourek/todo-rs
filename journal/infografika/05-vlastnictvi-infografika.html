@@ -294,6 +294,12 @@ footer ul { margin: 0; padding-left: 1.2em; }
 
 <div class="wrap">
 
+  <nav aria-label="Navigace" style="display:flex; flex-wrap:wrap; gap:4px 18px; font-size:0.95rem">
+    <a href="../05-vlastnictvi-a-vypujcky.md">← Lekce 05: Vlastnictví a výpůjčky</a>
+    <a href="../README.md">Obsah</a>
+    <a href="https://github.com/akabourek/todo-rs">GitHub</a>
+  </nav>
+
   <!-- ===== HERO ===== -->
   <header class="hero">
     <div>
@@ -684,6 +690,7 @@ fn add_task(tasks: &amp;mut Vec&lt;Task&gt;, …) <span class="c">// přidává:
   <footer>
     <span>Doplněk k lekci 05 projektu todo-rs. Ukázky kódu jsou z <code>src/main.rs</code>.</span>
     <ul>
+      <li><a href="../05-vlastnictvi-a-vypujcky.md">Lekce 05: Vlastnictví a výpůjčky (text)</a></li>
       <li><a href="https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html">Rust Book 4.1: What is Ownership?</a></li>
       <li><a href="https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html">Rust Book 4.2: References and Borrowing</a></li>
       <li><a href="https://doc.rust-lang.org/book/ch04-03-slices.html">Rust Book 4.3: The Slice Type</a></li>
@@ -809,4 +816,8 @@ fn add_task(tasks: &amp;mut Vec&lt;Task&gt;, …) <span class="c">// přidává:
 })();
 </script>
 
+<script>
+// Na webu (GitHub Pages) jsou lekce jako .html a obsah je adresář, při otevření ze souboru zůstávají .md.
+if (location.protocol !== 'file:') document.querySelectorAll('a[href^="../"][href$=".md"]').forEach((a) => { a.href = a.getAttribute('href').replace(/README\.md$/, '').replace(/\.md$/, '.html'); });
+</script>
 </html>

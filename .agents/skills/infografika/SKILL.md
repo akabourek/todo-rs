@@ -23,7 +23,8 @@ obrázky a nechá si ji „osahat“ na hřišti. Je to doplněk textu lekce, ne
    `- [Infografika: <Titulek>](infografika/<soubor>.html) – <co v ní je> + hřiště … (otevřít v prohlížeči)`
    a stejný řádek odsazeně (`  - …`) pod lekci v `journal/README.md`.
    V patičce infografiky odkaz na text lekce vede o adresář výš: `../NN-….md`.
-   Před `</body>` musí zůstat krátký skript ze šablony, který ten odkaz na GitHub Pages přepíše na `.html`.
+   Hned na začátku `.wrap` je navigace ze šablony: zpět na lekci, obsah a GitHub. Na konci stránky musí zůstat krátký skript
+   ze šablony, který odkazy na `.md` na GitHub Pages přepíše (`README.md` na adresář, ostatní na `.html`).
 
 ## Struktura stránky
 

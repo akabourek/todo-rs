@@ -1,5 +1,7 @@
 # 01 – První program
 
+[← 00 – Příprava prostředí](00-priprava.md) · [Obsah](README.md) · [02 – Debugování ve VS Code →](02-debugovani.md) · [GitHub](https://github.com/akabourek/todo-rs)
+
 ## Cíl
 Vypsat natvrdo zadaný seznam úkolů: proměnné, `Vec`, cyklus `for`, výpis pomocí `println!`.
 
@@ -173,3 +175,7 @@ fn main() {
 - [Rust Book 8.1 – Vectors](https://doc.rust-lang.org/book/ch08-01-vectors.html)
 - [Rust Book 13.1 – Closures](https://doc.rust-lang.org/book/ch13-01-closures.html)
 - [std::fmt – formátování](https://doc.rust-lang.org/std/fmt/)
+
+---
+
+[← 00 – Příprava prostředí](00-priprava.md) · [Obsah](README.md) · [02 – Debugování ve VS Code →](02-debugovani.md) · [GitHub](https://github.com/akabourek/todo-rs)

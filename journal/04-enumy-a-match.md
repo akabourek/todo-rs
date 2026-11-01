@@ -1,5 +1,7 @@
 # 04 – Enumy a `match`
 
+[← 03 – Struktury a metody](03-struktury-a-metody.md) · [Obsah](README.md) · [05 – Vlastnictví a výpůjčky →](05-vlastnictvi-a-vypujcky.md) · [GitHub](https://github.com/akabourek/todo-rs)
+
 ## Cíl
 Stav úkolu už není `bool`, ale enum se třemi stavy (čeká / rozpracovaný / hotový). Umíme hodnotu
 rozebrat přes `match`, `matches!` a `if let` a víme, jak Rust bez `null` vyjadřuje „možná hodnota“ – `Option`.
@@ -274,3 +276,7 @@ Poznámky:
 - [Rust Book 6.3 – Concise Control Flow with if let](https://doc.rust-lang.org/book/ch06-03-if-let.html)
 - [std::option::Option](https://doc.rust-lang.org/std/option/enum.Option.html)
 - [Rust Book 8.1 – Reading Elements of Vectors (`[]` vs `get`)](https://doc.rust-lang.org/book/ch08-01-vectors.html#reading-elements-of-vectors)
+
+---
+
+[← 03 – Struktury a metody](03-struktury-a-metody.md) · [Obsah](README.md) · [05 – Vlastnictví a výpůjčky →](05-vlastnictvi-a-vypujcky.md) · [GitHub](https://github.com/akabourek/todo-rs)

@@ -1,5 +1,7 @@
 # 05 – Vlastnictví a výpůjčky
 
+[← 04 – Enumy a `match`](04-enumy-a-match.md) · [Obsah](README.md) · [06 – Vstup od uživatele →](06-vstup-od-uzivatele.md) · [GitHub](https://github.com/akabourek/todo-rs)
+
 ## Cíl
 Rozumíme tomu, kdo v Rustu „vlastní“ data, co je přesun (move), kopie a klon, a jak si data jen půjčit
 přes `&` a `&mut`. Výpis a přidávání úkolů jsme vytáhli do samostatných funkcí, které si vektor půjčují.
@@ -197,3 +199,7 @@ Z názvu metody se dá poznat, co dělá se `self` (konvence standardní knihovn
 - [Rust Book 4.3 – The Slice Type](https://doc.rust-lang.org/book/ch04-03-slices.html)
 - [Rust Error Index – E0382](https://doc.rust-lang.org/error_codes/E0382.html), [E0502](https://doc.rust-lang.org/error_codes/E0502.html)
 - [Clippy – ptr_arg](https://rust-lang.github.io/rust-clippy/master/index.html#ptr_arg)
+
+---
+
+[← 04 – Enumy a `match`](04-enumy-a-match.md) · [Obsah](README.md) · [06 – Vstup od uživatele →](06-vstup-od-uzivatele.md) · [GitHub](https://github.com/akabourek/todo-rs)

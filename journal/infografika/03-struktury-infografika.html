@@ -302,6 +302,12 @@ footer ul { margin: 0; padding-left: 1.2em; }
 
 <div class="wrap">
 
+  <nav aria-label="Navigace" style="display:flex; flex-wrap:wrap; gap:4px 18px; font-size:0.95rem">
+    <a href="../03-struktury-a-metody.md">← Lekce 03: Struktury a metody</a>
+    <a href="../README.md">Obsah</a>
+    <a href="https://github.com/akabourek/todo-rs">GitHub</a>
+  </nav>
+
   <!-- ===== HERO ===== -->
   <header class="hero">
     <div>
@@ -861,8 +867,8 @@ let count_done = tasks.iter()
 })();
 </script>
 <script>
-// Na webu (GitHub Pages) jsou lekce jako .html, při otevření ze souboru zůstávají .md.
-if (location.protocol !== 'file:') document.querySelectorAll('a[href^="../"][href$=".md"]').forEach((a) => { a.href = a.getAttribute('href').replace(/\.md$/, '.html'); });
+// Na webu (GitHub Pages) jsou lekce jako .html a obsah je adresář, při otevření ze souboru zůstávají .md.
+if (location.protocol !== 'file:') document.querySelectorAll('a[href^="../"][href$=".md"]').forEach((a) => { a.href = a.getAttribute('href').replace(/README\.md$/, '').replace(/\.md$/, '.html'); });
 </script>
 </body>
 </html>

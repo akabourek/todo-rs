@@ -1,5 +1,7 @@
 # Journal – Rust od nuly přes ToDo list
 
+[Zdrojový kód na GitHubu](https://github.com/akabourek/todo-rs)
+
 Každá lekce = jeden krok aplikace + jeden okruh Rustu. Kód ke každé lekci je v gitu pod tagem `lekce-NN`:
 
 ```bash

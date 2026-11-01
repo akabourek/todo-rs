@@ -1,5 +1,7 @@
 # 00 – Příprava prostředí
 
+[Obsah](README.md) · [01 – První program →](01-prvni-program.md) · [GitHub](https://github.com/akabourek/todo-rs)
+
 ## Cíl
 Mít nainstalovaný Rust, založený projekt a git. Vědět, co který nástroj dělá.
 
@@ -68,3 +70,7 @@ Editor: ve VS Code nainstalovat rozšíření **rust-analyzer**.
 - [Infografika: Dílna na Rust](infografika/00-priprava-infografika.html) – rustup, rustc, cargo a git jako dílna, co udělá `cargo init`/`check`/`build`/`run` + hřiště s terminálem a stromem souborů (otevřít v prohlížeči)
 - [The Rust Book, kap. 1 – Getting Started](https://doc.rust-lang.org/book/ch01-00-getting-started.html)
 - [Cargo Book](https://doc.rust-lang.org/cargo/)
+
+---
+
+[Obsah](README.md) · [01 – První program →](01-prvni-program.md) · [GitHub](https://github.com/akabourek/todo-rs)

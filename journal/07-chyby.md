@@ -1,5 +1,7 @@
 # 07 – Chyby
 
+[← 06 – Vstup od uživatele](06-vstup-od-uzivatele.md) · [Obsah](README.md) · [GitHub](https://github.com/akabourek/todo-rs)
+
 ## Cíl
 Program uživateli řekne, **co** udělal špatně: chybí číslo, není to číslo, nula, úkol neexistuje.
 Umíme vracet `Result`, přeposlat chybu o patro výš otazníkem `?` a nadefinovat vlastní chybový
@@ -302,3 +304,7 @@ Poznámky:
 - [std::result::Result](https://doc.rust-lang.org/std/result/enum.Result.html) ([`map_err`](https://doc.rust-lang.org/std/result/enum.Result.html#method.map_err)),
   [Option::ok_or](https://doc.rust-lang.org/std/option/enum.Option.html#method.ok_or), [ok_or_else](https://doc.rust-lang.org/std/option/enum.Option.html#method.ok_or_else)
 - [std::fmt::Display](https://doc.rust-lang.org/std/fmt/trait.Display.html), [write!](https://doc.rust-lang.org/std/macro.write.html)
+
+---
+
+[← 06 – Vstup od uživatele](06-vstup-od-uzivatele.md) · [Obsah](README.md) · [GitHub](https://github.com/akabourek/todo-rs)

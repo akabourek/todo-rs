@@ -45,6 +45,8 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
   5. **Procvičení** – 2–3 malé úkoly pro samostatnou práci
   6. **Odkazy** – kapitoly z The Rust Book apod.
 - Lekce popisuje stav kódu odpovídající git tagu `lekce-NN`.
+- Pod nadpisem a na konci každé lekce je stejný řádek s navigací: předchozí lekce, `[Obsah](README.md)`, další lekce a odkaz
+  na GitHub. Po přidání nové lekce doplnit odkaz na ni i do lekce předchozí. `journal/README.md` odkazuje na GitHub pod nadpisem.
 - Web (GitHub Pages) používá kramdown: před tabulkou musí být prázdný řádek a svislítko v kódu uvnitř tabulky
   se píše `<code>a &#124;&#124; b</code>` (zápis `\|` by se zobrazil doslova).
 
@@ -53,6 +55,7 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
 - **Ke každé lekci patří infografika** – agent ji vytvoří vždy spolu se zápisem lekce (krok 4 postupu).
 - Umístění: `journal/infografika/NN-kratky-nazev-infografika.html` (jeden samostatný HTML soubor,
   otevírá se v prohlížeči), odkaz v sekci **Odkazy** lekce i v `journal/README.md`.
+- Každá infografika má hned nahoře navigaci zpět na svou lekci, na obsah a na GitHub.
 - Postup, struktura, jednotný styl řady, pasti a ověřovací skripty jsou ve skillu
   **`infografika`** (`.agents/skills/infografika/SKILL.md`, skripty v `scripts/`):
   `rustc-check.sh` (ukázky a hlášky na skutečném `rustc`), `overflow.sh` (přetékání na mobilu),

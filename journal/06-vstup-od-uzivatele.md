@@ -1,5 +1,7 @@
 # 06 – Vstup od uživatele
 
+[← 05 – Vlastnictví a výpůjčky](05-vlastnictvi-a-vypujcky.md) · [Obsah](README.md) · [07 – Chyby →](07-chyby.md) · [GitHub](https://github.com/akabourek/todo-rs)
+
 ## Cíl
 Program už jen nevypisuje pevná data: zobrazí výzvu `> `, přečte příkaz z klávesnice, provede ho
 a čeká na další. Umíme číst řádek ze stdin, rozdělit ho na příkaz a parametr a převést text na číslo.
@@ -304,3 +306,7 @@ Poznámky:
 - [std::io::Stdin::read_line](https://doc.rust-lang.org/std/io/struct.Stdin.html#method.read_line)
 - [str::split_once](https://doc.rust-lang.org/std/primitive.str.html#method.split_once), [str::parse](https://doc.rust-lang.org/std/primitive.str.html#method.parse)
 - [Rust Reference – if let chains](https://doc.rust-lang.org/reference/expressions/if-expr.html#chains-of-conditions)
+
+---
+
+[← 05 – Vlastnictví a výpůjčky](05-vlastnictvi-a-vypujcky.md) · [Obsah](README.md) · [07 – Chyby →](07-chyby.md) · [GitHub](https://github.com/akabourek/todo-rs)
