@@ -1,6 +1,6 @@
 ---
 name: infografika
-description: Vytvoření nebo úprava infografiky k lekci todo-rs (journal/infografika/NN-…-infografika.html) – jednotný styl řady, metafora, scény, interaktivní hřiště, ověření kódu na rustc a kontrola vzhledu screenshoty. Použít vždy při zápisu nové lekce a když Aleš chce infografiku upravit.
+description: Vytvoření nebo úprava infografiky k lekci todo-rs (journal/infografika/NN-…-infografika.html) – jednotný styl řady, metafora, scény, interaktivní hřiště, ověření kódu na rustc a kontrola vzhledu screenshoty. Použít vždy při zápisu nové lekce a když student chce infografiku upravit.
 ---
 
 # Infografika k lekci
@@ -11,7 +11,7 @@ obrázky a nechá si ji „osahat“ na hřišti. Je to doplněk textu lekce, ne
 ## Postup
 
 1. **Podklady:** přečti `journal/NN-….md` celé a kód na tagu `git show lekce-NN:src/main.rs`.
-   Infografika vychází z **Alešova skutečného kódu** a nepředbíhá pozdější lekce (odkáže na ně
+   Infografika vychází ze **skutečného kódu studenta** a nepředbíhá pozdější lekce (odkáže na ně
    jen tam, kde to dělá i text lekce).
 2. **Metafora:** jedna pro celou lekci, fyzická a jednoduchá (lekce 05 krabice a štítky, 04 třídička
    a žetony, 06 cesta textu a řada branek). Vede přes všechny scény.
@@ -33,7 +33,7 @@ obrázky a nechá si ji „osahat“ na hřišti. Je to doplněk textu lekce, ne
    `.text` (věta s metaforou `.metaphor`, kód v `<pre>`, vysvětlení syntaxe, `.verdict` s chybou).
    V nadpisu scény má být klíčové slovo (`<h2><code>if let</code>: …</h2>`), ne jen metafora –
    jinak se v infografice nedá najít.
-4. **Hřiště** (`.play`): interaktivní simulace nad Alešovým kódem – hodnoty/příkazy na kliknutí,
+4. **Hřiště** (`.play`): interaktivní simulace nad kódem studenta – hodnoty/příkazy na kliknutí,
    vidět mezistavy, proměnné, výstup terminálu a **hlášky kompilátoru**, když něco nejde.
    Simulace se musí chovat jako skutečný program (stejné texty výstupu).
 5. **Tahák** (`table.cheat`) a tabulka chyb / „co se pokazí“.
