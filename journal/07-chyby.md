@@ -1,6 +1,6 @@
 # 07 – Chyby
 
-[← 06 – Vstup od uživatele](06-vstup-od-uzivatele.md) · [Obsah](README.md) · [GitHub](https://github.com/akabourek/todo-rs)
+[← 06 – Vstup od uživatele](06-vstup-od-uzivatele.md) · [Obsah](README.md) · [08 – Moduly →](08-moduly.md) · [GitHub](https://github.com/akabourek/todo-rs)
 
 ## Cíl
 Program uživateli řekne, **co** udělal špatně: chybí číslo, není to číslo, nula, úkol neexistuje.
@@ -311,4 +311,4 @@ Poznámky:
 
 ---
 
-[← 06 – Vstup od uživatele](06-vstup-od-uzivatele.md) · [Obsah](README.md) · [GitHub](https://github.com/akabourek/todo-rs)
+[← 06 – Vstup od uživatele](06-vstup-od-uzivatele.md) · [Obsah](README.md) · [08 – Moduly →](08-moduly.md) · [GitHub](https://github.com/akabourek/todo-rs)

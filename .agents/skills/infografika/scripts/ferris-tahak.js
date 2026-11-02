@@ -31,6 +31,9 @@ const LESSONS = [
   { md: '07-chyby.md', html: '07-chyby-infografika.html', thing: 'červenou obálku',
     tip: "Chyba uživatele? `Result` a hláška. Předat o patro výš? `?`. Nemělo by to nastat? `.expect()`.",
     object: `<rect x="70" y="13" width="60" height="35" rx="3" fill="#b42318" stroke="#7a1610" stroke-width="2.5"/><path d="M71 15 L100 35 L129 15" fill="none" stroke="#f9dedb" stroke-width="2.5" stroke-linejoin="round"/><path d="M71 47 L91 29 M129 47 L109 29" stroke="#7a1610" stroke-width="1.5"/>` },
+  { md: '08-moduly.md', html: '08-moduly-infografika.html', thing: 'okénko přepážky',
+    tip: "Nový soubor? `mod` v `main.rs`. Jiný modul? `use crate::…`. Vidět zvenku? `pub`, ale jen co je potřeba.",
+    object: `<rect x="71" y="9" width="58" height="39" rx="3" fill="#c9975c" stroke="#6f4c24" stroke-width="2.5"/><rect x="82" y="12" width="36" height="9" rx="1.5" fill="#f7f1e3" stroke="#a7773f" stroke-width="1.5"/><path d="M87 16.5 H113" stroke="#5b6676" stroke-width="2"/><rect x="79" y="24" width="42" height="19" fill="#d7eef0" stroke="#0d7480" stroke-width="2"/><rect x="75" y="42" width="50" height="6" rx="1" fill="#efc75e" stroke="#6f4c24" stroke-width="1.5"/>` },
 ];
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const tipHtml = (t) => t.split('`').map((p, i) => (i % 2 ? `<code>${esc(p)}</code>` : esc(p))).join('');

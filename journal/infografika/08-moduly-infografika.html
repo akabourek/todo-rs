@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>Úřad s přepážkami</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
+<style>
+/* Metafora: program je budova úřadu, moduly jsou kanceláře, main.rs je vrátnice s plánem budovy (mod).
+   pub = přepážka, bez pub = zázemí, soukromá pole = šanony za přepážkou, crate:: = adresa od vrátnice,
+   use = rychlá volba na telefonu. Barvy a písma sdílí s lekcemi 04–07. */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #1b2330;
+  --muted: #5b6676;
+  --line: #cfd6df;
+  --kraft: #c9975c;
+  --kraft-dark: #a7773f;
+  --kraft-edge: #6f4c24;
+  --tape: #efc75e;
+  --label: #f7f1e3;
+  --read: #0d7480;
+  --read-soft: #d7eef0;
+  --write: #c2410c;
+  --write-soft: #fbe3d6;
+  --ok: #2e7d32;
+  --ok-soft: #dcefdc;
+  --err: #b42318;
+  --err-soft: #f9dedb;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --f-stamp: "Saira Stencil One", Impact, "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+    --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+    --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+    --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+  --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+  --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+  --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  /* bez ligatur: => -> || musí vypadat přesně tak, jak se píšou */
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3.2vw, 2rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 code { font-size: 0.85em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+code, pre { font-family: var(--f-code); font-size: 0.86em; }
+:not(pre) > code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; white-space: nowrap; }
+a { color: var(--read); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--write); outline-offset: 2px; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 32px; align-items: center; }
+.hero .lead { font-size: 1.2rem; color: var(--muted); margin-top: 16px; }
+.eyebrow { font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hero-fig { display: flex; justify-content: center; min-width: 0; }
+
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.rule b { font-family: var(--f-display); font-size: 1.15rem; }
+.rule span { color: var(--muted); font-size: 0.95rem; }
+.rule .n { font-family: var(--f-stamp); font-size: 1.6rem; color: var(--kraft-dark); line-height: 1; }
+
+/* ---------- budova, kanceláře ---------- */
+.bldg { display: grid; gap: 0; width: 100%; max-width: 440px; border: 3px solid var(--ink); border-radius: 10px 10px 4px 4px; overflow: hidden; background: var(--surface); }
+.gate { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 12px; background: var(--surface-2); border-bottom: 2px solid var(--line); min-width: 0; }
+.gate b { font-family: var(--f-display); font-size: 1.2rem; }
+.gate code { white-space: normal; overflow-wrap: anywhere; font-size: 0.74rem; }
+.offices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.office { display: grid; gap: 4px; justify-items: center; align-content: start; text-align: center; padding: 12px 6px; border-left: 2px solid var(--line); min-width: 0; }
+.office:first-child { border-left: 0; }
+.office b { font-family: var(--f-display); font-size: 1.05rem; }
+.office small { font-family: var(--f-code); font-size: 0.72rem; color: var(--muted); }
+.window { font-family: var(--f-code); font-size: 0.7rem; font-weight: 600; padding: 3px 6px; border-radius: 4px; background: var(--read-soft); color: var(--read); border: 2px solid var(--read); overflow-wrap: anywhere; max-width: 100%; }
+.tree { width: 100%; }
+.outside { display: grid; gap: 4px; justify-items: center; text-align: center; width: 100%; padding: 12px; border: 2px dashed var(--line); border-radius: 8px; color: var(--muted); }
+.outside small { font-size: 0.85rem; }
+.addr { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; width: 100%; }
+.step { display: grid; gap: 2px; justify-items: center; padding: 8px 10px; border-radius: 8px; background: var(--label); color: #3a2b17; border: 2px solid var(--kraft-dark); }
+.step code { background: none; border: 0; color: inherit; font-weight: 600; font-size: 1rem; }
+.step small { font-size: 0.72rem; color: #7a6340; }
+.sep { font-family: var(--f-code); font-weight: 600; font-size: 1.1rem; }
+.phones { display: grid; gap: 10px; width: 100%; }
+.phone { display: grid; gap: 4px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 2px solid var(--line); font-size: 0.85rem; min-width: 0; }
+.phone div { overflow-wrap: anywhere; }
+.phone code { white-space: normal; overflow-wrap: anywhere; }
+.desk { display: grid; width: 100%; border: 3px solid var(--ink); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.desk-h { padding: 8px 12px; background: var(--surface-2); font-family: var(--f-code); font-size: 0.82rem; border-bottom: 2px solid var(--line); }
+.desk-h b { font-family: var(--f-display); font-size: 1rem; }
+.counter, .back { display: grid; gap: 8px; padding: 12px; min-width: 0; }
+.counter { background: var(--read-soft); }
+.back { background: var(--surface-2); border-top: 3px double var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.bars { display: grid; gap: 8px; width: 100%; }
+.bar-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 40px; gap: 10px; align-items: center; }
+.bar-row code { justify-self: start; }
+.bar-row b { font-family: var(--f-code); text-align: right; }
+.bar-row .bar { display: block; height: 18px; border-radius: 4px; background: var(--read); justify-self: start; }
+.bar-row .bar.old { background: var(--kraft-dark); }
+.mini.files td:first-child code { white-space: nowrap; overflow-wrap: normal; }
+.bar-row code { white-space: nowrap; }
+.reach { display: grid; gap: 6px; }
+.reach button {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; text-align: left; cursor: pointer;
+  padding: 8px 12px; border-radius: 8px; border: 2px solid var(--line); background: var(--surface-2); color: var(--ink); font-family: var(--f-code); font-size: 0.82rem;
+}
+.reach button span:first-child { overflow-wrap: anywhere; min-width: 0; }
+.reach button[aria-pressed="true"] { border-color: var(--ink); }
+.reach .ok { color: var(--ok); font-weight: 600; white-space: nowrap; }
+.reach .bad { color: var(--err); font-weight: 600; white-space: nowrap; }
+.fl-tag { font-family: var(--f-code); font-size: 0.7rem; font-weight: 600; padding: 0 6px; border-radius: 4px; }
+.fl-tag.pub { background: var(--read-soft); color: var(--read); }
+.fl-tag.priv { background: var(--surface); color: var(--muted); border: 1px solid var(--line); }
+
+/* ---------- scény ---------- */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.scene.wide { grid-template-columns: minmax(0, 1fr); }
+.scene-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.scene-head .num { font-family: var(--f-stamp); font-size: 2rem; color: var(--kraft-dark); line-height: 1; }
+.scene-head .sym { font-family: var(--f-code); font-size: 1rem; color: var(--muted); }
+.fig {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0;
+  padding: 22px 18px; display: grid; gap: 16px; justify-items: center; align-content: center; min-height: 200px;
+  overflow-x: auto;
+}
+.fig-cap { font-size: 0.9rem; color: var(--muted); text-align: center; max-width: 46ch; }
+.lbl { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+.vs > div { display: grid; gap: 10px; align-content: start; justify-items: center; padding: 12px; border-radius: 8px; background: var(--surface-2); min-width: 0; text-align: center; }
+.vs h3 { font-size: 0.95rem; }
+.vs .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.vs small { color: var(--muted); font-size: 0.82rem; }
+
+.text { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.text > * { min-width: 0; }
+.text .metaphor { font-size: 1.12rem; }
+.text .metaphor b { font-family: var(--f-display); }
+.text ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+
+pre {
+  margin: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .e { color: var(--err); font-weight: 600; }
+pre .k { color: var(--ok); font-weight: 600; }
+pre .r { color: var(--read); font-weight: 600; }
+pre .w { color: var(--write); font-weight: 600; }
+
+.verdict { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+.verdict > span:last-child { min-width: 0; }
+.verdict.bad { background: var(--err-soft); }
+.verdict.good { background: var(--ok-soft); }
+.verdict.warn { background: var(--write-soft); }
+.verdict .code { font-family: var(--f-code); font-weight: 600; flex: none; }
+.verdict.bad .code { color: var(--err); }
+.verdict.good .code { color: var(--ok); }
+.verdict.warn .code { color: var(--write); }
+
+.mini { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.mini th, .mini td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mini th { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.mini tr:last-child td { border-bottom: 0; }
+.mini td.ok { color: var(--ok); font-weight: 700; }
+.mini td.bad { color: var(--err); font-weight: 700; }
+.mini td code { white-space: normal; }
+
+.three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; width: 100%; }
+.three > div { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.three pre { font-size: 0.8rem; padding: 12px; }
+.three .tag { font-family: var(--f-stamp); font-size: 1.05rem; color: var(--kraft-dark); }
+
+.term { font-family: var(--f-code); font-size: 0.85rem; background: #10161e; color: #e6ebf1; border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; width: 100%; min-width: 0; overflow-x: auto; }
+.term .p { color: #7f8b99; }
+.term .u { color: #efc75e; }
+.term .bad { color: #f2a59d; }
+.term .warn { color: #fbbf77; }
+.term .okc { color: #9fd8a3; }
+
+/* ---------- hřiště ---------- */
+.play { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
+.play-intro { display: grid; gap: 8px; }
+.hint { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--tape); padding-left: 12px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 2px solid var(--line); }
+.tabs button {
+  font-family: var(--f-body); font-size: 0.95rem; font-weight: 700; cursor: pointer; padding: 8px 14px;
+  border: 2px solid var(--line); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--surface-2); color: var(--muted); margin-bottom: -2px;
+}
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); border-color: var(--ink); border-bottom: 2px solid var(--surface); }
+.pane { display: grid; gap: 16px; }
+.pane[hidden] { display: none; }
+.prompt { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.prompt label { font-family: var(--f-code); font-weight: 600; font-size: 1.1rem; }
+.prompt input {
+  flex: 1 1 220px; min-width: 0; font-family: var(--f-code); font-size: 1rem; padding: 9px 12px;
+  border: 2px solid var(--ink); border-radius: 8px; background: var(--surface); color: var(--ink);
+  white-space: pre;
+}
+.btn {
+  font-family: var(--f-body); font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  padding: 9px 14px; border-radius: 8px; border: 2px solid var(--ink); background: var(--ink); color: var(--surface);
+}
+.btn.quiet { background: var(--surface); color: var(--muted); border-color: var(--line); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.examples button {
+  font-family: var(--f-code); font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: pre;
+  padding: 5px 10px; border-radius: 999px; border: 2px solid var(--kraft-dark); background: var(--label); color: #3a2b17;
+}
+.examples button[aria-pressed="true"] { background: var(--err); border-color: var(--err); color: #fff; }
+.play-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.trace { display: grid; gap: 10px; min-width: 0; }
+.fl-box { border: 2px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
+.fl-box.hit { border-color: var(--err); }
+.fl-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; padding: 6px 10px; background: var(--surface-2); font-family: var(--f-code); font-size: 0.75rem; color: var(--muted); }
+.fl-head b { font-family: var(--f-display); font-size: 0.95rem; color: var(--ink); }
+.fl-box .rows { display: grid; gap: 4px; padding: 8px; }
+.tr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 7px 10px; border-radius: 8px; background: var(--surface-2); border-left: 5px solid var(--line); min-width: 0; }
+.tr .op { font-family: var(--f-code); font-size: 0.78rem; color: var(--muted); overflow-wrap: anywhere; }
+.tr .val { font-size: 0.88rem; overflow-wrap: anywhere; }
+.tr .val .env { font-size: 0.78rem; }
+.tr.ok { border-left-color: var(--ok); }
+.tr.bad { border-left-color: var(--err); background: var(--err-soft); }
+.tr.up { border-left-color: var(--err); border-left-style: double; border-left-width: 6px; }
+.tr.skip { opacity: 0.45; border-left-style: dashed; }
+.tr.hl { border-left-color: var(--tape); }
+.side { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.tasks { display: grid; gap: 4px; font-family: var(--f-code); font-size: 0.82rem; }
+.tasks div { padding: 5px 8px; background: var(--surface-2); border-radius: 6px; overflow-wrap: anywhere; }
+.tasks div.changed { box-shadow: 0 0 0 2px var(--tape); }
+.side .term { max-height: 280px; overflow-y: auto; }
+
+.diff { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; font-family: var(--f-code); font-size: 0.8rem; }
+.diff div { white-space: pre; padding: 3px 12px; }
+.diff .minus { background: var(--ok-soft); color: var(--ok); }
+.diff .plus { background: var(--err-soft); color: var(--err); }
+.diff .none { color: var(--muted); font-style: italic; }
+.broken-out { max-height: 420px; overflow-y: auto; }
+.broken-why { font-size: 0.95rem; }
+
+/* ---------- tahák ---------- */
+.cheat-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table.cheat { border-collapse: collapse; width: 100%; min-width: 640px; }
+table.cheat th, table.cheat td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.cheat th { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+table.cheat tr:last-child td { border-bottom: 0; }
+table.cheat td:first-child { font-weight: 700; }
+
+footer { display: grid; gap: 8px; color: var(--muted); font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 20px; }
+footer ul { margin: 0; padding-left: 1.2em; }
+
+@media (max-width: 780px) {
+  .hero, .scene, .play-grid, .three { grid-template-columns: minmax(0, 1fr); }
+  .hero-fig { order: -1; }
+  .rules { grid-template-columns: 1fr; }
+  .vs { grid-template-columns: 1fr; }
+  .bar-row { grid-template-columns: 84px minmax(0, 1fr) 34px; gap: 6px; }
+  .offices .office small { font-size: 0.66rem; }
+  :not(pre) > code { white-space: normal; overflow-wrap: anywhere; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <nav aria-label="Navigace" style="display:flex; flex-wrap:wrap; gap:4px 18px; font-size:0.95rem">
+    <a href="../08-moduly.md">← Lekce 08: Moduly</a>
+    <a href="../README.md">Obsah</a>
+    <a href="https://github.com/akabourek/todo-rs">GitHub</a>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <div>
+      <div class="eyebrow">todo-rs · lekce 08 · moduly</div>
+      <h1>Úřad s přepážkami</h1>
+      <p class="lead">Program je <b>budova úřadu</b>. Každý modul je <b>kancelář</b> a <code>main.rs</code> je vrátnice s plánem budovy. Co má kancelář na <b>přepážce</b> (<code>pub</code>), si může vyzvednout každý. Co je v <b>zázemí</b>, zůstává uvnitř.</p>
+    </div>
+    <div class="hero-fig" aria-hidden="true">
+      <div class="bldg">
+        <div class="gate"><span class="lbl">vrátnice · kořen</span><b>main.rs</b><code>mod error; mod list; mod task;</code></div>
+        <div class="offices">
+          <div class="office"><b>task</b><small>task.rs</small><span class="window">Task</span></div>
+          <div class="office"><b>list</b><small>list.rs</small><span class="window">get_task</span></div>
+          <div class="office"><b>error</b><small>error.rs</small><span class="window">TaskError</span></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="rules" aria-label="Tři pravidla">
+    <div class="rule"><span class="n">1</span><b><code>mod</code> zapisuje do plánu.</b><span>Soubor, na který nevede <code>mod</code>, kompilátor vůbec nečte. Píše se jednou, v <code>main.rs</code>.</span></div>
+    <div class="rule"><span class="n">2</span><b><code>use</code> je jen rychlá volba.</b><span>Zkrátí dlouhou adresu <code>crate::task::Task</code> na <code>Task</code>. Platí jen v souboru, kde je napsaná.</span></div>
+    <div class="rule"><span class="n">3</span><b>Výchozí je soukromí.</b><span>Bez <code>pub</code> položku vidí jen její kancelář a její potomci. Zveřejni jen to, co je potřeba.</span></div>
+  </section>
+
+  <!-- ===== 1 MOD ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">1</span><h2><code>mod</code>: zápis do plánu budovy</h2><span class="sym">mod list;</span></div>
+    <div class="fig">
+<pre class="tree"><code><span class="w">crate</span>            <span class="c">← main.rs, kořen</span>
+├── <span class="r">error</span>        <span class="c">← error.rs</span>
+├── <span class="r">list</span>         <span class="c">← list.rs</span>
+└── <span class="r">task</span>         <span class="c">← task.rs</span></code></pre>
+      <div class="outside"><span class="lbl">mimo plán</span><code>src/nesmysl.rs</code><small>Soubor plný nesmyslů bez <code>mod</code>: <code>cargo build</code> projde, nikdo ho nečte.</small></div>
+      <p class="fig-cap">Moduly tvoří strom a kořenem je <code>main.rs</code>. Ve zdrojácích je soubor, ale do programu ho přidá teprve <code>mod</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Kancelář neexistuje, dokud není v plánu budovy.</b> Stavba tam může stát, ale nikdo do ní nepřijde.</p>
+<pre><code><span class="c">// src/main.rs</span>
+<span class="c">// „mám podmodul error, je v src/error.rs“</span>
+<span class="w">mod</span> error;
+<span class="w">mod</span> list;
+<span class="w">mod</span> task;</code></pre>
+      <ul>
+        <li><b><code>mod list;</code></b> se středníkem znamená „obsah je v jiném souboru“. Není to <code>#include</code>: nic se nekopíruje, vznikne prostor se jménem.</li>
+        <li><b>Kolikrát:</b> pro každý soubor jednou v celém programu. Ostatní soubory ho už jen používají.</li>
+        <li><b><code>mod x { … }</code></b> je modul přímo na místě, bez dalšího souboru.</li>
+      </ul>
+      <div class="verdict bad"><span class="code">E0432</span><span><b>Tvoje chyba:</b> s řádkem <code>use error::TaskError;</code> se z <code>main.rs</code> smazal i <code>mod error;</code>. <i>unresolved import <code>crate::error</code></i>: soubor existuje, ale v plánu chybí. Rada <code>crate::core::error</code> je slepá ulička, kompilátor jen našel podobné jméno ve standardní knihovně.</span></div>
+      <div class="verdict bad"><span class="code">E0583</span><span><code>mod task;</code> v <code>list.rs</code>: <i>file not found for module <code>task</code></i>. Rust by hledal <code>src/list/task.rs</code>, protože by šlo o podmodul <code>list</code>u. Tady patří <code>use</code>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 2 CESTA ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">2</span><h2><code>crate::</code>: adresa od vrátnice</h2><span class="sym">crate::task::Task · :: · super::</span></div>
+    <div class="fig">
+      <div class="addr" aria-label="Cesta crate::task::Task">
+        <span class="step"><code>crate</code><small>začni ve vrátnici</small></span><span class="sep">::</span>
+        <span class="step"><code>task</code><small>jdi do kanceláře</small></span><span class="sep">::</span>
+        <span class="step"><code>Task</code><small>vyzvedni typ</small></span>
+      </div>
+      <table class="mini">
+        <thead><tr><th>Stojím v</th><th><code>crate::task::Task</code></th><th><code>task::Task</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>main.rs</code></td><td class="ok">✓</td><td class="ok">✓ <small>task je můj podmodul</small></td></tr>
+          <tr><td><code>list.rs</code></td><td class="ok">✓</td><td class="bad">✗ <small>v listu žádný task není</small></td></tr>
+        </tbody>
+      </table>
+      <p class="fig-cap">Adresa od vrátnice platí odkudkoli. Relativní adresa se hledá od místa, kde právě stojíš.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Plná adresa začíná vždycky u vrátnice.</b> Nemusíš vědět, kde právě stojíš.</p>
+      <ul>
+        <li><b><code>::</code></b> čti „uvnitř“. Znáš ho z <code>Task::new</code> a <code>TaskError::ZeroIndex</code>, u modulů funguje stejně.</li>
+        <li><b><code>crate</code></b> je kořen celého programu, tady <code>main.rs</code>.</li>
+        <li><b><code>super::</code></b> znamená „o úroveň výš“. V <code>list.rs</code> by <code>super::task::Task</code> fungovalo taky, <code>crate::</code> je čitelnější.</li>
+      </ul>
+      <p>Celou adresu můžeš napsat rovnou do kódu, bez <code>use</code>:</p>
+<pre><code>pub fn add_task(
+    tasks: &amp;mut Vec&lt;<span class="r">crate::task::Task</span>&gt;,
+    title: &amp;str,
+) { … }</code></pre>
+      <div class="verdict bad"><span class="code">E0432</span><span><code>use task::Task;</code> v <code>list.rs</code>: <i>unresolved import <code>task</code></i>. Kompilátor správně radí <code>crate::task::Task</code>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 3 USE ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">3</span><h2><code>use</code>: rychlá volba na telefonu</h2><span class="sym">use crate::task::Task;</span></div>
+    <div class="fig">
+      <div class="phones">
+        <div class="phone"><span class="lbl">telefon v list.rs</span><div><code>Task</code> → <code>crate::task::Task</code></div><div><code>TaskError</code> → <code>crate::error::TaskError</code></div></div>
+        <div class="phone"><span class="lbl">telefon v main.rs</span><div><code>Task</code> → <code>task::Task</code></div><div><code>io</code> → <code>std::io</code></div><div><code>Write</code> → <code>std::io::Write</code></div></div>
+        <div class="phone"><span class="lbl">telefon v error.rs</span><div><code>fmt</code> → <code>std::fmt</code></div></div>
+      </div>
+      <p class="fig-cap">Každá kancelář má vlastní telefon. Zkratky se mezi nimi nepřenášejí.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Rychlá volba nikoho neteleportuje.</b> Jen místo celého čísla stiskneš jedno tlačítko.</p>
+<pre><code><span class="c">// src/list.rs</span>
+<span class="w">use</span> crate::error::TaskError;
+<span class="w">use</span> crate::task::Task;
+
+pub fn add_task(tasks: &amp;mut Vec&lt;<span class="k">Task</span>&gt;, title: &amp;str) { … }</code></pre>
+      <ul>
+        <li><b>Poslední část cesty</b> se stane krátkým jménem.</li>
+        <li><b>Zvyk:</b> typy se importují přímo (<code>Task::new</code>), funkce se volají přes modul (<code>list::print_tasks(&amp;tasks)</code>). Je hned vidět, odkud pochází. K tomu stačí <code>mod list;</code>.</li>
+        <li><b>Modul i proměnná</b> se můžou jmenovat stejně: <code>mod task;</code> a <code>Ok(task) =&gt; task.start()</code> si nepřekážejí.</li>
+      </ul>
+      <div class="verdict bad"><span class="code">E0433</span><span>Bez <code>use std::fmt;</code> v <code>error.rs</code>: <i>cannot find module or crate <code>fmt</code></i>. Nepomůže, že ho měl <code>main.rs</code>.</span></div>
+      <div class="verdict warn"><span class="code">unused</span><span>Zbytečný <code>use error::TaskError;</code> v <code>main.rs</code> je jen varování <i>unused import</i>. Smaž ho, ale <code>mod error;</code> nech.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 4 PUB ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">4</span><h2><code>pub</code>: přepážka a zázemí</h2><span class="sym">pub fn · pub struct · bez pub</span></div>
+    <div class="fig">
+      <div class="desk">
+        <div class="desk-h">kancelář <b>list</b> · list.rs</div>
+        <div class="counter"><span class="lbl">přepážka · pub</span><div class="chips"><code>print_tasks</code><code>add_task</code><code>start_all</code><code>find_task</code><code>get_task</code></div></div>
+        <div class="back"><span class="lbl">zázemí · soukromé</span><div class="chips"><code>parse_index</code></div></div>
+      </div>
+      <p class="fig-cap"><code>parse_index</code> volá jen <code>get_task</code> ve stejné kanceláři, takže ven nemusí.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Bez <code>pub</code> je všechno v zázemí.</b> Na přepážku dáš jen to, co ostatní opravdu potřebují.</p>
+<pre><code><span class="k">pub</span> fn get_task&lt;'a&gt;(…) -&gt; … {
+    let n = parse_index(arg)?;   <span class="c">// ze zázemí, stejná kancelář</span>
+    …
+}
+
+fn parse_index(arg: &amp;str) -&gt; … { … }</code></pre>
+      <ul>
+        <li><b><code>pub</code></b> se píše na každou položku zvlášť: typ, funkci, metodu i pole.</li>
+        <li><b>Potomci vidí nahoru:</b> soukromou položku vidí její modul a všichni jeho potomci. Proto <code>list.rs</code> dosáhne na <code>mod task;</code>, i když nemá <code>pub</code>. Visí na stejném kořeni.</li>
+        <li><b><code>pub</code> neumlčí <i>never used</i>.</b> Binárku zvenku nikdo nevolá, takže kompilátor ví, že <code>find_task</code> nikdo nepoužívá.</li>
+      </ul>
+      <div class="verdict bad"><span class="code">E0603</span><span>Typ nebo funkce bez <code>pub</code>: <i>function <code>print_tasks</code> is private</i>.</span></div>
+      <div class="verdict bad"><span class="code">E0624</span><span>Metoda bez <code>pub</code>: <i>method <code>start</code> is private</i>. <code>pub struct Task</code> metody nezveřejní.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 5 POLE ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">5</span><h2>Soukromá pole: šanon zůstává za přepážkou</h2><span class="sym">title: String · fn title(&amp;self)</span></div>
+    <div class="fig">
+      <div class="desk">
+        <div class="desk-h">kancelář <b>task</b> · task.rs</div>
+        <div class="counter"><span class="lbl">přepážka · pub</span><div class="chips"><code>Task</code><code>new</code><code>title()</code><code>is_todo()</code><code>is_done()</code><code>start()</code><code>complete()</code><code>cancel()</code><code>rename()</code><code>symbol()</code><code>…</code></div></div>
+        <div class="back"><span class="lbl">zázemí · soukromé</span><div class="chips"><code>.title</code><code>.status</code><code>.priority</code><code>TaskStatus</code></div></div>
+      </div>
+      <p class="fig-cap"><code>TaskStatus</code> nepotřebuje <code>pub</code>: je jen v soukromém poli a žádná veřejná metoda ho nevrací.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Do šanonu ti úředník sáhnout nedá.</b> Přečte ti z něj hodnotu a změní ji podle svých pravidel.</p>
+<pre><code>pub struct Task {
+    <span class="w">title</span>: String,    <span class="c">// pole bez pub</span>
+    …
+}
+
+impl Task {
+    pub fn <span class="k">title</span>(&amp;self) -&gt; &amp;str { &amp;self.title }
+    pub fn <span class="k">is_todo</span>(&amp;self) -&gt; bool {
+        matches!(self.status, TaskStatus::ToDo)
+    }
+}</code></pre>
+      <table class="mini">
+        <thead><tr><th>Možnost</th><th>Co to znamená</th></tr></thead>
+        <tbody>
+          <tr><td><code>pub title: String</code></td><td>Rychlé, ale kdokoli napíše <code>task.title = String::new()</code>.</td></tr>
+          <tr><td><code>pub fn title(&amp;self)</code></td><td>Číst jde přes metodu, měnit jen přes <code>rename</code>. Naše volba.</td></tr>
+        </tbody>
+      </table>
+      <div class="verdict bad"><span class="code">E0616</span><span><code>task.title</code> mimo <code>task.rs</code>: <i>field <code>title</code> of struct <code>Task</code> is private</i>. Kompilátor radí <i>a method <code>title</code> also exists, call it with parentheses</i>.</span></div>
+      <div class="verdict bad"><span class="code">private</span><span><code>Task { … }</code> mimo <code>task.rs</code>: <i>cannot construct <code>Task</code> with struct literal syntax due to private fields</i>. Proto musí být <code>Task::new</code> veřejná.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 6 BEZ PUB ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">6</span><h2>Kde <code>pub</code> být nesmí: enum a trait</h2><span class="sym">pub enum · impl fmt::Display</span></div>
+    <div class="fig">
+      <div class="desk">
+        <div class="desk-h">kancelář <b>error</b> · error.rs</div>
+        <div class="counter"><span class="lbl">přepážka · pub</span><div class="chips"><code>TaskError</code><code>MissingArgument</code><code>NotANumber</code><code>ZeroIndex</code><code>NoSuchTask</code><code>Display</code></div></div>
+      </div>
+      <p class="fig-cap">Varianty jsou vidět s enumem a <code>Display</code> všude, kde je vidět typ i trait. Zázemí tu není.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Formulář se nedává na přepážku po řádcích.</b> Když je venku enum, jsou venku všechny jeho varianty.</p>
+<pre><code>use std::fmt;
+
+<span class="k">pub</span> enum TaskError {
+    MissingArgument,     <span class="c">// bez pub</span>
+    ZeroIndex,
+    …
+}
+
+impl fmt::Display for TaskError {
+    <span class="c">// bez pub</span>
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; fmt::Result {
+        …
+    }
+}</code></pre>
+      <p>Proto v <code>main.rs</code> funguje <code>println!("Error: {}", err)</code>, i když tam <code>fmt</code> ani <code>TaskError</code> importované nejsou.</p>
+      <div class="verdict bad"><span class="code">E0449</span><span><code>pub fn fmt</code> nebo <code>pub ZeroIndex</code>: <i>visibility qualifiers are not permitted here</i>. Kompilátor radí <i>remove the qualifier</i>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 7 VÝSLEDEK ===== -->
+  <section class="scene wide">
+    <div class="scene-head"><span class="num">7</span><h2>Výsledek: z jednoho souboru čtyři</h2><span class="sym">refaktoring</span></div>
+    <div class="fig" style="justify-items:stretch">
+      <div class="bars">
+        <div class="bar-row"><code>před</code><span class="bar old" style="width:100%"></span><b>184</b></div>
+        <div class="bar-row"><code>main.rs</code><span class="bar" style="width:30.4%"></span><b>56</b></div>
+        <div class="bar-row"><code>task.rs</code><span class="bar" style="width:40.2%"></span><b>74</b></div>
+        <div class="bar-row"><code>list.rs</code><span class="bar" style="width:26.1%"></span><b>48</b></div>
+        <div class="bar-row"><code>error.rs</code><span class="bar" style="width:10.9%"></span><b>20</b></div>
+      </div>
+      <table class="mini files">
+        <thead><tr><th>Soubor</th><th>Co v něm je</th><th>Na přepážce (<code>pub</code>)</th></tr></thead>
+        <tbody>
+          <tr><td><code>main.rs</code></td><td><code>fn main</code>, smyčka, <code>match cmd</code></td><td>nic, je to kořen</td></tr>
+          <tr><td><code>task.rs</code></td><td><code>TaskStatus</code>, <code>Task</code>, <code>impl Task</code></td><td><code>Task</code> a všechny jeho metody</td></tr>
+          <tr><td><code>list.rs</code></td><td>funkce nad seznamem úkolů</td><td>všechno kromě <code>parse_index</code></td></tr>
+          <tr><td><code>error.rs</code></td><td><code>TaskError</code>, <code>impl Display</code></td><td><code>TaskError</code></td></tr>
+        </tbody>
+      </table>
+      <p class="fig-cap" style="justify-self:center">Program se chová přesně jako po lekci 07. Přesunu kódu bez změny chování se říká <b>refaktoring</b>.</p>
+    </div>
+  </section>
+
+  <!-- ===== HŘIŠTĚ ===== -->
+  <section class="play" aria-labelledby="play-h">
+    <div class="play-intro">
+      <h2 id="play-h">Hřiště: projdi úřadem</h2>
+      <p><b>Pošli příkaz</b> ukáže, kudy příkaz chodí mezi kancelářemi. <b>Kdo na co dosáhne</b> ukáže, co je vidět z kterého souboru. <b>Rozbij kód</b> ukáže, co řekne kompilátor na časté chyby. Hlášky jsou ze skutečného <code>cargo build</code>.</p>
+    </div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-run" aria-selected="true" aria-controls="pane-run">Pošli příkaz</button>
+      <button type="button" role="tab" id="tab-reach" aria-selected="false" aria-controls="pane-reach">Kdo na co dosáhne</button>
+      <button type="button" role="tab" id="tab-break" aria-selected="false" aria-controls="pane-break">Rozbij kód</button>
+    </div>
+
+    <div class="pane" id="pane-run" role="tabpanel" aria-labelledby="tab-run">
+      <form class="prompt" id="form" autocomplete="off">
+        <label for="cmd">&gt;</label>
+        <input id="cmd" type="text" spellcheck="false" placeholder="např. start abc" aria-label="Příkaz">
+        <button class="btn" type="submit" id="send">Enter ⏎</button>
+        <button class="btn quiet" type="button" id="reset">Začít znovu</button>
+      </form>
+      <div class="examples" id="examples" aria-label="Příklady"></div>
+      <div class="play-grid">
+        <div class="trace" id="trace" aria-live="polite"></div>
+        <div class="side">
+          <span class="lbl">tasks</span>
+          <div class="tasks" id="tasks"></div>
+          <span class="lbl">Terminál</span>
+          <div class="term" id="term"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane" id="pane-reach" role="tabpanel" aria-labelledby="tab-reach" hidden>
+      <p class="hint">Vyber kancelář, ve které stojíš, a pak řádek kódu. Každý řádek byl opravdu přeložený v tom souboru, uvnitř funkce s parametrem <code>t: &amp;mut Task</code>.</p>
+      <div class="examples" id="reach-places" aria-label="Soubor"></div>
+      <div class="reach" id="reach-list"></div>
+      <div class="term broken-out" id="reach-out"></div>
+    </div>
+
+    <div class="pane" id="pane-break" role="tabpanel" aria-labelledby="tab-break" hidden>
+      <p class="hint">Vyber jednu změnu. Uvidíš, který řádek se změnil (zeleně správně, červeně rozbitě), a co na to řekne <code>cargo build</code>. Výpisy s mnoha chybami jsou zkrácené (…).</p>
+      <div class="examples" id="broken-list" aria-label="Rozbití"></div>
+      <div class="diff" id="broken-diff"></div>
+      <div class="term broken-out" id="broken-out"></div>
+      <div class="verdict" id="broken-why"></div>
+    </div>
+  </section>
+
+  <!-- ===== TAHÁK ===== -->
+  <section style="display:grid; gap:16px">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px">
+      <div style="display:grid; gap:6px; min-width:0">
+        <h2>Tahák</h2>
+        <p><b>Ferris radí:</b> Nový soubor? <code>mod</code> v <code>main.rs</code>. Jiný modul? <code>use crate::…</code>. Vidět zvenku? <code>pub</code>, ale jen co je potřeba.</p>
+      </div>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="110" style="flex:none; height:auto" aria-hidden="true"><g stroke="#a52b00" stroke-width="7" stroke-linecap="round" fill="none"><path d="M50 106 L30 122 L34 134"/><path d="M62 114 L50 130 L56 140"/><path d="M150 106 L170 122 L166 134"/><path d="M138 114 L150 130 L144 140"/></g><path d="M46 84 Q28 62 50 42" stroke="#a52b00" stroke-width="8" stroke-linecap="round" fill="none"/><path d="M154 84 Q172 62 150 42" stroke="#a52b00" stroke-width="8" stroke-linecap="round" fill="none"/><rect x="71" y="9" width="58" height="39" rx="3" fill="#c9975c" stroke="#6f4c24" stroke-width="2.5"/><rect x="82" y="12" width="36" height="9" rx="1.5" fill="#f7f1e3" stroke="#a7773f" stroke-width="1.5"/><path d="M87 16.5 H113" stroke="#5b6676" stroke-width="2"/><rect x="79" y="24" width="42" height="19" fill="#d7eef0" stroke="#0d7480" stroke-width="2"/><rect x="75" y="42" width="50" height="6" rx="1" fill="#efc75e" stroke="#6f4c24" stroke-width="1.5"/><path d="M58 30 L70.7 37.9 A15 15 0 1 1 70.7 22.1 Z" fill="#f74c00" stroke="#a52b00" stroke-width="2.5" stroke-linejoin="round"/><path d="M142 30 L129.3 22.1 A15 15 0 1 1 129.3 37.9 Z" fill="#f74c00" stroke="#a52b00" stroke-width="2.5" stroke-linejoin="round"/><path d="M36 88 L26.3 80.7 L39.9 75.7 L35.2 66.9 L51 64.9 L51.9 55.7 L68 56.8 L74.4 48.4 L88.9 52.5 L100 45.9 L111.1 52.5 L125.6 48.4 L132 56.8 L148.1 55.7 L149 64.9 L164.8 66.9 L160.1 75.7 L173.7 80.7 L164 88 Q158 126 100 124 Q42 126 36 88 Z" fill="#f74c00" stroke="#f74c00" stroke-width="5" stroke-linejoin="round"/><circle cx="80" cy="82" r="9" fill="#111"/><circle cx="77.5" cy="79" r="3" fill="#fff"/><circle cx="120" cy="82" r="9" fill="#111"/><circle cx="117.5" cy="79" r="3" fill="#fff"/><path d="M86 100 Q100 122 114 100 Z" fill="#111" stroke="#111" stroke-width="2" stroke-linejoin="round"/><path d="M93 108 Q100 116 107 108 Z" fill="#e8574f"/></svg>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Zápis</th><th>Význam</th><th>Obrázek</th></tr></thead>
+        <tbody>
+          <tr><td><code>mod list;</code></td><td>zapoj <code>src/list.rs</code> do programu, píše se v <code>main.rs</code>, jednou</td><td>zápis do plánu budovy</td></tr>
+          <tr><td><code>mod x { … }</code></td><td>modul přímo na místě, bez dalšího souboru</td><td></td></tr>
+          <tr><td><code>crate::task::Task</code></td><td>absolutní cesta od kořene</td><td>adresa od vrátnice</td></tr>
+          <tr><td><code>task::Task</code></td><td>relativní cesta od aktuálního modulu</td><td>adresa odsud</td></tr>
+          <tr><td><code>super::task::Task</code></td><td>cesta o úroveň výš</td><td></td></tr>
+          <tr><td><code>use crate::task::Task;</code></td><td>zkratka <code>Task</code>, platí jen pro tento soubor</td><td>rychlá volba</td></tr>
+          <tr><td><code>list::print_tasks(…)</code></td><td>volání funkce přes jméno modulu, stačí <code>mod list;</code></td><td></td></tr>
+          <tr><td><code>pub struct</code>, <code>pub enum</code>, <code>pub fn</code></td><td>položka je vidět mimo svůj modul</td><td>přepážka</td></tr>
+          <tr><td><code>pub title: String</code></td><td>veřejné pole, <code>pub struct</code> pole samo nezveřejní</td><td>šanon na přepážce</td></tr>
+          <tr><td>varianty <code>enum</code></td><td>veřejné s enumem, <code>pub</code> se k nim nepíše</td><td></td></tr>
+          <tr><td><code>impl Display for T</code></td><td>bez <code>pub</code>, ani <code>fn fmt</code> ho nemá</td><td></td></tr>
+          <tr><td>bez <code>pub</code></td><td>vidí modul a jeho potomci</td><td>zázemí</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Hláška</th><th>Příčina</th><th>Lék</th></tr></thead>
+        <tbody>
+          <tr><td><code>E0432</code> unresolved import <code>crate::error</code></td><td>v <code>main.rs</code> chybí <code>mod error;</code></td><td>přidat <code>mod</code>, nevěřit radě <code>crate::core::…</code></td></tr>
+          <tr><td><code>E0432</code> unresolved import <code>task</code></td><td>relativní cesta v <code>list.rs</code></td><td><code>use crate::task::Task;</code></td></tr>
+          <tr><td><code>E0433</code> cannot find module or crate <code>fmt</code></td><td>chybí <code>use</code> v tomto souboru</td><td><code>use std::fmt;</code></td></tr>
+          <tr><td><code>E0425</code> cannot find type <code>Task</code></td><td>chybí <code>use</code> v tomto souboru</td><td><code>use crate::task::Task;</code></td></tr>
+          <tr><td><code>E0583</code> file not found for module</td><td><code>mod</code> ve špatném souboru, nebo soubor neexistuje</td><td><code>mod</code> do <code>main.rs</code>, jinde <code>use</code></td></tr>
+          <tr><td><code>E0603</code> … is private</td><td>položce chybí <code>pub</code></td><td>přidat <code>pub</code>, nebo ji nechat uvnitř</td></tr>
+          <tr><td><code>E0624</code> method … is private</td><td>metodě chybí <code>pub</code></td><td>přidat <code>pub</code></td></tr>
+          <tr><td><code>E0616</code> field … is private</td><td>sahá se na soukromé pole</td><td>metoda, např. <code>title()</code></td></tr>
+          <tr><td>cannot construct … due to private fields</td><td><code>Task { … }</code> mimo modul</td><td><code>Task::new(…)</code></td></tr>
+          <tr><td><code>E0449</code> visibility qualifiers are not permitted</td><td><code>pub</code> u varianty nebo metody traitu</td><td>smazat <code>pub</code></td></tr>
+          <tr><td>warning: unused import</td><td><code>use</code>, který už není potřeba</td><td>smazat <code>use</code>, <code>mod</code> nechat</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Doplněk k lekci 08 projektu todo-rs. Ukázky kódu jsou ze <code>src/</code> (tag <code>lekce-08</code>).</span>
+    <ul>
+      <li><a href="../08-moduly.md">Lekce 08: Moduly (text)</a></li>
+      <li><a href="07-chyby-infografika.html">Infografika k lekci 07: červená obálka</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch07-02-defining-modules-to-control-scope-and-privacy.html">Rust Book 7.2: Control Scope and Privacy with Modules</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch07-04-bringing-paths-into-scope-with-the-use-keyword.html">Rust Book 7.4: Bringing Paths into Scope with use</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch07-05-separating-modules-into-different-files.html">Rust Book 7.5: Separating Modules into Different Files</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const dbg = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  const SYM = { ToDo: ' ', InProgress: '~', Done: 'X', Canceled: 'C' };
+  const WS = /^[\s\u0085]+|[\s\u0085]+$/g;
+
+  let tasks, out, boxes, stopped, changed;
+  const traceEl = document.getElementById('trace');
+  const tasksEl = document.getElementById('tasks');
+  const termEl = document.getElementById('term');
+  const input = document.getElementById('cmd');
+
+  function reset() {
+    tasks = ['Buy groceries', 'Clean the house', 'Finish Rust project'].map((t) => ({ title: t, status: 'ToDo' }));
+    out = [];
+    boxes = [];
+    stopped = false;
+    changed = -1;
+    render();
+  }
+
+  // usize::from_str: volitelné '+', pak jen číslice, max 2^64 - 1
+  function parseUsize(s) {
+    if (!/^\+?[0-9]+$/.test(s)) return null;
+    const n = BigInt(s.replace('+', ''));
+    return n > 18446744073709551615n ? null : n;
+  }
+
+  // kind: 'pub' = přepážka, 'priv' = zázemí, '' = bez značky
+  const box = (file, name, kind) => { const b = { file, name, kind, rows: [], hit: false }; boxes.push(b); return b; };
+  const r = (b, cls, op, val) => b.rows.push({ cls, op, val });
+
+  function errCmd(cmd, arg) {
+    const method = { start: 'start', done: 'complete', cancel: 'cancel' }[cmd];
+    const newSt = { start: 'InProgress', done: 'Done', cancel: 'Canceled' }[cmd];
+    const m = box('main.rs', 'main', '');
+    r(m, 'hl', `"${cmd}" => match list::get_task(&mut tasks, arg)`, `arg = ${esc(dbg(arg))}, jde se na přepážku v kanceláři list`);
+
+    const g = box('list.rs', 'get_task', 'pub');
+    r(g, 'hl', 'let n = parse_index(arg)?;', 'parse_index je v zázemí, ale get_task je ve stejné kanceláři');
+
+    const p = box('list.rs', 'parse_index', 'priv');
+    let err = null, n = null;
+    if (arg === '') {
+      r(p, 'bad', 'if arg.is_empty()', 'true → return Err(TaskError::MissingArgument)');
+      err = { msg: 'Missing argument', arm: 'TaskError::MissingArgument' };
+    } else {
+      n = parseUsize(arg);
+      if (n === null) {
+        r(p, 'bad', 'arg.parse::<usize>().map_err(…)?', `není číslo → Err(TaskError::NotANumber(${esc(dbg(arg))}))`);
+        err = { msg: `Not a number: ${arg}`, arm: 'TaskError::NotANumber(arg)' };
+      } else if (n === 0n) {
+        r(p, 'bad', 'if n == 0', 'true → return Err(TaskError::ZeroIndex)');
+        err = { msg: 'Task numbers start at 1', arm: 'TaskError::ZeroIndex' };
+      } else {
+        r(p, 'ok', 'Ok(n)', `n = ${n}`);
+      }
+    }
+    if (err) {
+      p.hit = true;
+      const g2 = box('list.rs', 'get_task', 'pub');
+      r(g2, 'up', '?', 'chyba → return, zpátky do main');
+    } else {
+      const g2 = box('list.rs', 'get_task', 'pub');
+      if (n - 1n < BigInt(tasks.length)) {
+        r(g2, 'ok', `tasks.get_mut(${n - 1n}).ok_or(…)`, 'Ok(&mut task) → zpátky do main');
+      } else {
+        g2.hit = true;
+        r(g2, 'bad', `tasks.get_mut(${n - 1n}).ok_or(…)`, `None → Err(TaskError::NoSuchTask(${n}))`);
+        err = { msg: `No task ${n}`, arm: 'TaskError::NoSuchTask(index)' };
+      }
+    }
+    const m2 = box('main.rs', 'main', '');
+    if (err) {
+      r(m2, 'bad', 'Err(err) => println!("Error: {}", err)', '{} si zavolá Display');
+      const d = box('error.rs', 'impl fmt::Display', '');
+      r(d, 'ok', `${err.arm} => write!(…)`, esc(dbg(err.msg)));
+      out.push({ t: `Error: ${err.msg}` });
+    } else {
+      const i = Number(n - 1n);
+      r(m2, 'ok', `Ok(task) => task.${method}()`, 'jde se na přepážku v kanceláři task');
+      const t = box('task.rs', `Task::${method}`, 'pub');
+      r(t, 'ok', `self.status = TaskStatus::${newSt}`, `úkol ${n}: ${tasks[i].status} → ${newSt}. Na soukromé pole smí jen task.rs.`);
+      tasks[i].status = newSt;
+      changed = i;
+    }
+  }
+
+  function run(line) {
+    boxes = [];
+    changed = -1;
+    out.push({ u: line });
+    const inp = (line + '\n').replace(WS, '');
+    const sp = inp.indexOf(' ');
+    const [cmd, arg] = sp >= 0 ? [inp.slice(0, sp), inp.slice(sp + 1)] : [inp, ''];
+    const m = () => box('main.rs', 'main', '');
+    switch (cmd) {
+      case '':
+        r(m(), 'skip', '"" => {}', 'prázdný blok, nic se neděje');
+        break;
+      case 'quit':
+        r(m(), 'bad', '"quit" => break', 'program skončil, žádná kancelář nebyla potřeba');
+        stopped = true;
+        break;
+      case 'list': {
+        r(m(), 'hl', '"list" => list::print_tasks(&tasks)', 'přepážka v kanceláři list');
+        r(box('list.rs', 'print_tasks', 'pub'), 'hl', 'task.symbol(), task.title(), task.priority_label(), task.is_done()', 'samá přepážka v kanceláři task. Pole přímo číst nemůže.');
+        r(box('task.rs', 'Task::title', 'pub'), 'ok', '&self.title', 'úředník přečte hodnotu ze šanonu');
+        tasks.forEach((t, i) => { out.push({ t: `${i + 1}: [${SYM[t.status]}] ${t.title}` }); out.push({ t: '   Priority: None' }); });
+        out.push({ t: `Done: ${tasks.filter((t) => t.status === 'Done').length}/${tasks.length}` });
+        break;
+      }
+      case 'add': {
+        const title = arg.replace(WS, '');
+        r(m(), 'hl', '"add" => list::add_task(&mut tasks, arg.trim())', 'přepážka v kanceláři list');
+        const a = box('list.rs', 'add_task', 'pub');
+        if (title) {
+          r(a, 'ok', 'tasks.push(Task::new(title))', `Task::new je přepážka v task.rs. Úkol ${tasks.length + 1} přidán.`);
+          tasks.push({ title, status: 'ToDo' });
+          changed = tasks.length - 1;
+        } else {
+          r(a, 'bad', 'if title.is_empty()', 'true → println! a return');
+          out.push({ t: "Title can't be empty!" });
+        }
+        break;
+      }
+      case 'startall':
+        r(m(), 'hl', '"startall" => list::start_all(&mut tasks)', 'přepážka v kanceláři list');
+        r(box('list.rs', 'start_all', 'pub'), 'ok', '.filter(|task| task.is_todo()).for_each(|task| task.start())', 'obě metody jsou na přepážce v kanceláři task');
+        tasks.forEach((t) => { if (t.status === 'ToDo') t.status = 'InProgress'; });
+        break;
+      case 'start': case 'done': case 'cancel':
+        errCmd(cmd, arg);
+        break;
+      case 'help':
+        r(m(), 'ok', '"help" => { println!(…); … }', 'vyřídí sama vrátnice');
+        ['quit: end of app', 'list: print all tasks', 'add <title>: add new task', 'startall: start all unfinished tasks',
+          'start <n>: start task number <n>', 'done <n>: finish task number <n>', 'cancel <n>: cancel task number <n>'].forEach((t) => out.push({ t }));
+        break;
+      default:
+        r(m(), 'bad', '_ => println!("Unknown command: …")', `${esc(dbg(cmd))} nepasuje na žádný příkaz`);
+        out.push({ t: `Unknown command: ${cmd}, try: help` });
+    }
+  }
+
+  const rowHtml = (x) => `<div class="tr ${x.cls}"><span class="op">${esc(x.op)}</span><span class="val">${x.val}</span></div>`;
+  const TAG = { pub: '<span class="fl-tag pub">přepážka · pub</span>', priv: '<span class="fl-tag priv">zázemí · soukromá</span>', '': '' };
+
+  function render() {
+    traceEl.innerHTML = boxes.map((b) => `<div class="fl-box${b.hit ? ' hit' : ''}"><div class="fl-head"><b>${esc(b.name)}</b>${esc(b.file)} ${TAG[b.kind]}</div><div class="rows">${b.rows.map(rowHtml).join('')}</div></div>`).join('') ||
+      '<div class="tr skip"><span class="op">čeká se na příkaz</span><span class="val">napiš třeba start abc a stiskni Enter</span></div>';
+    tasksEl.innerHTML = tasks.map((t, i) => `<div class="${i === changed ? 'changed' : ''}">${i + 1}: [${SYM[t.status]}] ${esc(t.title)}</div>`).join('');
+    termEl.innerHTML = out.map((o) => (o.u !== undefined ? `<span class="p">&gt;</span> <span class="u">${esc(o.u)}</span>` : (o.t.startsWith('Error: ') ? `<span class="bad">${esc(o.t)}</span>` : esc(o.t)))).join('\n') +
+      (stopped ? '\n<span class="bad">(program skončil, klikni na Začít znovu)</span>' : '\n<span class="p">&gt;</span> ');
+    termEl.scrollTop = termEl.scrollHeight;
+    document.getElementById('send').disabled = stopped;
+    input.disabled = stopped;
+  }
+
+  document.getElementById('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (stopped) return;
+    run(input.value);
+    input.value = '';
+    render();
+    input.focus();
+  });
+  document.getElementById('reset').addEventListener('click', () => { reset(); input.focus(); });
+
+  const EX = ['list', 'start 1', 'start abc', 'start 0', 'start 99', 'start', 'done 3', 'add Test', 'add', 'startall', 'help', 'nesmysl', 'quit'];
+  document.getElementById('examples').innerHTML = '<span class="lbl">příklady:</span>' +
+    EX.map((x, i) => `<button type="button" data-i="${i}" title="${esc(x)}">${esc(x)}</button>`).join('');
+  document.getElementById('examples').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-i]');
+    if (!b || stopped) return;
+    run(EX[Number(b.dataset.i)]);
+    render();
+  });
+
+  const colorize = (lines) => lines.map((l) => {
+    const e = esc(l);
+    if (/^error/.test(l)) return `<span class="bad">${e}</span>`;
+    if (/^warning/.test(l)) return `<span class="warn">${e}</span>`;
+    if (/^help/.test(l)) return `<span class="okc">${e}</span>`;
+    return e;
+  }).join('\n');
+
+  // ---------- Kdo na co dosáhne: každá kombinace přeložená skutečným cargo build ----------
+  const REACH = /*REACH*/{"main.rs": {"new": {"ok": true, "code": null, "out": []}, "newrel": {"ok": true, "code": null, "out": []}, "title": {"ok": true, "code": null, "out": []}, "field": {"ok": false, "code": "E0616", "out": ["error[E0616]: field `title` of struct `Task` is private", "  --> src/main.rs:61:16", "   |", "61 |     let _ = &t.title;", "   |                ^^^^^ private field", "   |", "help: a method `title` also exists, call it with parentheses", "   |", "61 |     let _ = &t.title();", "   |                     ++", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "start": {"ok": true, "code": null, "out": []}, "status": {"ok": false, "code": "E0603", "out": ["error[E0603]: enum `TaskStatus` is private", "  --> src/main.rs:61:26", "   |", "61 |     let _ = crate::task::TaskStatus::ToDo;", "   |                          ^^^^^^^^^^  ---- unit variant `ToDo` is not publicly re-exported", "   |                          |", "   |                          private enum", "   |", "note: the enum `TaskStatus` is defined here", "  --> src/task.rs:2:1", "   |", " 2 | enum TaskStatus {", "   | ^^^^^^^^^^^^^^^", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "get": {"ok": true, "code": null, "out": []}, "parse": {"ok": false, "code": "E0603", "out": ["error[E0603]: function `parse_index` is private", "  --> src/main.rs:61:26", "   |", "61 |     let _ = crate::list::parse_index(\"1\");", "   |                          ^^^^^^^^^^^ private function", "   |", "note: the function `parse_index` is defined here", "  --> src/list.rs:32:1", "   |", "32 | fn parse_index(arg: &str) -> Result<usize, TaskError> {", "   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "zero": {"ok": true, "code": null, "out": []}}, "list.rs": {"new": {"ok": true, "code": null, "out": []}, "newrel": {"ok": false, "code": "E0433", "out": ["error[E0433]: cannot find module or crate `task` in this scope", "  --> src/list.rs:53:13", "   |", "53 |     let _ = task::Task::new(\"x\");", "   |             ^^^^ use of unresolved module or unlinked crate `task`", "   |", "help: to make use of source file src/task.rs, use `mod task` in this file to declare the module", "  --> src/main.rs:1:1", "   |", " 1 + mod task;", "   |", "help: consider importing this struct through its public re-export", "   |", " 1 + use crate::Task;", "   |", "help: if you import `Task`, refer to it directly", "   |", "53 -     let _ = task::Task::new(\"x\");", "53 +     let _ = Task::new(\"x\");", "   |", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "title": {"ok": true, "code": null, "out": []}, "field": {"ok": false, "code": "E0616", "out": ["error[E0616]: field `title` of struct `Task` is private", "  --> src/list.rs:53:16", "   |", "53 |     let _ = &t.title;", "   |                ^^^^^ private field", "   |", "help: a method `title` also exists, call it with parentheses", "   |", "53 |     let _ = &t.title();", "   |                     ++", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "start": {"ok": true, "code": null, "out": []}, "status": {"ok": false, "code": "E0603", "out": ["error[E0603]: enum `TaskStatus` is private", "  --> src/list.rs:53:26", "   |", "53 |     let _ = crate::task::TaskStatus::ToDo;", "   |                          ^^^^^^^^^^  ---- unit variant `ToDo` is not publicly re-exported", "   |                          |", "   |                          private enum", "   |", "note: the enum `TaskStatus` is defined here", "  --> src/task.rs:2:1", "   |", " 2 | enum TaskStatus {", "   | ^^^^^^^^^^^^^^^", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "get": {"ok": true, "code": null, "out": []}, "parse": {"ok": true, "code": null, "out": []}, "zero": {"ok": true, "code": null, "out": []}}, "task.rs": {"new": {"ok": true, "code": null, "out": []}, "newrel": {"ok": false, "code": "E0433", "out": ["error[E0433]: cannot find module or crate `task` in this scope", "  --> src/task.rs:79:13", "   |", "79 |     let _ = task::Task::new(\"x\");", "   |             ^^^^ use of unresolved module or unlinked crate `task`", "   |", "help: to make use of source file src/task.rs, use `mod task` in this file to declare the module", "  --> src/main.rs:1:1", "   |", " 1 + mod task;", "   |", "help: consider importing this struct through its public re-export", "   |", " 1 + use crate::Task;", "   |", "help: if you import `Task`, refer to it directly", "   |", "79 -     let _ = task::Task::new(\"x\");", "79 +     let _ = Task::new(\"x\");", "   |", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "title": {"ok": true, "code": null, "out": []}, "field": {"ok": true, "code": null, "out": []}, "start": {"ok": true, "code": null, "out": []}, "status": {"ok": true, "code": null, "out": []}, "get": {"ok": true, "code": null, "out": []}, "parse": {"ok": false, "code": "E0603", "out": ["error[E0603]: function `parse_index` is private", "  --> src/task.rs:79:26", "   |", "79 |     let _ = crate::list::parse_index(\"1\");", "   |                          ^^^^^^^^^^^ private function", "   |", "note: the function `parse_index` is defined here", "  --> src/list.rs:32:1", "   |", "32 | fn parse_index(arg: &str) -> Result<usize, TaskError> {", "   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "zero": {"ok": true, "code": null, "out": []}}, "error.rs": {"new": {"ok": true, "code": null, "out": []}, "newrel": {"ok": false, "code": "E0433", "out": ["error[E0433]: cannot find module or crate `task` in this scope", "  --> src/error.rs:25:13", "   |", "25 |     let _ = task::Task::new(\"x\");", "   |             ^^^^ use of unresolved module or unlinked crate `task`", "   |", "help: to make use of source file src/task.rs, use `mod task` in this file to declare the module", "  --> src/main.rs:1:1", "   |", " 1 + mod task;", "   |", "help: consider importing this struct through its public re-export", "   |", " 1 + use crate::Task;", "   |", "help: if you import `Task`, refer to it directly", "   |", "25 -     let _ = task::Task::new(\"x\");", "25 +     let _ = Task::new(\"x\");", "   |", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "title": {"ok": true, "code": null, "out": []}, "field": {"ok": false, "code": "E0616", "out": ["error[E0616]: field `title` of struct `Task` is private", "  --> src/error.rs:25:16", "   |", "25 |     let _ = &t.title;", "   |                ^^^^^ private field", "   |", "help: a method `title` also exists, call it with parentheses", "   |", "25 |     let _ = &t.title();", "   |                     ++", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "start": {"ok": true, "code": null, "out": []}, "status": {"ok": false, "code": "E0603", "out": ["error[E0603]: enum `TaskStatus` is private", "  --> src/error.rs:25:26", "   |", "25 |     let _ = crate::task::TaskStatus::ToDo;", "   |                          ^^^^^^^^^^  ---- unit variant `ToDo` is not publicly re-exported", "   |                          |", "   |                          private enum", "   |", "note: the enum `TaskStatus` is defined here", "  --> src/task.rs:2:1", "   |", " 2 | enum TaskStatus {", "   | ^^^^^^^^^^^^^^^", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "get": {"ok": true, "code": null, "out": []}, "parse": {"ok": false, "code": "E0603", "out": ["error[E0603]: function `parse_index` is private", "  --> src/error.rs:25:26", "   |", "25 |     let _ = crate::list::parse_index(\"1\");", "   |                          ^^^^^^^^^^^ private function", "   |", "note: the function `parse_index` is defined here", "  --> src/list.rs:32:1", "   |", "32 | fn parse_index(arg: &str) -> Result<usize, TaskError> {", "   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"]}, "zero": {"ok": true, "code": null, "out": []}}}/*/REACH*/;
+  const ITEMS = /*ITEMS*/{"new": "let _ = crate::task::Task::new(\"x\");", "newrel": "let _ = task::Task::new(\"x\");", "title": "let _ = t.title();", "field": "let _ = &t.title;", "start": "t.start();", "status": "let _ = crate::task::TaskStatus::ToDo;", "get": "let _ = crate::list::get_task(&mut [], \"1\");", "parse": "let _ = crate::list::parse_index(\"1\");", "zero": "let _ = crate::error::TaskError::ZeroIndex;"}/*/ITEMS*/;
+  const PLACES = ['main.rs', 'list.rs', 'task.rs', 'error.rs'];
+  let place = 'main.rs', item = null;
+  const placesEl = document.getElementById('reach-places');
+  const reachEl = document.getElementById('reach-list');
+  const reachOut = document.getElementById('reach-out');
+  placesEl.innerHTML = '<span class="lbl">stojím v:</span>' + PLACES.map((p) => `<button type="button" data-p="${p}" aria-pressed="false">${p}</button>`).join('');
+  function showReach() {
+    placesEl.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === place)));
+    reachEl.innerHTML = Object.keys(ITEMS).map((k) => {
+      const d = REACH[place][k];
+      const verdict = d.ok ? '<span class="ok">✓ projde</span>' : `<span class="bad">✗ ${esc(d.code || 'chyba')}</span>`;
+      return `<button type="button" data-k="${k}" aria-pressed="${k === item}"><span>${esc(ITEMS[k])}</span>${verdict}</button>`;
+    }).join('');
+    const d = item && REACH[place][item];
+    reachOut.innerHTML = !d ? '<span class="p">Klikni na řádek a uvidíš výstup cargo build.</span>'
+      : '<span class="p">$</span> <span class="u">cargo build</span>\n' + (d.ok ? `<span class="okc">přeloží se, ${esc(place)} na tuhle položku dosáhne</span>` : colorize(d.out));
+  }
+  placesEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-p]'); if (b) { place = b.dataset.p; showReach(); } });
+  reachEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-k]'); if (b) { item = b.dataset.k; showReach(); } });
+  item = 'field';
+  showReach();
+
+  // ---------- Rozbij kód: skutečné výstupy cargo build z rozbitých kopií ----------
+  const BROKEN = /*BROKEN*/{"nomod": {"file": "main.rs", "line": 4, "before": ["mod error;"], "after": [], "out": ["error[E0432]: unresolved import `crate::error`", " --> src/list.rs:1:12", "  |", "1 | use crate::error::TaskError;", "  |            ^^^^^ unresolved import", "  |", "help: a similar path exists", "  |", "1 | use crate::core::error::TaskError;", "  |            ++++++", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"], "built": false}, "nocrate": {"file": "list.rs", "line": 2, "before": ["use crate::task::Task;"], "after": ["use task::Task;"], "out": ["error[E0432]: unresolved import `task`", " --> src/list.rs:2:5", "  |", "2 | use task::Task;", "  |     ^^^^", "  |", "  = note: `use` statements changed in Rust 2018; read more at <https://doc.rust-lang.org/edition-guide/rust-2018/module-system/path-clarity.html>", "help: a similar path exists", "  |", "2 | use crate::task::Task;", "  |     +++++++", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"], "built": false}, "modtwice": {"file": "list.rs", "line": 2, "before": ["use crate::task::Task;"], "after": ["mod task;"], "out": ["error[E0583]: file not found for module `task`", " --> src/list.rs:2:1", "  |", "2 | mod task;", "  | ^^^^^^^^^", "  |", "  = help: to create the module `task`, create file \"src/list/task.rs\" or \"src/list/task/mod.rs\"", "  = note: if there is a `mod task` elsewhere in the crate already, import it with `use crate::...` instead", "", "error[E0425]: cannot find type `Task` in this scope", " --> src/list.rs:4:29", "  |", "4 | pub fn print_tasks(tasks: &[Task]) {", "  |                             ^^^^ not found in this scope", "  |", "help: consider importing this struct through its public re-export", "  |", "1 + use crate::Task;", "  |", "", "…", "", "error: could not compile `todo` (bin \"todo\") due to 9 previous errors"], "built": false}, "nouse": {"file": "list.rs", "line": 2, "before": ["use crate::task::Task;"], "after": [], "out": ["error[E0425]: cannot find type `Task` in this scope", " --> src/list.rs:3:29", "  |", "3 | pub fn print_tasks(tasks: &[Task]) {", "  |                             ^^^^ not found in this scope", "  |", "help: consider importing this struct through its public re-export", "  |", "1 + use crate::Task;", "  |", "", "error[E0425]: cannot find type `Task` in this scope", "  --> src/list.rs:12:33", "   |", "12 | pub fn add_task(tasks: &mut Vec<Task>, title: &str) {", "   |                                 ^^^^ not found in this scope", "   |", "help: consider importing this struct through its public re-export", "   |", " 1 + use crate::Task;", "   |", "", "…", "", "error: could not compile `todo` (bin \"todo\") due to 8 previous errors"], "built": false}, "pubstruct": {"file": "task.rs", "line": 10, "before": ["pub struct Task {"], "after": ["struct Task {"], "out": ["error[E0603]: struct `Task` is private", "  --> src/list.rs:2:18", "   |", " 2 | use crate::task::Task;", "   |                  ^^^^ private struct", "   |", "note: the struct `Task` is defined here", "  --> src/task.rs:10:1", "   |", "10 | struct Task {", "   | ^^^^^^^^^^^", "", "error[E0603]: struct `Task` is private", "  --> src/main.rs:7:11", "   |", " 7 | use task::Task;", "   |           ^^^^ private struct", "   |", "note: the struct `Task` is defined here", "  --> src/task.rs:10:1", "   |", "10 | struct Task {", "   | ^^^^^^^^^^^", "", "error: could not compile `todo` (bin \"todo\") due to 2 previous errors"], "built": false}, "pubfn": {"file": "list.rs", "line": 4, "before": ["pub fn print_tasks(tasks: &[Task]) {"], "after": ["fn print_tasks(tasks: &[Task]) {"], "out": ["error[E0603]: function `print_tasks` is private", "  --> src/main.rs:29:29", "   |", "29 |             \"list\" => list::print_tasks(&tasks),", "   |                             ^^^^^^^^^^^ private function", "   |", "note: the function `print_tasks` is defined here", "  --> src/list.rs:4:1", "   |", " 4 | fn print_tasks(tasks: &[Task]) {", "   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"], "built": false}, "pubmethod": {"file": "task.rs", "line": 50, "before": ["    pub fn start(&mut self) {"], "after": ["    fn start(&mut self) {"], "out": ["error[E0624]: method `start` is private", "  --> src/list.rs:25:31", "   |", "25 |         .for_each(|task| task.start());", "   |                               ^^^^^ private method", "   |", "  ::: src/task.rs:50:5", "   |", "50 |     fn start(&mut self) {", "   |     ------------------- private method defined here", "", "error[E0624]: method `start` is private", "  --> src/main.rs:33:34", "   |", "33 |                 Ok(task) => task.start(),", "   |                                  ^^^^^ private method", "   |", "  ::: src/task.rs:50:5", "   |", "50 |     fn start(&mut self) {", "   |     ------------------- private method defined here", "", "error: could not compile `todo` (bin \"todo\") due to 2 previous errors"], "built": false}, "field": {"file": "list.rs", "line": 7, "before": ["        println!(\"{}: [{}] {}\", index + 1, task.symbol(), task.title());"], "after": ["        println!(\"{}: [{}] {}\", index + 1, task.symbol(), task.title);"], "out": ["error[E0616]: field `title` of struct `Task` is private", " --> src/list.rs:7:64", "  |", "7 |         println!(\"{}: [{}] {}\", index + 1, task.symbol(), task.title);", "  |                                                                ^^^^^ private field", "  |", "help: a method `title` also exists, call it with parentheses", "  |", "7 |         println!(\"{}: [{}] {}\", index + 1, task.symbol(), task.title());", "  |                                                                     ++", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"], "built": false}, "literal": {"file": "main.rs", "line": 11, "before": ["        Task::new(\"Buy groceries\"),"], "after": ["        Task { title: String::from(\"Buy groceries\"), priority: None },"], "out": ["error: cannot construct `Task` with struct literal syntax due to private fields", "  --> src/main.rs:11:9", "   |", "11 |         Task { title: String::from(\"Buy groceries\"), priority: None },", "   |         ^^^^   ------------------------------------  -------------- private field", "   |                |", "   |                private field", "   |", "   = note: ...and other private field `status` that was not provided", "help: you might have meant to use the `new` associated function", "   |", "11 -         Task { title: String::from(\"Buy groceries\"), priority: None },", "11 +         Task::new(_),", "   |", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"], "built": false}, "fmtuse": {"file": "error.rs", "line": 1, "before": ["use std::fmt;"], "after": [], "out": ["error[E0433]: cannot find module or crate `fmt` in this scope", "  --> src/error.rs:10:6", "   |", "10 | impl fmt::Display for TaskError {", "   |      ^^^ use of unresolved module or unlinked crate `fmt`", "   |", "   = help: if you wanted to use a crate named `fmt`, use `cargo add fmt` to add it to your `Cargo.toml`", "help: consider importing this module", "   |", " 2 + use std::fmt;", "   |", "", "error[E0433]: cannot find module or crate `fmt` in this scope", "  --> src/error.rs:11:27", "   |", "11 |     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {", "   |                           ^^^ use of unresolved module or unlinked crate `fmt`", "   |", "   = help: if you wanted to use a crate named `fmt`, use `cargo add fmt` to add it to your `Cargo.toml`", "help: consider importing this module", "   |", " 2 + use std::fmt;", "   |", "", "…", "", "error: could not compile `todo` (bin \"todo\") due to 3 previous errors"], "built": false}, "pubfmt": {"file": "error.rs", "line": 12, "before": ["    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {"], "after": ["    pub fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {"], "out": ["error[E0449]: visibility qualifiers are not permitted here", "  --> src/error.rs:12:5", "   |", "12 |     pub fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {", "   |     ^^^ help: remove the qualifier", "   |", "   = note: trait items always share the visibility of their trait", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"], "built": false}, "pubvariant": {"file": "error.rs", "line": 7, "before": ["    ZeroIndex,"], "after": ["    pub ZeroIndex,"], "out": ["error[E0449]: visibility qualifiers are not permitted here", " --> src/error.rs:7:5", "  |", "7 |     pub ZeroIndex,", "  |     ^^^ help: remove the qualifier", "  |", "  = note: enum variants and their fields always share the visibility of the enum they are in", "", "error: could not compile `todo` (bin \"todo\") due to 1 previous error"], "built": false}, "leftover": {"file": "main.rs", "line": 6, "before": ["mod task;"], "after": ["mod task;", "use error::TaskError;"], "out": ["warning: unused import: `error::TaskError`", " --> src/main.rs:7:5", "  |", "7 | use error::TaskError;", "  |     ^^^^^^^^^^^^^^^^", "  |", "  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default"], "built": true}}/*/BROKEN*/;
+  const BROKEN_INFO = [
+    ['nomod', 'smazaný mod error;', 'bad', 'E0432', 'Tvoje chyba z kroku 3. Soubor <code>error.rs</code> existuje, ale v plánu budovy chybí, takže <code>crate::error</code> nikam nevede. Rada <code>crate::core::error</code> je slepá ulička. Lék: vrátit <code>mod error;</code> do <code>main.rs</code>.'],
+    ['nocrate', 'use bez crate::', 'bad', 'E0432', 'Relativní cesta se hledá od <code>list</code> a ten žádný podmodul <code>task</code> nemá. Rada <code>crate::task::Task</code> sedí.'],
+    ['modtwice', 'mod task; v list.rs', 'bad', 'E0583', 'Rust hledá <code>src/list/task.rs</code>. Poznámka <i>import it with <code>use crate::...</code> instead</i> je přesně ten lék. Následné chyby zmizí s první.'],
+    ['nouse', 'chybí use v list.rs', 'bad', 'E0425', '<code>use</code> v <code>main.rs</code> tomuhle souboru nepomůže, zkratky platí jen pro svůj soubor.'],
+    ['fmtuse', 'chybí use std::fmt', 'bad', 'E0433', 'Stejná příčina: <code>error.rs</code> potřebuje vlastní <code>use std::fmt;</code>.'],
+    ['pubstruct', 'Task bez pub', 'bad', 'E0603', 'Typ je v zázemí. Kompilátor ukáže i místo definice.'],
+    ['pubfn', 'print_tasks bez pub', 'bad', 'E0603', '<code>main</code> se dovolává funkce, která není na přepážce.'],
+    ['pubmethod', 'start bez pub', 'bad', 'E0624', 'I u veřejného typu je každá metoda veřejná zvlášť. <code>list.rs</code> i <code>main.rs</code> ji volají, proto dvě chyby.'],
+    ['field', 'task.title bez ()', 'bad', 'E0616', 'Pole je soukromé. Kompilátor si všimne, že existuje metoda, a poradí závorky.'],
+    ['literal', 'Task { … } v main', 'bad', 'bez kódu', 'Se soukromými poli nejde úkol mimo <code>task.rs</code> sestavit, kompilátor proto ukáže na <code>new</code>.'],
+    ['pubfmt', 'pub fn fmt', 'bad', 'E0449', 'Metody traitu mají viditelnost traitu, <code>pub</code> tu nejde napsat.'],
+    ['pubvariant', 'pub ZeroIndex', 'bad', 'E0449', 'Varianty jsou veřejné s enumem, <code>pub</code> se k nim nepíše.'],
+    ['leftover', 'zbytečný use', 'warn', 'přeloží se', 'Jen varování. Smaž <code>use</code>, ale <code>mod error;</code> nech: viz první rozbití v seznamu.'],
+  ];
+  const bList = document.getElementById('broken-list');
+  bList.innerHTML = '<span class="lbl">rozbij:</span>' + BROKEN_INFO.map((b, i) => `<button type="button" data-b="${i}" aria-pressed="false">${esc(b[1])}</button>`).join('');
+  function showBroken(i) {
+    const [key, , kind, code, why] = BROKEN_INFO[i];
+    const d = BROKEN[key];
+    bList.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.b) === i)));
+    const lines = [`<div class="none">src/${d.file}, řádek ${d.line}</div>`];
+    d.before.forEach((l) => lines.push(`<div class="minus">- ${esc(l)}</div>`));
+    if (d.after.length) d.after.forEach((l) => lines.push(`<div class="plus">+ ${esc(l)}</div>`));
+    else lines.push('<div class="plus none">+ (řádek smazán)</div>');
+    document.getElementById('broken-diff').innerHTML = lines.join('');
+    document.getElementById('broken-out').innerHTML = '<span class="p">$</span> <span class="u">cargo build</span>\n' + colorize(d.out);
+    const w = document.getElementById('broken-why');
+    w.className = 'verdict broken-why ' + kind;
+    w.innerHTML = `<span class="code">${esc(code)}</span><span>${why}</span>`;
+  }
+  bList.addEventListener('click', (e) => { const b = e.target.closest('button[data-b]'); if (b) showBroken(Number(b.dataset.b)); });
+  showBroken(0);
+
+  // ---------- záložky ----------
+  const tabs = [['tab-run', 'pane-run'], ['tab-reach', 'pane-reach'], ['tab-break', 'pane-break']];
+  tabs.forEach(([t, p]) => document.getElementById(t).addEventListener('click', () => {
+    tabs.forEach(([t2, p2]) => {
+      document.getElementById(t2).setAttribute('aria-selected', String(t2 === t));
+      document.getElementById(p2).hidden = p2 !== p;
+    });
+  }));
+
+  reset();
+})();
+</script>
+<script>
+// Na webu (GitHub Pages) jsou lekce jako .html a obsah je adresář, při otevření ze souboru zůstávají .md.
+if (location.protocol !== 'file:') document.querySelectorAll('a[href^="../"][href$=".md"]').forEach((a) => { a.href = a.getAttribute('href').replace(/README\.md$/, '').replace(/\.md$/, '.html'); });
+</script>
+</body>
+</html>

@@ -124,7 +124,7 @@ Nový student má svůj postup v `journal/student/stav.md`.
 - ✅ 05 Vlastnictví a výpůjčky (ownership, borrowing, `&` / `&mut`)
 - ✅ 06 Vstup od uživatele (stdin, interaktivní smyčka, parsování příkazů)
 - ✅ 07 Chyby (`Result`, `?`, vlastní chybový typ)
-- ⬜ 08 Moduly (rozdělení do souborů, `pub`, `mod`, `use`)
+- ✅ 08 Moduly (rozdělení do souborů, `pub`, `mod`, `use`)
 - ⬜ 09 Testy (`cargo test`, unit testy)
 - ⬜ 10 Ukládání do souboru (crates, `serde`, JSON, `std::fs`)
 - ⬜ 11 CLI argumenty (`clap`, `todo add "..."`)

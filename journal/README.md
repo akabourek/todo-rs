@@ -34,6 +34,8 @@ git diff lekce-01 lekce-02 # co přibylo mezi lekcemi
   - [Infografika: Cesta příkazu](infografika/06-vstup-infografika.html) – cesta textu programem, řetězení podmínek jako řada branek + hřiště (otevřít v prohlížeči)
 - [07 – Chyby](07-chyby.md) – `Result`, `return`, operátor `?`, `ok_or`/`map_err`, vlastní `enum TaskError`, `impl Display`
   - [Infografika: Červená obálka](infografika/07-chyby-infografika.html) – obálky `Ok`/`Err` putují patry funkcí, `?` jako potrubní pošta + hřiště s cestou příkazu a „rozbij kód“ (otevřít v prohlížeči)
+- [08 – Moduly](08-moduly.md) – `mod`, `crate::`, `use`, `pub`, soukromá pole a metody místo nich
+  - [Infografika: Úřad s přepážkami](infografika/08-moduly-infografika.html) – moduly jako kanceláře, `pub` jako přepážka, `use` jako rychlá volba + hřiště s cestou příkazu, „kdo na co dosáhne“ a „rozbij kód“ (otevřít v prohlížeči)
 
 Celá plánovaná osnova je v [AGENTS.md](../AGENTS.md#osnova-stav--hotovo--čeká).
 

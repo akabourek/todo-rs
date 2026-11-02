@@ -728,4 +728,182 @@ fn main() {
     { t: "Použít `tasks[n]` a nechat program panikařit", why: "Číslo od uživatele nikdy neindexuj přes `[ ]`." },
   ],
   ex: "Chyba uživatele = `Result` a hláška. Chyba, která by neměla nastat (nejde psát na terminál) = `.expect(\"…\")`." },
+{ l: 8, kind: 'Pojem',
+  q: "V `src/` přibyl soubor `help.rs`. Který řádek v `main.rs` ho zapojí do programu?",
+  checks: [{ src: "mod help;\nfn main() {}\n", err: 'E0583' }],
+  opts: [
+    { t: "`mod help;`", ok: true },
+    { t: "`use help;`", why: "`use` jen zkracuje jméno. Bez `mod` v programu žádný modul `help` není." },
+    { t: "`use crate::help;`", why: "Cesta `crate::help` nikam nevede, dokud na ni nevede `mod help;`." },
+    { t: "Žádný, Cargo najde všechny soubory v `src/` sám", why: "Soubor bez `mod` kompilátor vůbec nečte, i kdyby v něm byly nesmysly." },
+  ],
+  ex: "`mod help;` čti „mám podmodul help, najdeš ho v `src/help.rs`“. Když soubor neexistuje, je to `E0583 file not found for module`." },
+{ l: 8, kind: 'Přeloží se?',
+  q: "`parse_index` nemá `pub`. Co se stane?",
+  code: R`mod list {
+    fn parse_index() -> usize {
+        1
+    }
+
+    pub fn get_task() -> usize {
+        parse_index() + 1
+    }
+}
+
+fn main() {
+    println!("{}", list::get_task());
+}`,
+  checks: [{ out: "2\n" }],
+  opts: [
+    { t: "Přeloží se a vypíše `2`", ok: true },
+    { t: "`E0603 function parse_index is private`", why: "Soukromou funkci nevolá `main`, ale `get_task` ve stejném modulu. To je povolené." },
+    { t: "`E0624 method parse_index is private`", why: "`parse_index` není metoda a navíc ji volá vlastní modul." },
+    { t: "Přeloží se, ale spadne za běhu", why: "Viditelnost hlídá kompilátor, za běhu se s ní nic neděje." },
+  ],
+  ex: "Soukromá položka je vidět ve svém modulu a v jeho potomcích. `pub` potřebuje jen to, co se volá odjinud." },
+{ l: 8, kind: 'Přeloží se?',
+  q: "`Task` má `pub`. Co se stane?",
+  code: R`mod task {
+    pub struct Task {
+        title: String,
+    }
+
+    impl Task {
+        pub fn new(title: &str) -> Self {
+            Self { title: title.to_string() }
+        }
+    }
+}
+
+fn main() {
+    let t = task::Task::new("Buy");
+    println!("{}", t.title);
+}`,
+  checks: [{ err: 'E0616' }],
+  opts: [
+    { t: "`E0616`: pole `title` je soukromé", ok: true },
+    { t: "Přeloží se a vypíše `Buy`", why: "`pub struct` zveřejní jen typ. Pole potřebuje vlastní `pub`, nebo metodu." },
+    { t: "`E0603`: struktura `Task` je soukromá", why: "`Task` je `pub`, proto `Task::new` prošlo. Vadí až pole." },
+    { t: "`E0624`: metoda `new` je soukromá", why: "`new` má `pub`." },
+  ],
+  ex: "`pub` se píše na každou položku zvlášť. Řešením je `pub fn title(&self) -> &str`: pole jde číst, ale ne přepsat." },
+{ l: 8, kind: 'Přeloží se?',
+  q: "Enum je `pub`, jeho varianty `pub` nemají. Co se stane?",
+  code: R`mod error {
+    #[derive(Debug)]
+    pub enum TaskError {
+        ZeroIndex,
+    }
+}
+
+fn main() {
+    println!("{:?}", error::TaskError::ZeroIndex);
+}`,
+  checks: [{ out: "ZeroIndex\n" }],
+  opts: [
+    { t: "Přeloží se a vypíše `ZeroIndex`", ok: true },
+    { t: "`E0603`: varianta `ZeroIndex` je soukromá", why: "Varianty jsou veřejné spolu s enumem." },
+    { t: "`E0616`: pole `ZeroIndex` je soukromé", why: "Varianta není pole struktury. Soukromá můžou být pole `struct`, ne varianty `enum`." },
+    { t: "Musí se napsat `pub ZeroIndex`", why: "Tento zápis je naopak chyba `E0449 visibility qualifiers are not permitted here`." },
+  ],
+  ex: "U enumu stačí jedno `pub`. Jinak než u `struct`, kde každé pole potřebuje vlastní." },
+{ l: 8, kind: 'Který zápis?',
+  q: "Kód hlásí `E0432 unresolved import`. Čím nahradit řádek s `use`?",
+  code: R`mod task {
+    pub struct Task;
+}
+
+mod list {
+    use task::Task;
+
+    pub fn make() -> Task {
+        Task
+    }
+}
+
+fn main() {
+    let _t = list::make();
+}`,
+  checks: [
+    { err: 'E0432' },
+    { src: "mod task {\n    pub struct Task;\n}\n\nmod list {\n    use crate::task::Task;\n\n    pub fn make() -> Task {\n        Task\n    }\n}\n\nfn main() {\n    let _t = list::make();\n}\n", out: "" },
+    { src: "mod task {\n    pub struct Task;\n}\n\nmod list {\n    use self::task::Task;\n\n    pub fn make() -> Task {\n        Task\n    }\n}\n\nfn main() {\n    let _t = list::make();\n}\n", err: 'any' },
+  ],
+  opts: [
+    { t: "`use crate::task::Task;`", ok: true },
+    { t: "`mod task;`", why: "To by byl nový podmodul `list`u a Rust by hledal soubor `list/task.rs`." },
+    { t: "`use self::task::Task;`", why: "`self` je aktuální modul, tedy `list`, a v něm žádný `task` není." },
+    { t: "`pub use task::Task;`", why: "`pub` nic nemění na tom, kde se cesta začne hledat." },
+  ],
+  ex: "`crate::` je absolutní cesta od kořene a funguje odkudkoli. Bez něj se cesta hledá od aktuálního modulu." },
+{ l: 8, kind: 'Přeloží se?',
+  q: "`use std::fmt;` je na začátku souboru, modul `error` je o pár řádků níž. Co se stane?",
+  code: R`use std::fmt;
+
+mod error {
+    pub struct TaskError;
+
+    impl fmt::Display for TaskError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "Task error")
+        }
+    }
+}
+
+fn main() {
+    println!("{}", error::TaskError);
+}`,
+  checks: [{ err: 'E0433' }],
+  opts: [
+    { t: "`E0433`: v modulu `error` není `fmt` známé", ok: true },
+    { t: "Přeloží se a vypíše `Task error`", why: "`use` platí jen pro modul, kde je napsané. `mod error` je jiný modul, i když je ve stejném souboru." },
+    { t: "`E0603`: `TaskError` je soukromý", why: "`TaskError` má `pub`." },
+    { t: "`E0449`: `fn fmt` musí mít `pub`", why: "Naopak: `pub` u metody traitu být nesmí." },
+  ],
+  ex: "Každý modul má vlastní sadu jmen a zkratky se nedědí. Proto má `error.rs` vlastní `use std::fmt;`." },
+{ l: 8, kind: 'Přeloží se?',
+  q: "`TaskStatus` nemá `pub`, ale je v poli veřejného `Task`. Co se stane?",
+  code: R`mod task {
+    enum TaskStatus {
+        ToDo,
+    }
+
+    pub struct Task {
+        status: TaskStatus,
+    }
+
+    impl Task {
+        pub fn new() -> Self {
+            Self { status: TaskStatus::ToDo }
+        }
+
+        pub fn is_todo(&self) -> bool {
+            matches!(self.status, TaskStatus::ToDo)
+        }
+    }
+}
+
+fn main() {
+    println!("{}", task::Task::new().is_todo());
+}`,
+  checks: [{ out: "true\n" }],
+  opts: [
+    { t: "Přeloží se a vypíše `true`", ok: true },
+    { t: "`E0603`: `TaskStatus` je soukromý", why: "`main` jméno `TaskStatus` nikde nepoužívá. Pracuje jen s `Task` a `is_todo`." },
+    { t: "`E0616`: pole `status` je soukromé", why: "Na pole sahá jen `impl Task` ve stejném modulu." },
+    { t: "Musí se napsat `pub enum TaskStatus`", why: "Není potřeba. Je to vnitřní detail, který ven neodchází." },
+  ],
+  ex: "Co jde schovat, schovej. Soukromý typ v soukromém poli je v pořádku a jde ho později změnit, aniž by se rozbil kód jinde." },
+{ l: 8, kind: 'Pojem',
+  q: "Ze souboru `main.rs` se smazal `use error::TaskError;`, který už nebyl potřeba, a omylem i `mod error;`. Co se stane, když `list.rs` má `use crate::error::TaskError;`?",
+  checks: [
+    { src: "mod list {\n    use crate::error::TaskError;\n    pub fn f() -> TaskError { TaskError }\n}\nfn main() { let _ = list::f(); }\n", err: 'E0432' },
+  ],
+  opts: [
+    { t: "`E0432 unresolved import`", ok: true },
+    { t: "Nic, `list.rs` si soubor `error.rs` najde sám", why: "Soubor existuje, ale do programu ho přidává jedině `mod`." },
+    { t: "`E0583 file not found for module`", why: "Tu dostaneš u `mod`, kde chybí soubor. Tady chybí naopak `mod`." },
+    { t: "Jen varování `unused import`", why: "To platí pro zbytečný `use`. Chybějící modul je chyba." },
+  ],
+  ex: "`mod` a `use` dělají různou práci. `use` lze smazat, když už není potřeba, ale `mod` musí zůstat, jinak větev ze stromu zmizí." },
 ];
