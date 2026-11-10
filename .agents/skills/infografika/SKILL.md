@@ -27,8 +27,11 @@ obrázky a nechá si ji „osahat“ na hřišti. Je to doplněk textu lekce, ne
    `- [Infografika: <Titulek>](infografika/<soubor>.html) – <co v ní je> + hřiště … (otevřít v prohlížeči)`
    a stejný řádek odsazeně (`  - …`) pod lekci v `journal/README.md`.
    V patičce infografiky odkaz na text lekce vede o adresář výš: `../NN-….md`.
-   Hned na začátku `.wrap` je navigace ze šablony: zpět na lekci, obsah a GitHub. Na konci stránky musí zůstat krátký skript
-   ze šablony, který odkazy na `.md` na GitHub Pages přepíše (`README.md` na adresář, ostatní na `.html`).
+   Hned na začátku `.wrap` je navigace ze šablony (`<nav aria-label="Navigace">`), v ní stačí odkaz na vlastní lekci
+   `<a href="../NN-….md">Text lekce NN: Název</a>`. Pak spusť `node scripts/navigace.js`: doplní nahoru i pod patičku
+   předchozí a další infografiku, text lekce, obsah a GitHub, a do předchozí infografiky odkaz na tuhle novou.
+   Na konci stránky musí zůstat krátký skript ze šablony, který odkazy na `.md` na GitHub Pages přepíše
+   (`README.md` na adresář, ostatní na `.html`).
 
 ## Struktura stránky
 
@@ -66,6 +69,7 @@ nezaměnit), stejně jako v lekcích.
 | `scripts/rustc-check.sh soubor.rs` nebo `- <<'EOF' … EOF` | přeloží ukázku `rustc --edition 2024`, vypíše hlavičky chyb (`error[E0384]: …`) a celý výpis; když se přeloží, spustí a vypíše výstup / paniku |
 | `scripts/overflow.sh journal/infografika/*.html` | najde prvky přetékající na šířce mobilu 390 px (exit 1, pokud něco přetéká) |
 | `scripts/shot.sh soubor.html [adresář]` | screenshot na 1200 a 390 px rozřezaný na dílky ≤ 2000 px; dílky prohlédni nástrojem Read |
+| `node scripts/navigace.js` | přegeneruje navigaci všech infografik nahoře i dole (předchozí, text lekce, obsah, další, GitHub) |
 | `node scripts/ferris-tahak.js` | vygeneruje Ferrise (`journal/ferris/`) a doplní ho k tahákům, kde ještě není; hotové stránky nechá být |
 | `scripts/playtest.sh soubor.html test.js` | spustí stránku s testovacím skriptem (klikání na hřišti), výsledek z `document.title` |
 

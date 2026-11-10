@@ -66,7 +66,8 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
 - **Ke každé lekci patří infografika** – agent ji vytvoří vždy spolu se zápisem lekce (krok 4 postupu).
 - Umístění: `journal/infografika/NN-kratky-nazev-infografika.html` (jeden samostatný HTML soubor,
   otevírá se v prohlížeči), odkaz v sekci **Odkazy** lekce i v `journal/README.md`.
-- Každá infografika má hned nahoře navigaci zpět na svou lekci, na obsah a na GitHub.
+- Každá infografika má nahoře i dole navigaci: předchozí infografika, text své lekce, obsah, další infografika a GitHub.
+  Generuje ji skript `navigace.js` ze skillu `infografika`, po přidání nové infografiky doplní odkaz i do předchozí.
 - Postup, struktura, jednotný styl řady, pasti a ověřovací skripty jsou ve skillu
   **`infografika`** (`.agents/skills/infografika/SKILL.md`, skripty v `scripts/`):
   `rustc-check.sh` (ukázky a hlášky na skutečném `rustc`), `overflow.sh` (přetékání na mobilu),
