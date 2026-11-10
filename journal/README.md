@@ -4,14 +4,22 @@
 
 [Zdrojový kód na GitHubu](https://github.com/akabourek/todo-rs)
 
-Každá lekce = jeden krok aplikace + jeden okruh Rustu. Kód ke každé lekci je v gitu pod tagem `lekce-NN`:
+Každá lekce = jeden krok aplikace + jeden okruh Rustu. Kód ke každé lekci je v gitu pod tagem `lekce-NN`.
+
+**Učebnici čti vždycky z větve `main` nebo na webu, tagy jsou jen pro kód.** Infografiky, kvíz a opravy
+starších lekcí přibývají průběžně, takže na starém tagu je i stará, neúplná učebnice. Proto se na kód lekce
+nepřepínej přes `git checkout`, ale použij příkazy, které `journal/` nechají být:
 
 ```bash
-git tag                    # seznam lekcí
-git checkout lekce-01      # stav kódu po lekci 01
-git checkout main          # zpět na aktuální stav
-git diff lekce-01 lekce-02 # co přibylo mezi lekcemi
+git tag                                      # seznam lekcí
+git diff lekce-06 lekce-07 -- src/           # co v kódu přibylo mezi lekcemi
+git show lekce-08:src/list.rs                # jeden soubor, jak vypadal po lekci 08
+git worktree add ../todo-lekce-07 lekce-07   # celý projekt po lekci 07 ve vedlejší složce
+git worktree remove ../todo-lekce-07         # vedlejší složku zase smazat
 ```
+
+Ve vedlejší složce z `git worktree` jde kód lekce spustit (`cargo run`). Tahle složka zůstane na `main`
+s úplnou učebnicí a s tvým rozpracovaným kódem.
 
 ## Obsah
 

@@ -26,6 +26,10 @@ Jinak jde o autora učebnice, který píše další lekci podle osnovy, a tato s
   Lekci, která v `journal/` chybí, agent sepíše běžným postupem.
 - **Tagy:** `lekce-NN` v klonu už existují a ukazují kód učebnice, nový student používá `student-NN`.
   Porovnání: `git diff lekce-03 student-03`.
+- **Kód lekce ukazovat bez `git checkout`:** materiály v `journal/` přibývají a opravují se průběžně, na starém tagu
+  je proto neúplná učebnice. Učebnice se čte z `main`, kód lekce agent ukáže přes `git show lekce-NN:src/…`,
+  `git diff lekce-NN lekce-MM -- src/` nebo celý projekt ve vedlejší složce přes `git worktree add ../todo-lekce-NN lekce-NN`
+  (pak `git worktree remove`). Checkout by navíc narazil na rozpracovaný kód studenta.
 
 ## Jazyk
 

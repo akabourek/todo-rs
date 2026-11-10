@@ -36,11 +36,16 @@ vysvětluje, zadává úkoly a kontroluje kód. Kód ale píšeš sám.
 ## Lekce
 
 Ke každé lekci patří zápis a interaktivní infografika. Obsah je v [journal/README.md](journal/README.md).
-Stav kódu po každé lekci je v gitu pod tagem `lekce-NN`:
+Stav kódu po každé lekci je v gitu pod tagem `lekce-NN`.
+
+Učebnici čti vždycky z větve `main` (nebo na webu), tagy používej jen na kód. Materiály k lekcím přibývají
+a opravují se průběžně, takže `git checkout lekce-07` by ukázal i starou, neúplnou učebnici. Místo něj:
 
 ```bash
-git checkout lekce-07      # stav kódu po lekci 07
-git checkout main          # zpět na aktuální stav
+git diff lekce-06 lekce-07 -- src/           # co v kódu přibylo mezi lekcemi
+git show lekce-08:src/list.rs                # jeden soubor, jak vypadal po lekci 08
+git worktree add ../todo-lekce-07 lekce-07   # celý projekt po lekci 07 ve vedlejší složce
+git worktree remove ../todo-lekce-07         # vedlejší složku zase smazat
 ```
 
 ## Spuštění
