@@ -9,10 +9,10 @@ const Q = require(path.join(K, 'questions.js'));
 const tmp = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'kviz-'));
 let fails = 0, checked = 0;
 const lessons = {};
-function compile(src, bin) {
+function compile(src, bin, test) {
   const f = bin + '.rs';
   fs.writeFileSync(f, src);
-  return spawnSync('rustc', ['--edition', '2024', '-o', bin, f], { encoding: 'utf8' });
+  return spawnSync('rustc', ['--edition', '2024', ...(test ? ['--test'] : []), '-o', bin, f], { encoding: 'utf8' });
 }
 function source(q, c) {
   if (c.tag) return spawnSync('git', ['show', `${c.tag}:src/main.rs`], { cwd: ROOT, encoding: 'utf8' }).stdout;
@@ -28,7 +28,7 @@ Q.forEach((q, i) => {
   (q.checks || []).forEach((c, j) => {
     checked++;
     const bin = path.join(tmp, `q${i}_${j}`);
-    const r = compile(source(q, c), bin);
+    const r = compile(source(q, c), bin, c.test);
     if (c.err) {
       if (r.status === 0) return bad(`[${j}] přeložilo se, čekal jsem ${c.err}`);
       if (c.err !== 'any' && !r.stderr.includes(`error[${c.err}]`)) return bad(`[${j}] čekal jsem ${c.err}:\n${r.stderr.split('\n').filter((l) => l.startsWith('error')).join('\n')}`);
@@ -37,7 +37,13 @@ Q.forEach((q, i) => {
     }
     if (r.status !== 0) return bad(`[${j}] nepřeložilo se:\n${r.stderr}`);
     if (c.warn && !r.stderr.includes(c.warn)) bad(`[${j}] chybí varování ${c.warn}`);
-    const run = spawnSync(bin, [], { input: c.stdin ?? '', encoding: 'utf8', timeout: 5000 });
+    const run = spawnSync(bin, c.args || [], { input: c.stdin ?? '', encoding: 'utf8', timeout: 5000 });
+    if (c.test) {
+      // Testovací binárka (rustc --test): has = texty, které musí být ve výpisu, pass = mají všechny testy projít.
+      (c.has || []).forEach((h) => { if (!run.stdout.includes(h)) bad(`[${j}] ve výpisu testů chybí "${h}":\n${run.stdout}`); });
+      if (c.pass !== undefined && (run.status === 0) !== c.pass) bad(`[${j}] testy ${c.pass ? 'měly projít' : 'měly selhat'}, status ${run.status}`);
+      return;
+    }
     if (c.panic) { if (run.status === 0 || !run.stderr.includes(c.panic)) bad(`[${j}] čekal jsem paniku "${c.panic}", status ${run.status}: ${run.stderr}`); return; }
     if (run.stdout !== c.out) bad(`[${j}] výstup ${JSON.stringify(run.stdout)} != ${JSON.stringify(c.out)}`);
     if (c.stderr && !run.stderr.includes(c.stderr)) bad(`[${j}] stderr bez "${c.stderr}": ${run.stderr}`);

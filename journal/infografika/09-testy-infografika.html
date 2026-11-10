@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>Zkušebna s váhou</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Saira+Stencil+One&display=swap">
+<style>
+/* Metafora: testy jsou zkušebna v zadní části dílny. Každý test je zkušební stolek se vzorkem,
+   assert_eq! je rovnoramenná váha (miska left = co kód vyrobil, miska right = co čekáme),
+   PartialEq = smí na váhu, #[cfg(test)] = zkušebna je otevřená jen při kontrole,
+   cargo test = kontrolor s razítkem ok / FAILED. Barvy a písma sdílí s lekcemi 04–08. */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #1b2330;
+  --muted: #5b6676;
+  --line: #cfd6df;
+  --kraft: #c9975c;
+  --kraft-dark: #a7773f;
+  --kraft-edge: #6f4c24;
+  --tape: #efc75e;
+  --label: #f7f1e3;
+  --read: #0d7480;
+  --read-soft: #d7eef0;
+  --write: #c2410c;
+  --write-soft: #fbe3d6;
+  --ok: #2e7d32;
+  --ok-soft: #dcefdc;
+  --err: #b42318;
+  --err-soft: #f9dedb;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --f-stamp: "Saira Stencil One", Impact, "Arial Black", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+    --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+    --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+    --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b2330; --surface-2: #222c3a; --ink: #e6ebf1; --muted: #9ba7b6; --line: #2f3b4c;
+  --kraft: #b8884f; --kraft-dark: #8d6232; --kraft-edge: #3d2810; --tape: #d9ae45; --label: #ece3cf;
+  --read: #57c6cf; --read-soft: #163a3f; --write: #fb8c4e; --write-soft: #432517;
+  --ok: #74c47a; --ok-soft: #1c3820; --err: #f2766b; --err-soft: #44201d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  /* bez ligatur: => -> || musí vypadat přesně tak, jak se píšou */
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3.2vw, 2rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 code { font-size: 0.85em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+code, pre { font-family: var(--f-code); font-size: 0.86em; }
+:not(pre) > code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; white-space: nowrap; }
+a { color: var(--read); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--write); outline-offset: 2px; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 32px; align-items: center; }
+.hero .lead { font-size: 1.2rem; color: var(--muted); margin-top: 16px; }
+.eyebrow { font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hero-fig { display: grid; justify-items: center; gap: 6px; min-width: 0; }
+
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.rule b { font-family: var(--f-display); font-size: 1.15rem; }
+.rule span { color: var(--muted); font-size: 0.95rem; }
+.rule .n { font-family: var(--f-stamp); font-size: 1.6rem; color: var(--kraft-dark); line-height: 1; }
+
+/* ---------- váha ---------- */
+.scale { width: 100%; max-width: 360px; height: auto; display: block; }
+.s-foot, .s-post { fill: var(--kraft-dark); }
+.s-beam { stroke: var(--ink); stroke-width: 6; stroke-linecap: round; }
+.s-pivot { fill: var(--tape); stroke: var(--ink); stroke-width: 2; }
+.s-str { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.s-pan { fill: var(--kraft); stroke: var(--kraft-edge); stroke-width: 2; }
+.s-val { fill: var(--label); stroke: var(--kraft-dark); stroke-width: 1.5; }
+.s-val.bad { fill: var(--err-soft); stroke: var(--err); }
+.s-txt { font-family: var(--f-code); font-size: 11.5px; font-weight: 600; fill: #3a2b17; text-anchor: middle; }
+.s-txt.bad { fill: var(--err); }
+.s-lbl { font-family: var(--f-code); font-size: 12px; fill: var(--muted); text-anchor: middle; }
+
+.stamp {
+  display: inline-block; font-family: var(--f-stamp); font-size: 1.25rem; letter-spacing: 0.06em; line-height: 1;
+  padding: 6px 12px 4px; border: 3px solid currentColor; border-radius: 6px; transform: rotate(-5deg);
+}
+.stamp.ok { color: var(--ok); }
+.stamp.fail { color: var(--err); }
+.stamp.sm { font-size: 0.85rem; padding: 3px 7px 2px; border-width: 2px; }
+
+/* ---------- stolek ---------- */
+.bench { width: 100%; max-width: 420px; border: 3px solid var(--ink); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.bench-h { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; padding: 8px 12px; background: var(--surface-2); border-bottom: 2px solid var(--line); font-family: var(--f-code); font-size: 0.78rem; color: var(--muted); }
+.bench-h b { font-family: var(--f-code); font-size: 0.85rem; color: var(--ink); overflow-wrap: anywhere; }
+.bench-b { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; padding: 12px; align-items: baseline; }
+.bench-b .lbl { white-space: nowrap; }
+.bench-b code { white-space: normal; overflow-wrap: anywhere; }
+.bench-f { display: flex; justify-content: flex-end; padding: 0 14px 12px; }
+.lab { display: grid; gap: 4px; width: 100%; }
+.lab div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 6px; background: var(--surface-2); font-family: var(--f-code); font-size: 0.78rem; }
+.lab div span:first-child { overflow-wrap: anywhere; min-width: 0; }
+
+/* ---------- PartialEq: co smí na váhu ---------- */
+.weigh { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.weigh th, .weigh td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.weigh th { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.weigh tr:last-child td { border-bottom: 0; }
+.weigh td code { white-space: normal; overflow-wrap: anywhere; }
+.weigh .y { color: var(--ok); font-weight: 700; white-space: nowrap; }
+.weigh .n { color: var(--err); font-weight: 700; white-space: nowrap; }
+
+.names { display: grid; gap: 8px; width: 100%; }
+.name-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 8px; border: 2px solid var(--line); background: var(--surface-2); font-family: var(--f-code); font-size: 0.82rem; }
+.name-row span:first-child { overflow-wrap: anywhere; min-width: 0; }
+.name-row.win { border-color: var(--ink); background: var(--surface); }
+.name-row.lose { opacity: 0.55; text-decoration: line-through; }
+.name-row small { font-family: var(--f-body); font-size: 0.78rem; color: var(--muted); }
+
+/* ---------- scény ---------- */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.scene.wide { grid-template-columns: minmax(0, 1fr); }
+.scene-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.scene-head .num { font-family: var(--f-stamp); font-size: 2rem; color: var(--kraft-dark); line-height: 1; }
+.scene-head .sym { font-family: var(--f-code); font-size: 1rem; color: var(--muted); }
+.fig {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0;
+  padding: 22px 18px; display: grid; gap: 16px; justify-items: center; align-content: center; min-height: 200px;
+  overflow-x: auto;
+}
+.fig-cap { font-size: 0.9rem; color: var(--muted); text-align: center; max-width: 46ch; }
+.lbl { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+.vs > div { display: grid; gap: 10px; align-content: start; justify-items: center; padding: 12px; border-radius: 8px; background: var(--surface-2); min-width: 0; text-align: center; }
+.vs h3 { font-size: 0.95rem; }
+.vs small { color: var(--muted); font-size: 0.82rem; }
+
+.pairs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; width: 100%; }
+.pair { display: grid; gap: 8px; align-content: start; min-width: 0; padding: 14px; border-radius: 10px; background: var(--surface-2); }
+.pair h3 { font-size: 1rem; }
+.pair pre { font-size: 0.78rem; padding: 10px 12px; }
+.pair .weak { border-left: 5px solid var(--err); }
+.pair .strong { border-left: 5px solid var(--ok); }
+.pair p { font-size: 0.9rem; color: var(--muted); }
+
+.text { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.text > * { min-width: 0; }
+.text .metaphor { font-size: 1.12rem; }
+.text .metaphor b { font-family: var(--f-display); }
+.text ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+
+pre {
+  margin: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .e { color: var(--err); font-weight: 600; }
+pre .k { color: var(--ok); font-weight: 600; }
+pre .r { color: var(--read); font-weight: 600; }
+pre .w { color: var(--write); font-weight: 600; }
+
+.verdict { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; }
+.verdict > span:last-child { min-width: 0; }
+.verdict.bad { background: var(--err-soft); }
+.verdict.good { background: var(--ok-soft); }
+.verdict.warn { background: var(--write-soft); }
+.verdict .code { font-family: var(--f-code); font-weight: 600; flex: none; }
+.verdict.bad .code { color: var(--err); }
+.verdict.good .code { color: var(--ok); }
+.verdict.warn .code { color: var(--write); }
+
+.mini { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.mini th, .mini td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mini th { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.mini tr:last-child td { border-bottom: 0; }
+.mini td.ok { color: var(--ok); font-weight: 700; }
+.mini td.bad { color: var(--err); font-weight: 700; }
+.mini td code { white-space: normal; }
+
+.term { font-family: var(--f-code); font-size: 0.8rem; background: #10161e; color: #e6ebf1; border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: anywhere; width: 100%; min-width: 0; overflow-x: auto; }
+.term .p { color: #7f8b99; }
+.term .u { color: #efc75e; }
+.term .bad { color: #f2a59d; }
+.term .warn { color: #fbbf77; }
+.term .okc { color: #9fd8a3; }
+
+/* ---------- hřiště ---------- */
+.play { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
+.play-intro { display: grid; gap: 8px; }
+.hint { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--tape); padding-left: 12px; }
+.prompt { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.prompt label { font-family: var(--f-code); font-weight: 600; font-size: 1rem; white-space: nowrap; }
+.prompt input {
+  flex: 1 1 160px; min-width: 0; font-family: var(--f-code); font-size: 1rem; padding: 9px 12px;
+  border: 2px solid var(--ink); border-radius: 8px; background: var(--surface); color: var(--ink);
+}
+.btn {
+  font-family: var(--f-body); font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  padding: 9px 14px; border-radius: 8px; border: 2px solid var(--ink); background: var(--ink); color: var(--surface);
+}
+.examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.examples button {
+  font-family: var(--f-code); font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  padding: 5px 10px; border-radius: 999px; border: 2px solid var(--kraft-dark); background: var(--label); color: #3a2b17;
+}
+.examples button[aria-pressed="true"] { background: var(--err); border-color: var(--err); color: #fff; }
+.examples.filters button[aria-pressed="true"] { background: var(--read); border-color: var(--read); }
+.diff { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; font-family: var(--f-code); font-size: 0.8rem; }
+.diff div { white-space: pre; padding: 3px 12px; }
+.diff .minus { background: var(--ok-soft); color: var(--ok); }
+.diff .plus { background: var(--err-soft); color: var(--err); }
+.diff .none { color: var(--muted); font-style: italic; }
+.play-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 20px; align-items: start; }
+.side { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.benches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.benches button {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; text-align: left; cursor: pointer; min-width: 0;
+  padding: 7px 9px; border-radius: 8px; border: 2px solid var(--line); background: var(--surface-2); color: var(--ink);
+  font-family: var(--f-code); font-size: 0.72rem;
+}
+.benches button span.nm { display: grid; overflow-wrap: anywhere; min-width: 0; }
+.benches button small { font-family: var(--f-body); color: var(--muted); font-size: 0.72rem; }
+.benches button.ok { border-color: var(--ok); }
+.benches button.fail { border-color: var(--err); background: var(--err-soft); }
+.benches button.skip { opacity: 0.45; border-style: dashed; }
+.benches button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--tape); }
+.side .term { max-height: 460px; overflow-y: auto; }
+#bench-code { font-size: 0.8rem; }
+
+/* ---------- tahák ---------- */
+.cheat-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table.cheat { border-collapse: collapse; width: 100%; min-width: 640px; }
+table.cheat th, table.cheat td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.cheat th { font-family: var(--f-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+table.cheat tr:last-child td { border-bottom: 0; }
+table.cheat td:first-child { font-weight: 700; }
+
+footer { display: grid; gap: 8px; color: var(--muted); font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 20px; }
+footer ul { margin: 0; padding-left: 1.2em; }
+
+@media (max-width: 780px) {
+  .hero, .scene, .play-grid, .pairs { grid-template-columns: minmax(0, 1fr); }
+  .hero-fig { order: -1; }
+  .rules { grid-template-columns: 1fr; }
+  .vs { grid-template-columns: 1fr; }
+  :not(pre) > code { white-space: normal; overflow-wrap: anywhere; }
+  .term { font-size: 0.72rem; }
+  .benches { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <nav aria-label="Navigace" style="display:flex; flex-wrap:wrap; gap:4px 18px; font-size:0.95rem">
+    <a href="../09-testy.md">← Lekce 09: Testy</a>
+    <a href="../README.md">Obsah</a>
+    <a href="https://github.com/akabourek/todo-rs">GitHub</a>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <div>
+      <div class="eyebrow">todo-rs · lekce 09 · testy</div>
+      <h1>Zkušebna s váhou</h1>
+      <p class="lead">Za dílnou je <b>zkušebna</b>. Každý test je jeden <b>zkušební stolek</b>: vezme kus kódu, nechá ho něco vyrobit a položí výsledek na <b>váhu</b> (<code>assert_eq!</code>) proti tomu, co čekáš. Kontrolor <code>cargo test</code> obejde všechny stolky a dá razítko <b>ok</b>, nebo <b>FAILED</b>.</p>
+    </div>
+    <div class="hero-fig" aria-hidden="true">
+      <svg class="scale" viewBox="0 0 360 200">
+        <rect class="s-foot" x="130" y="178" width="100" height="12" rx="4"/>
+        <rect class="s-post" x="174" y="46" width="12" height="134"/>
+        <line class="s-beam" x1="70" y1="46" x2="290" y2="46"/>
+        <circle class="s-pivot" cx="180" cy="46" r="7"/>
+        <path class="s-str" d="M70 46 L22 120 M70 46 L118 120"/>
+        <path class="s-pan" d="M14 120 Q70 146 126 120 Z"/>
+        <rect class="s-val" x="20" y="96" width="100" height="24" rx="4"/>
+        <text class="s-txt" x="70" y="112">Ok(3)</text>
+        <text class="s-lbl" x="70" y="164">left</text>
+        <path class="s-str" d="M290 46 L242 120 M290 46 L338 120"/>
+        <path class="s-pan" d="M234 120 Q290 146 346 120 Z"/>
+        <rect class="s-val" x="240" y="96" width="100" height="24" rx="4"/>
+        <text class="s-txt" x="290" y="112">Ok(3)</text>
+        <text class="s-lbl" x="290" y="164">right</text>
+      </svg>
+      <span class="stamp ok">ok</span>
+    </div>
+  </header>
+
+  <section class="rules" aria-label="Tři pravidla">
+    <div class="rule"><span class="n">1</span><b>Test je funkce, která nespadne.</b><span>Funkce s <code>#[test]</code> projde, když doběhne, a selže, když zpanikaří. Proto v ní nevadí <code>.unwrap()</code>.</span></div>
+    <div class="rule"><span class="n">2</span><b>Váha ukáže obě misky.</b><span><code>assert_eq!(skutečná, očekávaná)</code> při selhání vypíše <code>left</code> i <code>right</code>. Na váhu smí jen typ s <code>PartialEq</code>.</span></div>
+    <div class="rule"><span class="n">3</span><b>Zkušebna je otevřená jen při kontrole.</b><span><code>#[cfg(test)] mod tests</code> se přeloží jen v <code>cargo test</code>. Je to dítě modulu, takže vidí i soukromé věci.</span></div>
+  </section>
+
+  <!-- ===== 1 #[test] ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">1</span><h2><code>#[test]</code>: zkušební stolek</h2><span class="sym">#[test] fn … { }</span></div>
+    <div class="fig">
+      <div class="bench">
+        <div class="bench-h">stolek <b>parse_index_rejects_zero</b></div>
+        <div class="bench-b">
+          <span class="lbl">vzorek</span><code>parse_index("0")</code>
+          <span class="lbl">čekám</span><code>Err(TaskError::ZeroIndex)</code>
+          <span class="lbl">váha</span><code>assert_eq!(…, …)</code>
+        </div>
+        <div class="bench-f"><span class="stamp ok sm">ok</span></div>
+      </div>
+      <div class="vs">
+        <div><h3>doběhne</h3><span class="stamp ok sm">ok</span><small>všechny kontroly prošly</small></div>
+        <div><h3>zpanikaří</h3><span class="stamp fail sm">FAILED</span><small><code>assert</code> neprošel, nebo <code>.unwrap()</code> dostal <code>Err</code></small></div>
+      </div>
+      <p class="fig-cap">Každý stolek zkouší jednu věc. Jméno stolku je jméno funkce, ve výpisu ho uvidíš celé i s cestou.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Stolek nic nevyrábí pro zákazníka.</b> Jen vezme vzorek, vyzkouší ho a řekne, jestli sedí.</p>
+<pre><code><span class="k">#[test]</span>             <span class="c">// nálepka: tohle je test</span>
+fn <span class="r">parse_index_rejects_zero</span>() {
+    <span class="c">// žádné parametry, nic nevrací</span>
+    assert_eq!(parse_index("0"), Err(TaskError::ZeroIndex));
+}</code></pre>
+      <ul>
+        <li><b><code>#[…]</code></b> je <b>atribut</b>, poznámka pro kompilátor k položce pod ní. Znáš ho z <code>#[derive(Debug)]</code>.</li>
+        <li><b><code>#[test]</code></b> = „spusť při <code>cargo test</code>, v normálním programu vynech“.</li>
+        <li><b>Jméno</b> popisuje, co se ověřuje. Předpona <code>test_</code> je zbytečná, to už říká <code>#[test]</code>.</li>
+        <li><b>Jedna věc na test.</b> Po prvním neúspěšném <code>assert</code> test končí a zbytek se neprovede.</li>
+      </ul>
+      <div class="verdict bad"><span class="code">item context</span><span>Kontroly napsané rovnou do <code>mod tests { }</code> bez funkce: <i>macro expansion ignores keyword <code>match</code></i> a <i>the usage of <code>assert_eq!</code> is likely invalid in item context</i>. Modul smí obsahovat jen položky (<code>fn</code>, <code>use</code>…), příkazy patří do těla funkce.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 2 assert_eq! ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">2</span><h2><code>assert_eq!</code>: váha se dvěma miskami</h2><span class="sym">assert! · assert_eq! · assert_ne!</span></div>
+    <div class="fig">
+      <svg class="scale" viewBox="0 0 360 200" role="img" aria-label="Váha je nakloněná: na levé misce Ok(0), na pravé Err(ZeroIndex)">
+        <rect class="s-foot" x="130" y="178" width="100" height="12" rx="4"/>
+        <rect class="s-post" x="174" y="46" width="12" height="134"/>
+        <line class="s-beam" x1="70" y1="30" x2="290" y2="62"/>
+        <circle class="s-pivot" cx="180" cy="46" r="7"/>
+        <g transform="translate(0,-16)">
+          <path class="s-str" d="M70 46 L22 120 M70 46 L118 120"/>
+          <path class="s-pan" d="M14 120 Q70 146 126 120 Z"/>
+          <rect class="s-val bad" x="20" y="96" width="100" height="24" rx="4"/>
+          <text class="s-txt bad" x="70" y="112">Ok(0)</text>
+          <text class="s-lbl" x="70" y="164">left · kód</text>
+        </g>
+        <g transform="translate(0,16)">
+          <path class="s-str" d="M290 46 L242 120 M290 46 L338 120"/>
+          <path class="s-pan" d="M234 120 Q290 146 346 120 Z"/>
+          <rect class="s-val" x="240" y="96" width="100" height="24" rx="4"/>
+          <text class="s-txt" x="290" y="112">Err(ZeroIndex)</text>
+          <text class="s-lbl" x="290" y="164">right · čekám</text>
+        </g>
+      </svg>
+      <div class="term"><span class="bad">assertion `left == right` failed</span>
+  left: Ok(0)
+ right: Err(ZeroIndex)</div>
+      <p class="fig-cap">Skutečný výpis, kdyby <code>parse_index</code> zapomněla kontrolovat nulu. Na první pohled vidíš, co kód vrátil.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Váha neříká jen „nesedí“.</b> Ukáže, co leží na které misce.</p>
+      <table class="mini">
+        <thead><tr><th>Makro</th><th>Selže, když</th><th>Vypíše</th></tr></thead>
+        <tbody>
+          <tr><td><code>assert!(x)</code></td><td><code>x</code> je <code>false</code></td><td>jen podmínku</td></tr>
+          <tr><td><code>assert_eq!(a, b)</code></td><td><code>a != b</code></td><td><code>left</code> a <code>right</code></td></tr>
+          <tr><td><code>assert_ne!(a, b)</code></td><td><code>a == b</code></td><td><code>left</code> a <code>right</code></td></tr>
+        </tbody>
+      </table>
+      <ul>
+        <li><b><code>!</code></b> = makro, jako <code>println!</code>. Při neúspěchu zpanikaří, a tím test selže.</li>
+        <li><b>Pořadí:</b> <code>left</code> je první argument. Zvyk je <b>nejdřív skutečná hodnota, pak očekávaná</b>.</li>
+        <li><b>Číslo vlákna</b> ve výpisu (<code>(213925)</code>) se při každém spuštění mění, nevšímej si ho.</li>
+      </ul>
+      <div class="verdict warn"><span class="code">assert!</span><span><code>assert!(tasks.len() == 2)</code> funguje, ale při selhání napíše jen <i>assertion failed: tasks.len() == 2</i>. Kolik úkolů tam doopravdy bylo, neuvidíš. Na porovnání proto <code>assert_eq!(tasks.len(), 2)</code>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 3 PartialEq ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">3</span><h2><code>PartialEq</code>: co smí na váhu</h2><span class="sym">#[derive(Debug, PartialEq)] · matches!</span></div>
+    <div class="fig">
+      <table class="weigh">
+        <thead><tr><th>Na misce</th><th>před lekcí</th><th>po lekci</th></tr></thead>
+        <tbody>
+          <tr><td><code>usize</code>, <code>&amp;str</code>, <code>char</code></td><td class="y">✓ umí ==</td><td class="y">✓</td></tr>
+          <tr><td><code>Result&lt;usize, TaskError&gt;</code></td><td class="n">✗ E0369</td><td class="y">✓ derive u <code>TaskError</code></td></tr>
+          <tr><td><code>TaskStatus</code></td><td class="n">✗</td><td class="y">✓ derive</td></tr>
+          <tr><td><code>Option&lt;&amp;Task&gt;</code></td><td class="n">✗</td><td class="y">✓ derive u <code>Task</code></td></tr>
+        </tbody>
+      </table>
+      <p class="fig-cap">Obal (<code>Result</code>, <code>Option</code>) jde porovnat, jen když jde porovnat i to, co je uvnitř.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Na váhu smí jen to, co má nálepku „jde porovnat“.</b> Čísla a texty ji mají od výroby, vlastní typy ne.</p>
+<pre><code>#[derive(Debug, <span class="k">PartialEq</span>)]
+pub enum TaskError { … }</code></pre>
+      <ul>
+        <li><b><code>assert_eq!</code></b> uvnitř dělá <code>left == right</code> (potřebuje <code>PartialEq</code>) a výpis <code>{:?}</code> (potřebuje <code>Debug</code>).</li>
+        <li><b><code>derive</code></b> napíše porovnání za tebe: stejná varianta a stejný obsah. Víc traitů se odděluje čárkou.</li>
+        <li><b>Bez nálepky</b> jde použít <code>matches!</code> z lekce 04. Nic neváží, jen zkouší, jestli hodnota pasuje na vzor:</li>
+      </ul>
+<pre><code>assert!(matches!(
+    parse_index("abc"),
+    Err(TaskError::NotANumber(<span class="w">_</span>))
+));</code></pre>
+      <p><code>_</code> = obsah je jedno. Nevýhoda: při selhání vypíše jen <i>assertion failed</i>, misky neukáže.</p>
+      <div class="verdict bad"><span class="code">E0369</span><span><i>binary operation <code>==</code> cannot be applied to type <code>Result&lt;usize, error::TaskError&gt;</code></i>. Kompilátor rovnou radí <i>consider annotating <code>error::TaskError</code> with <code>#[derive(PartialEq)]</code></i>.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 4 cfg(test) ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">4</span><h2><code>#[cfg(test)] mod tests</code>: zkušebna za dílnou</h2><span class="sym">use super::*;</span></div>
+    <div class="fig">
+<pre><code><span class="w">crate</span>               <span class="c">← main.rs</span>
+├── error
+├── <span class="r">list</span>            <span class="c">← list.rs</span>
+│   └── <span class="k">tests</span>       <span class="c">← jen při cargo test</span>
+└── <span class="r">task</span>            <span class="c">← task.rs</span>
+    └── <span class="k">tests</span>       <span class="c">← jen při cargo test</span></code></pre>
+      <table class="mini">
+        <thead><tr><th></th><th><code>cargo build</code></th><th><code>cargo test</code></th></tr></thead>
+        <tbody>
+          <tr><td>modul <code>tests</code></td><td class="bad">není</td><td class="ok">přeloží se</td></tr>
+          <tr><td>varování <i>never used</i> u <code>find_task</code></td><td class="bad">je</td><td class="ok">není, test ji volá</td></tr>
+        </tbody>
+      </table>
+      <p class="fig-cap">Zkušebna je dítě modulu, který testuje. Proto vidí i jeho zázemí: soukromou <code>parse_index</code> i pole <code>task.status</code>.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Zkušebna se odemyká jen při kontrole.</b> Zákazník si odnese výrobek bez ní.</p>
+<pre><code><span class="k">#[cfg(test)]</span>
+mod tests {
+    use <span class="r">super</span>::<span class="w">*</span>;
+
+    fn sample_tasks() -&gt; Vec&lt;Task&gt; {   <span class="c">// pomocná, bez #[test]</span>
+        vec![Task::new("A"), Task::new("B")]
+    }
+
+    #[test]
+    fn get_task_returns_task_by_number() { … }
+}</code></pre>
+      <ul>
+        <li><b><code>cfg</code></b> = <i>configuration</i>. <code>#[cfg(test)]</code> = přelož jen při testech.</li>
+        <li><b><code>super</code></b> je rodič (lekce 08), <b><code>*</code></b> znamená „všechno“. <code>use</code> se nedědí ani do vnořeného modulu, bez tohoto řádku <code>tests</code> nic nezná.</li>
+        <li><b>Pomocná funkce</b> bez <code>#[test]</code> se sama nespustí. Každý test si z ní vezme vlastní čerstvý <code>Vec</code>.</li>
+      </ul>
+      <div class="verdict warn"><span class="code">never used</span><span>Bez <code>#[cfg(test)]</code> se modul přeloží i do programu a <code>cargo build</code> hlásí <i>function <code>sample_tasks</code> is never used</i>: <code>#[test]</code> funkce v normálním buildu nejsou, takže ji nikdo nevolá.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 5 PASTI ===== -->
+  <section class="scene">
+    <div class="scene-head"><span class="num">5</span><h2>Dvě pasti: stejné jméno a <code>.clone()</code> na <code>&amp;str</code></h2><span class="sym">E0061 · E0502</span></div>
+    <div class="fig">
+      <span class="lbl">v mod tests znamená get_task…</span>
+      <div class="names">
+        <div class="name-row win"><span>fn get_task() { … }</span><small>test napsaný tady</small></div>
+        <div class="name-row lose"><span>use super::* → get_task(tasks, arg)</span><small>z rodiče</small></div>
+      </div>
+      <p class="fig-cap">Jména z <code>use super::*</code> mají nejnižší přednost. Položka napsaná přímo v modulu je zakryje.</p>
+    </div>
+    <div class="text">
+      <p class="metaphor"><b>Dva stolky se stejnou jmenovkou.</b> Kontrolor zavolá ten bližší, tedy test sám.</p>
+<pre><code>#[test]
+fn <span class="e">get_task</span>() {
+    let mut tasks = sample_tasks();
+    get_task(&amp;mut tasks, "2")   <span class="c">// volá sám sebe!</span>
+}</code></pre>
+      <div class="verdict bad"><span class="code">E0061</span><span><i>this function takes 0 arguments but 2 arguments were supplied</i>. Lék: test přejmenovat, třeba <code>get_task_returns_task_by_number</code>.</span></div>
+<pre><code><span class="c">// &amp;str → &amp;str, pořád výpůjčka</span>
+let title = tasks[1].title().<span class="e">clone()</span>;
+<span class="c">// &amp;mut, ale title ještě čte</span>
+get_task(&amp;mut tasks, "2")…;</code></pre>
+      <div class="verdict bad"><span class="code">E0502</span><span><i>cannot borrow <code>tasks</code> as mutable because it is also borrowed as immutable</i>. <code>.clone()</code> na <code>&amp;str</code> zkopíruje <b>odkaz</b>, ne text, takže výpůjčka trvá (lekce 05). Vlastní kopie je <code>.to_string()</code>. Ještě lepší je napsat <code>"B"</code> natvrdo.</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 6 DOBRÝ TEST ===== -->
+  <section class="scene wide">
+    <div class="scene-head"><span class="num">6</span><h2>Dobrý test: přesný vzorek, přesná váha</h2><span class="sym">natvrdo · okraje · obě strany</span></div>
+    <div class="fig" style="justify-items:stretch">
+      <div class="pairs">
+        <div class="pair">
+          <h3>Očekávaná hodnota natvrdo</h3>
+<pre class="weak"><code>let title = tasks[1].title().to_string();
+assert_eq!(get_task(…, "2")….title(), title);</code></pre>
+<pre class="strong"><code>assert_eq!(get_task(&amp;mut sample_tasks(), "2")
+    .unwrap().title(), "B");</code></pre>
+          <p>Hodnota spočítaná ze stejných dat se rozbije spolu s kódem a test to nepozná.</p>
+        </div>
+        <div class="pair">
+          <h3>Přesná kontrola</h3>
+<pre class="weak"><code>assert_ne!(Task::new("A").title.trim(), "");</code></pre>
+<pre class="strong"><code>assert_eq!(Task::new("A").title, "A");</code></pre>
+          <p>„Není prázdný“ projde i se špatným titulkem.</p>
+        </div>
+        <div class="pair">
+          <h3>Obě strany chování</h3>
+<pre class="weak"><code>start_all(&amp;mut tasks);
+assert!(tasks[0].is_done());</code></pre>
+<pre class="strong"><code>start_all(&amp;mut tasks);
+assert!(tasks[0].is_done());
+assert_eq!(tasks[1].symbol(), '~');</code></pre>
+          <p><code>start_all</code> má hotový úkol nechat být <b>a</b> úkol <code>ToDo</code> spustit. Ověř obojí.</p>
+        </div>
+        <div class="pair">
+          <h3>Okrajové případy</h3>
+<pre class="strong"><code>task.set_priority(9);
+assert_eq!(task.priority_label(), "None");</code></pre>
+<pre class="strong"><code>assert_eq!(parse_index(""), Err(TaskError::MissingArgument));</code></pre>
+          <p>Nula, prázdný text, číslo mimo rozsah. Tam se chyby schovávají nejčastěji.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HŘIŠTĚ ===== -->
+  <section class="play" aria-labelledby="play-h">
+    <div class="play-intro">
+      <h2 id="play-h">Hřiště: rozbij kód a pusť kontrolora</h2>
+      <p>Vyber, co v kódu rozbít, a spusť <code>cargo test</code>. Uvidíš, který stolek dostane razítko FAILED a co ukáže váha. Do pole můžeš napsat filtr, jako bys psal <code>cargo test parse</code>. Výpisy selhání jsou ze skutečného <code>cargo test</code> nad kódem z lekce.</p>
+    </div>
+    <div class="examples" id="bugs" aria-label="Rozbití"></div>
+    <div class="diff" id="bug-diff"></div>
+    <form class="prompt" id="form" autocomplete="off">
+      <label for="filter">$ cargo test</label>
+      <input id="filter" type="text" spellcheck="false" placeholder="filtr, např. parse" aria-label="Filtr testů">
+      <button class="btn" type="submit">Enter ⏎</button>
+    </form>
+    <div class="examples filters" id="filters" aria-label="Filtry"></div>
+    <div class="play-grid">
+      <div class="side">
+        <span class="lbl">zkušebna · 16 stolků (klikni pro kód testu)</span>
+        <div class="benches" id="benches"></div>
+        <pre id="bench-code"><code></code></pre>
+      </div>
+      <div class="side">
+        <span class="lbl">Terminál</span>
+        <div class="term" id="term"></div>
+      </div>
+    </div>
+    <div class="verdict" id="verdict"></div>
+  </section>
+
+  <!-- ===== TAHÁK ===== -->
+  <section style="display:grid; gap:16px">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px">
+      <div style="display:grid; gap:6px; min-width:0">
+        <h2>Tahák</h2>
+        <p><b>Ferris radí:</b> Porovnáváš? <code>assert_eq!(skutečná, očekávaná)</code>. Očekávanou hodnotu napiš natvrdo a na každou věc jeden test.</p>
+      </div>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="110" style="flex:none; height:auto" aria-hidden="true"><g stroke="#a52b00" stroke-width="7" stroke-linecap="round" fill="none"><path d="M50 106 L30 122 L34 134"/><path d="M62 114 L50 130 L56 140"/><path d="M150 106 L170 122 L166 134"/><path d="M138 114 L150 130 L144 140"/></g><path d="M46 84 Q28 62 50 42" stroke="#a52b00" stroke-width="8" stroke-linecap="round" fill="none"/><path d="M154 84 Q172 62 150 42" stroke="#a52b00" stroke-width="8" stroke-linecap="round" fill="none"/><rect x="98" y="14" width="4" height="30" fill="#a7773f"/><rect x="87" y="42" width="26" height="6" rx="1.5" fill="#a7773f" stroke="#6f4c24" stroke-width="1.5"/><path d="M78 14 L72 30 M78 14 L84 30 M122 14 L116 30 M122 14 L128 30" stroke="#5b6676" stroke-width="1.2" fill="none"/><path d="M73 14 H127" stroke="#1b2330" stroke-width="3" stroke-linecap="round"/><circle cx="100" cy="14" r="3.2" fill="#efc75e" stroke="#1b2330" stroke-width="1.5"/><rect x="73" y="24" width="10" height="6" rx="1" fill="#f7f1e3" stroke="#a7773f" stroke-width="1"/><rect x="117" y="24" width="10" height="6" rx="1" fill="#f7f1e3" stroke="#a7773f" stroke-width="1"/><path d="M70 30 Q78 37 86 30 Z M114 30 Q122 37 130 30 Z" fill="#c9975c" stroke="#6f4c24" stroke-width="1.5" stroke-linejoin="round"/><path d="M58 30 L70.7 37.9 A15 15 0 1 1 70.7 22.1 Z" fill="#f74c00" stroke="#a52b00" stroke-width="2.5" stroke-linejoin="round"/><path d="M142 30 L129.3 22.1 A15 15 0 1 1 129.3 37.9 Z" fill="#f74c00" stroke="#a52b00" stroke-width="2.5" stroke-linejoin="round"/><path d="M36 88 L26.3 80.7 L39.9 75.7 L35.2 66.9 L51 64.9 L51.9 55.7 L68 56.8 L74.4 48.4 L88.9 52.5 L100 45.9 L111.1 52.5 L125.6 48.4 L132 56.8 L148.1 55.7 L149 64.9 L164.8 66.9 L160.1 75.7 L173.7 80.7 L164 88 Q158 126 100 124 Q42 126 36 88 Z" fill="#f74c00" stroke="#f74c00" stroke-width="5" stroke-linejoin="round"/><circle cx="80" cy="82" r="9" fill="#111"/><circle cx="77.5" cy="79" r="3" fill="#fff"/><circle cx="120" cy="82" r="9" fill="#111"/><circle cx="117.5" cy="79" r="3" fill="#fff"/><path d="M86 100 Q100 122 114 100 Z" fill="#111" stroke="#111" stroke-width="2" stroke-linejoin="round"/><path d="M93 108 Q100 116 107 108 Z" fill="#e8574f"/></svg>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Zápis</th><th>Význam</th><th>Obrázek</th></tr></thead>
+        <tbody>
+          <tr><td><code>#[test]</code></td><td>funkce je test, spustí ji <code>cargo test</code></td><td>zkušební stolek</td></tr>
+          <tr><td><code>#[cfg(test)]</code></td><td>přelož jen při testech</td><td>zkušebna otevřená jen při kontrole</td></tr>
+          <tr><td><code>mod tests { … }</code></td><td>modul s testy na konci souboru, dítě testovaného modulu</td><td>zkušebna za dílnou</td></tr>
+          <tr><td><code>use super::*;</code></td><td>všechno z rodiče, i soukromé položky</td><td>klíč od celé dílny</td></tr>
+          <tr><td><code>assert!(podmínka)</code></td><td>selže, když je <code>false</code>, hodnoty nevypíše</td><td></td></tr>
+          <tr><td><code>assert_eq!(skutečná, očekávaná)</code></td><td>selže, když se liší, vypíše <code>left</code> a <code>right</code></td><td>váha</td></tr>
+          <tr><td><code>assert_ne!(a, b)</code></td><td>selže, když se rovnají</td><td></td></tr>
+          <tr><td><code>assert!(matches!(x, vzor))</code></td><td>pasuje na vzor? Nepotřebuje <code>PartialEq</code></td><td>šablona místo váhy</td></tr>
+          <tr><td><code>#[derive(PartialEq)]</code></td><td>typ jde porovnat přes <code>==</code></td><td>nálepka „smí na váhu“</td></tr>
+          <tr><td><code>.unwrap()</code> / <code>.unwrap_err()</code></td><td>v testu v pořádku, špatná varianta = test selže</td><td></td></tr>
+          <tr><td><code>cargo test</code></td><td>přelož a spusť všechny testy, paralelně, v libovolném pořadí</td><td>kontrolor s razítkem</td></tr>
+          <tr><td><code>cargo test parse</code></td><td>jen testy, které mají <code>parse</code> v cestě</td><td></td></tr>
+          <tr><td><code>cargo test -- --nocapture</code></td><td>ukaž i <code>println!</code> z testů, které prošly</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cheat-wrap">
+      <table class="cheat">
+        <thead><tr><th>Hláška</th><th>Příčina</th><th>Lék</th></tr></thead>
+        <tbody>
+          <tr><td>… <code>assert_eq!</code> is likely invalid in item context</td><td>kontrola stojí přímo v <code>mod tests</code></td><td>obalit do <code>#[test] fn … { }</code></td></tr>
+          <tr><td>warning: unused import <code>super::*</code></td><td>v modulu není žádný test</td><td>napsat testy jako funkce</td></tr>
+          <tr><td><code>E0369</code> binary operation <code>==</code> cannot be applied</td><td>typ nemá <code>PartialEq</code></td><td><code>#[derive(PartialEq)]</code>, nebo <code>assert!(matches!(…))</code></td></tr>
+          <tr><td><code>E0308</code> expected <code>String</code>, found <code>&amp;str</code></td><td>varianta nese <code>String</code></td><td><code>"abc".to_string()</code></td></tr>
+          <tr><td><code>E0061</code> this function takes 0 arguments</td><td>test se jmenuje stejně jako testovaná funkce</td><td>test přejmenovat</td></tr>
+          <tr><td><code>E0502</code> … also borrowed as immutable</td><td><code>&amp;str</code> z <code>title()</code> drží výpůjčku i po <code>.clone()</code></td><td>očekávaná hodnota natvrdo, nebo <code>.to_string()</code></td></tr>
+          <tr><td>assertion failed: … bez hodnot</td><td><code>assert!(a == b)</code></td><td><code>assert_eq!(a, b)</code></td></tr>
+          <tr><td><code>sample_tasks</code> is never used v <code>cargo build</code></td><td>chybí <code>#[cfg(test)]</code></td><td>přidat ho nad <code>mod tests</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Doplněk k lekci 09 projektu todo-rs. Ukázky kódu jsou ze <code>src/</code> (tag <code>lekce-09</code>), výpisy ze skutečného <code>cargo test</code>.</span>
+    <ul>
+      <li><a href="../09-testy.md">Lekce 09: Testy (text)</a></li>
+      <li><a href="08-moduly-infografika.html">Infografika k lekci 08: úřad s přepážkami</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch11-01-writing-tests.html">Rust Book 11.1: How to Write Tests</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch11-02-running-tests.html">Rust Book 11.2: Controlling How Tests Are Run</a></li>
+      <li><a href="https://doc.rust-lang.org/book/ch11-03-test-organization.html">Rust Book 11.3: Test Organization</a></li>
+      <li><a href="https://doc.rust-lang.org/std/macro.assert_eq.html">std: assert_eq!</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Testy přesně jako v src/ na tagu lekce-09 (modul, jméno, kód).
+  const TESTS = [
+    ['list', 'parse_index_number', 'assert_eq!(parse_index("3"), Ok(3));'],
+    ['list', 'parse_index_rejects_zero', 'assert_eq!(parse_index("0"), Err(TaskError::ZeroIndex));'],
+    ['list', 'parse_index_rejects_empty', 'assert_eq!(parse_index(""), Err(TaskError::MissingArgument));'],
+    ['list', 'parse_index_not_a_number', 'assert_eq!(\n    parse_index("abc"),\n    Err(TaskError::NotANumber("abc".to_string()))\n);'],
+    ['list', 'get_task_returns_task_by_number', 'assert_eq!(get_task(&mut sample_tasks(), "2").unwrap().title(), "B");'],
+    ['list', 'get_task_out_of_bounds', 'assert_eq!(\n    get_task(&mut sample_tasks(), "3").unwrap_err(),\n    TaskError::NoSuchTask(3)\n);'],
+    ['list', 'start_all_only_uncompleted_tasks', 'let mut tasks = sample_tasks();\ntasks[0].complete();\nstart_all(&mut tasks);\nassert!(tasks[0].is_done());\nassert_eq!(tasks[1].symbol(), \'~\');'],
+    ['list', 'add_empty_task', 'let mut tasks = sample_tasks();\nadd_task(&mut tasks, "");\nassert_eq!(tasks.len(), 2);'],
+    ['list', 'find_task_result', 'let tasks = sample_tasks();\nassert_eq!(find_task(&tasks, "A").unwrap().title(), "A");\nassert_eq!(find_task(&tasks, "X"), None);'],
+    ['task', 'new_task_has_title', 'assert_eq!(Task::new("A").title, "A");'],
+    ['task', 'new_task_is_todo', 'assert_eq!(Task::new("A").status, TaskStatus::ToDo);'],
+    ['task', 'new_task_priority_is_none', 'assert_eq!(Task::new("A").priority_label(), "None");'],
+    ['task', 'task_start', 'let mut task = Task::new("A");\ntask.start();\nassert_eq!(task.status, TaskStatus::InProgress);'],
+    ['task', 'task_set_priority_high', 'let mut task = Task::new("A");\ntask.set_priority(1);\nassert_eq!(task.priority_label(), "High");'],
+    ['task', 'task_set_priority_out_of_range', 'let mut task = Task::new("A");\ntask.set_priority(9);\nassert_eq!(task.priority_label(), "None");'],
+    ['task', 'task_rename', 'let mut task = Task::new("A");\ntask.rename("X");\nassert_eq!(task.title, "X");'],
+  ].map(([mod, name, body]) => ({ path: `${mod}::tests::${name}`, mod, name, body }));
+
+  // Rozbití: každé přeložené a spuštěné skutečným cargo test. loc a msg jsou z jeho výpisu.
+  const BUGS = [
+    { key: 'none', label: 'nic, původní kód' },
+    { key: 'zero', label: 'bez kontroly nuly', file: 'list.rs', at: 'řádky 39–41',
+      before: ['    if n == 0 {', '        return Err(TaskError::ZeroIndex);', '    }'], after: [],
+      fail: 'list::tests::parse_index_rejects_zero', loc: 'src/list.rs:62:9',
+      msg: ['assertion `left == right` failed', '  left: Ok(0)', ' right: Err(ZeroIndex)'],
+      why: 'Váha ukázala obě misky: kód vrátil <code>Ok(0)</code>, čekalo se <code>Err(ZeroIndex)</code>. Bez testu by se nula dostala až do <code>n - 1</code> a <code>start 0</code> by program shodil: <i>attempt to subtract with overflow</i>.' },
+    { key: 'minus', label: 'get_mut(n) bez - 1', file: 'list.rs', at: 'řádek 47',
+      before: ['    tasks.get_mut(n - 1).ok_or(TaskError::NoSuchTask(n))'], after: ['    tasks.get_mut(n).ok_or(TaskError::NoSuchTask(n))'],
+      fail: 'list::tests::get_task_returns_task_by_number', loc: 'src/list.rs:83:55',
+      msg: ['called `Result::unwrap()` on an `Err` value: NoSuchTask(2)'],
+      why: 'Tady nespadla váha, ale <code>.unwrap()</code>: přišel <code>Err</code>. A všimni si, že <code>get_task_out_of_bounds</code> prošel, protože úkol 3 neexistuje ani s chybou. Jeden test na okraj nestačí, potřebuješ i test na existující úkol.' },
+    { key: 'filter', label: 'filter s !', file: 'list.rs', at: 'řádek 24',
+      before: ['        .filter(|task| task.is_todo())'], after: ['        .filter(|task| !task.is_todo())'],
+      fail: 'list::tests::start_all_only_uncompleted_tasks', loc: 'src/list.rs:99:9',
+      msg: ['assertion failed: tasks[0].is_done()'],
+      why: 'Spadl <code>assert!</code>, a ten hodnoty nevypíše. Víš jen, že úkol 0 není hotový, ne v jakém stavu je. Porovnej s rozbitím „start_all nic nedělá“.' },
+    { key: 'noop', label: 'start_all nic nedělá', file: 'list.rs', at: 'řádek 25',
+      before: ['        .for_each(|task| task.start());'], after: ['        .for_each(|_task| {});'],
+      fail: 'list::tests::start_all_only_uncompleted_tasks', loc: 'src/list.rs:100:9',
+      msg: ['assertion `left == right` failed', "  left: ' '", " right: '~'"],
+      why: 'Stejný test, ale tentokrát spadl druhý řádek, <code>assert_eq!</code>. Vidíš, že symbol je mezera, tedy úkol zůstal <code>ToDo</code>. Bez druhé kontroly by tahle chyba prošla.' },
+    { key: 'prio', label: 'prohozené priority', file: 'task.rs', at: 'řádky 39 a 41',
+      before: ['            Some(1) => "High",', '            Some(3) => "Low",'], after: ['            Some(1) => "Low",', '            Some(3) => "High",'],
+      fail: 'task::tests::task_set_priority_high', loc: 'src/task.rs:106:9',
+      msg: ['assertion `left == right` failed', '  left: "Low"', ' right: "High"'],
+      why: 'Test v <code>task.rs</code> našel chybu, kterou by ruční zkoušení v terminálu nenašlo: příkaz na nastavení priority program zatím nemá.' },
+    { key: 'empty', label: 'bez kontroly prázdného titulku', file: 'list.rs', at: 'řádky 14–17',
+      before: ['    if title.is_empty() {', '        println!("Title can\'t be empty!");', '        return;', '    }'], after: [],
+      fail: 'list::tests::add_empty_task', loc: 'src/list.rs:103:9',
+      msg: ['assertion `left == right` failed', '  left: 3', ' right: 2'],
+      why: 'Do seznamu přibyl úkol s prázdným titulkem: <code>left: 3</code>. Kdyby test psal <code>assert!(tasks.len() == 2)</code>, číslo 3 bys neviděl.' },
+  ];
+
+  let bug = BUGS[0], lastBuilt = null, results = {}, selected = TESTS[1];
+  const bugsEl = document.getElementById('bugs');
+  const diffEl = document.getElementById('bug-diff');
+  const termEl = document.getElementById('term');
+  const benchEl = document.getElementById('benches');
+  const codeEl = document.querySelector('#bench-code code');
+  const verdictEl = document.getElementById('verdict');
+  const input = document.getElementById('filter');
+
+  bugsEl.innerHTML = '<span class="lbl">rozbij:</span>' + BUGS.map((b, i) => `<button type="button" data-b="${i}" aria-pressed="false">${esc(b.label)}</button>`).join('');
+  const FILTERS = ['', 'parse', 'task::', 'get_task', 'start_all', 'nesmysl'];
+  document.getElementById('filters').innerHTML = '<span class="lbl">filtr:</span>' + FILTERS.map((f) => `<button type="button" data-f="${esc(f)}" aria-pressed="false">${f ? esc(f) : '(žádný)'}</button>`).join('');
+
+  function showBug() {
+    bugsEl.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(BUGS[Number(b.dataset.b)] === bug)));
+    if (!bug.file) { diffEl.innerHTML = '<div class="none">kód je stejný jako na tagu lekce-09</div>'; return; }
+    const lines = [`<div class="none">src/${bug.file}, ${bug.at}</div>`];
+    bug.before.forEach((l) => lines.push(`<div class="minus">- ${esc(l)}</div>`));
+    if (bug.after.length) bug.after.forEach((l) => lines.push(`<div class="plus">+ ${esc(l)}</div>`));
+    else lines.push('<div class="plus none">+ (řádky smazány)</div>');
+    diffEl.innerHTML = lines.join('');
+  }
+
+  function run(filter) {
+    const out = [];
+    if (lastBuilt !== bug) out.push('   Compiling todo v0.1.0 (…/todo-rs)');
+    out.push(`    Finished \`test\` profile [unoptimized + debuginfo] target(s) in ${lastBuilt !== bug ? '0.14' : '0.00'}s`);
+    out.push('     Running unittests src/main.rs (target/debug/deps/todo-75d91abb5a622558)');
+    lastBuilt = bug;
+    const chosen = TESTS.filter((t) => t.path.includes(filter));
+    // Testy běží paralelně: pořadí je skoro abecední, ale pokaždé trochu jiné.
+    const order = [...chosen].sort((a, b) => (a.path < b.path ? -1 : 1));
+    for (let i = 0; i + 1 < order.length; i++) if (Math.random() < 0.25) { [order[i], order[i + 1]] = [order[i + 1], order[i]]; i++; }
+    results = {};
+    TESTS.forEach((t) => { results[t.path] = chosen.includes(t) ? (t.path === bug.fail ? 'fail' : 'ok') : 'skip'; });
+    out.push('', `running ${order.length} test${order.length === 1 ? '' : 's'}`);
+    order.forEach((t) => out.push(`test ${t.path} ... ${results[t.path] === 'fail' ? 'FAILED' : 'ok'}`));
+    const failed = order.filter((t) => results[t.path] === 'fail');
+    const passed = order.length - failed.length, skipped = TESTS.length - order.length;
+    if (failed.length) {
+      const name = failed[0].path, tid = 210000 + Math.floor(Math.random() * 9000);
+      out.push('', 'failures:', '', `---- ${name} stdout ----`, '', `thread '${name}' (${tid}) panicked at ${bug.loc}:`, ...bug.msg,
+        'note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace', '', '', 'failures:', `    ${name}`, '',
+        `test result: FAILED. ${passed} passed; 1 failed; 0 ignored; 0 measured; ${skipped} filtered out; finished in 0.00s`, '',
+        'error: test failed, to rerun pass `--bin todo`');
+    } else {
+      out.push('', `test result: ok. ${passed} passed; 0 failed; 0 ignored; 0 measured; ${skipped} filtered out; finished in 0.00s`);
+    }
+    termEl.innerHTML = `<span class="p">$</span> <span class="u">cargo test${filter ? ' ' + esc(filter) : ''}</span>\n` + out.map((l) => {
+      const e = esc(l);
+      if (/ \.\.\. FAILED$/.test(l)) return e.replace(/FAILED$/, '<span class="bad">FAILED</span>');
+      if (/ \.\.\. ok$/.test(l)) return e.replace(/ok$/, '<span class="okc">ok</span>');
+      if (/^(test result: FAILED|error:|thread |assertion|called)/.test(l)) return `<span class="bad">${e}</span>`;
+      if (/^test result: ok/.test(l)) return `<span class="okc">${e}</span>`;
+      if (/^ ?(left|right):/.test(l)) return `<span class="warn">${e}</span>`;
+      return e;
+    }).join('\n');
+    termEl.scrollTop = 0;
+
+    document.querySelectorAll('#filters button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.f === filter)));
+    if (failed.length) {
+      verdictEl.className = 'verdict bad';
+      verdictEl.innerHTML = `<span class="code">FAILED</span><span>${bug.why}</span>`;
+    } else if (bug.fail) {
+      verdictEl.className = 'verdict warn';
+      verdictEl.innerHTML = `<span class="code">ok?!</span><span>Kód je rozbitý, ale filtr <code>${esc(filter)}</code> vynechal stolek <code>${esc(bug.fail.split('::').pop())}</code>, který by chybu našel. Razítko ok znamená jen „testy, které běžely, prošly“.</span>`;
+    } else {
+      verdictEl.className = 'verdict good';
+      verdictEl.innerHTML = `<span class="code">ok</span><span>${order.length === TESTS.length ? 'Všech 16 stolků prošlo. Zkus něco rozbít.' : `Prošlo ${passed} z ${order.length} vybraných, ${skipped} filtr vynechal (<i>filtered out</i>).`}</span>`;
+    }
+    renderBenches();
+  }
+
+  function renderBenches() {
+    const STAMP = { ok: '<span class="stamp ok sm">ok</span>', fail: '<span class="stamp fail sm">FAILED</span>', skip: '<small>vynechán</small>' };
+    benchEl.innerHTML = TESTS.map((t, i) => `<button type="button" data-t="${i}" class="${results[t.path] || ''}" aria-pressed="${t === selected}"><span class="nm"><small>${t.mod}::tests</small>${esc(t.name)}</span>${STAMP[results[t.path]] || ''}</button>`).join('');
+    const body = selected.body.split('\n').map((l) => '    ' + l).join('\n');
+    codeEl.innerHTML = esc(`// src/${selected.mod}.rs\n#[test]\nfn ${selected.name}() {\n${body}\n}`);
+  }
+
+  bugsEl.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-b]');
+    if (!b) return;
+    bug = BUGS[Number(b.dataset.b)];
+    if (bug.fail) selected = TESTS.find((t) => t.path === bug.fail);
+    showBug();
+    run(input.value.trim());
+  });
+  document.getElementById('filters').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-f]');
+    if (!b) return;
+    input.value = b.dataset.f;
+    run(b.dataset.f);
+  });
+  document.getElementById('form').addEventListener('submit', (e) => { e.preventDefault(); run(input.value.trim()); });
+  benchEl.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-t]');
+    if (!b) return;
+    selected = TESTS[Number(b.dataset.t)];
+    renderBenches();
+  });
+
+  showBug();
+  run('');
+})();
+</script>
+<script>
+// Na webu (GitHub Pages) jsou lekce jako .html a obsah je adresář, při otevření ze souboru zůstávají .md.
+if (location.protocol !== 'file:') document.querySelectorAll('a[href^="../"][href$=".md"]').forEach((a) => { a.href = a.getAttribute('href').replace(/README\.md$/, '').replace(/\.md$/, '.html'); });
+</script>
+</body>
+</html>

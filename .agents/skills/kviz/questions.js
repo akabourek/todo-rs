@@ -1,6 +1,8 @@
 // Otázky kvízu. `checks` se ověřují na skutečném rustc (scripts/verify.js) a do stránky se nedostanou.
 // Kontrola: err = kód chyby ('any' = jakákoli), out = přesný výstup, panic, warn, stderr, stdin,
 // src = vlastní zdroják místo `code`, tag = zdroják src/main.rs z gitového tagu.
+// Testy: test = přeložit s --test (jako cargo test), args = argumenty testovací binárky (filtr),
+// has = texty, které musí být ve výpisu testů, pass = mají všechny testy projít (true/false).
 const R = String.raw;
 
 const TASK = R`struct Task {
@@ -906,4 +908,172 @@ fn main() {
     { t: "Jen varování `unused import`", why: "To platí pro zbytečný `use`. Chybějící modul je chyba." },
   ],
   ex: "`mod` a `use` dělají různou práci. `use` lze smazat, když už není potřeba, ale `mod` musí zůstat, jinak větev ze stromu zmizí." },
+// ───────── 09 ─────────
+{ l: 9, kind: 'Pojem',
+  q: "Kdy test s `#[test]` **selže**?",
+  checks: [
+    { test: true, src: "#[test]\nfn compares() {\n    let _ = 1 == 2;\n}\n", has: ["test compares ... ok"], pass: true },
+    { test: true, src: "#[test]\nfn panics() {\n    let r: Result<u8, u8> = Err(1);\n    r.unwrap();\n}\n", has: ["test panics ... FAILED"], pass: false },
+  ],
+  opts: [
+    { t: "Když zpanikaří, třeba na `assert_eq!`", ok: true },
+    { t: "Když vrátí `false`", why: "Test nic nevrací. Výraz `1 == 2`, který nikdo nekontroluje, test neshodí." },
+    { t: "Když něco vypíše přes `println!`", why: "Výpis test neshodí. `cargo test` ho jen schová, pokud test projde." },
+    { t: "Když běží déle než ostatní testy", why: "Pomalý test je pořád úspěšný. Rozhoduje jen to, jestli doběhne bez paniky." },
+  ],
+  ex: "Test projde, když doběhne, a selže, když zpanikaří. Proto v testu nevadí `.unwrap()`: `Err` místo `Ok` test shodí, a to chceme." },
+{ l: 9, kind: 'Přeloží se?',
+  q: "Co udělá `cargo test` s tímhle souborem?",
+  code: R`fn double(x: i32) -> i32 {
+    x * 2
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    assert_eq!(double(2), 4);
+}`,
+  checks: [{ test: true, err: 'any' }],
+  opts: [
+    { t: "Chyba: `assert_eq!` stojí mimo funkci", ok: true },
+    { t: "Spustí 1 test a ten projde", why: "Test je funkce s `#[test]`. Tady žádná není." },
+    { t: "Přeloží se, ale napíše `running 0 tests`", why: "Kompilátor řádek s `assert_eq!` nepřeskočí, ohlásí ho jako chybu." },
+    { t: "`E0369`: `i32` nejde porovnat", why: "`i32` porovnat jde. Vadí místo, kde kontrola stojí." },
+  ],
+  ex: "Modul smí obsahovat jen položky (`fn`, `use`, `struct`…). Hláška zní *the usage of* `assert_eq!` *is likely invalid in item context*. Kontrolu je potřeba obalit do `#[test] fn … { }`." },
+{ l: 9, kind: 'Přeloží se?',
+  q: "`TaskError` má jen `#[derive(Debug)]`. Co se stane při `cargo test`?",
+  code: R`#[derive(Debug)]
+enum TaskError {
+    ZeroIndex,
+}
+
+fn parse(s: &str) -> Result<usize, TaskError> {
+    if s == "0" { Err(TaskError::ZeroIndex) } else { Ok(1) }
+}
+
+#[test]
+fn rejects_zero() {
+    assert_eq!(parse("0"), Err(TaskError::ZeroIndex));
+}`,
+  checks: [
+    { test: true, err: 'E0369' },
+    { test: true, src: "#[derive(Debug, PartialEq)]\nenum TaskError {\n    ZeroIndex,\n}\n\nfn parse(s: &str) -> Result<usize, TaskError> {\n    if s == \"0\" { Err(TaskError::ZeroIndex) } else { Ok(1) }\n}\n\n#[test]\nfn rejects_zero() {\n    assert_eq!(parse(\"0\"), Err(TaskError::ZeroIndex));\n}\n", pass: true },
+  ],
+  opts: [
+    { t: "`E0369`: `==` nejde použít na `Result<usize, TaskError>`", ok: true },
+    { t: "Test projde, `parse(\"0\")` vrací přesně tuhle chybu", why: "Hodnoty by seděly, ale kompilátor neví, jak `TaskError` porovnat." },
+    { t: "`E0277`: `TaskError` nejde vypsat přes `{:?}`", why: "`Debug` tu je. Chybí `PartialEq`." },
+    { t: "Test se přeloží a selže", why: "K porovnání vůbec nedojde, kód se nepřeloží." },
+  ],
+  ex: "`assert_eq!` potřebuje `PartialEq` (porovnání) a `Debug` (výpis). `Result` jde porovnat, jen když to umí i typ uvnitř. Lék: `#[derive(Debug, PartialEq)]`." },
+{ l: 9, kind: 'Který zápis?',
+  q: "`TaskError` nemá `PartialEq` a přidávat ho nechceme. Který řádek se v testu přeloží?",
+  code: R`#[derive(Debug)]
+enum TaskError {
+    ZeroIndex,
+}
+
+fn parse(s: &str) -> Result<usize, TaskError> {
+    if s == "0" { Err(TaskError::ZeroIndex) } else { Ok(1) }
+}`,
+  checks: [
+    { test: true, src: "#[derive(Debug)]\nenum TaskError {\n    ZeroIndex,\n}\nfn parse(s: &str) -> Result<usize, TaskError> {\n    if s == \"0\" { Err(TaskError::ZeroIndex) } else { Ok(1) }\n}\n#[test]\nfn t() {\n    assert!(matches!(parse(\"0\"), Err(TaskError::ZeroIndex)));\n}\n", pass: true },
+    { test: true, src: "#[derive(Debug)]\nenum TaskError {\n    ZeroIndex,\n}\nfn parse(s: &str) -> Result<usize, TaskError> {\n    if s == \"0\" { Err(TaskError::ZeroIndex) } else { Ok(1) }\n}\n#[test]\nfn t() {\n    assert!(parse(\"0\") == Err(TaskError::ZeroIndex));\n}\n", err: 'E0369' },
+    { test: true, src: "#[derive(Debug)]\nenum TaskError {\n    ZeroIndex,\n}\nfn parse(s: &str) -> Result<usize, TaskError> {\n    if s == \"0\" { Err(TaskError::ZeroIndex) } else { Ok(1) }\n}\n#[test]\nfn t() {\n    assert_eq!(parse(\"0\").unwrap_err(), TaskError::ZeroIndex);\n}\n", err: 'E0369' },
+    { test: true, src: "#[derive(Debug)]\nenum TaskError {\n    ZeroIndex,\n}\nfn parse(s: &str) -> Result<usize, TaskError> {\n    if s == \"0\" { Err(TaskError::ZeroIndex) } else { Ok(1) }\n}\n#[test]\nfn t() {\n    assert_ne!(parse(\"0\"), Ok(1));\n}\n", err: 'E0369' },
+  ],
+  opts: [
+    { t: "`assert!(matches!(parse(\"0\"), Err(TaskError::ZeroIndex)));`", ok: true },
+    { t: "`assert!(parse(\"0\") == Err(TaskError::ZeroIndex));`", why: "Pořád `==` na `Result` s `TaskError` uvnitř: `E0369`." },
+    { t: "`assert_eq!(parse(\"0\").unwrap_err(), TaskError::ZeroIndex);`", why: "`unwrap_err` vytáhne `TaskError`, ale ten porovnat neumí: `E0369`." },
+    { t: "`assert_ne!(parse(\"0\"), Ok(1));`", why: "`assert_ne!` porovnává stejně jako `assert_eq!`, jen čeká opak: `E0369`." },
+  ],
+  ex: "`matches!` nic neporovnává přes `==`, jen zkouší, jestli hodnota pasuje na vzor. Nevýhoda: při selhání vypíše jen *assertion failed*, hodnotu neukáže." },
+{ l: 9, kind: 'Co vypíše?',
+  q: "Test selže. Jaký řádek o selhání uvidíme ve výpisu `cargo test`?",
+  code: R`#[test]
+fn add_empty_task() {
+    let tasks = vec!["A", "B", ""];
+    assert!(tasks.len() == 2);
+}`,
+  checks: [{ test: true, has: ["assertion failed: tasks.len() == 2"], pass: false }],
+  opts: [
+    { code: "assertion failed: tasks.len() == 2", ok: true },
+    { code: "assertion `left == right` failed\n  left: 3\n right: 2", why: "Tohle vypíše `assert_eq!(tasks.len(), 2)`. `assert!` dostane jen `true`/`false`, hodnoty nezná." },
+    { code: "tasks.len() is 3", why: "Takovou hlášku Rust nevypisuje. `assert!` ukáže jen podmínku." },
+    { code: "test add_empty_task ... ok", why: "V seznamu jsou tři položky (i prázdný text je položka), takže podmínka neplatí." },
+  ],
+  ex: "`assert!(a == b)` při selhání neukáže, co v `a` bylo. Na porovnání je lepší `assert_eq!(a, b)`, které vypíše `left` i `right`." },
+{ l: 9, kind: 'Přeloží se?',
+  q: "Test se jmenuje stejně jako testovaná funkce. Co se stane?",
+  code: R`fn get_task(n: usize) -> usize {
+    n - 1
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_task() {
+        assert_eq!(get_task(2), 1);
+    }
+}`,
+  checks: [{ test: true, err: 'E0061' }],
+  opts: [
+    { t: "`E0061`: `get_task` tu je test bez parametrů", ok: true },
+    { t: "Test projde, `get_task(2)` vrátí `1`", why: "Uvnitř `tests` jméno `get_task` znamená test sám, ne funkci z rodiče." },
+    { t: "`E0428`: jméno `get_task` je definované dvakrát", why: "Jména z `use super::*` mají nejnižší přednost, takže konflikt nevznikne. Položka v modulu je prostě zakryje." },
+    { t: "Test zpanikaří na nekonečném volání sebe sama", why: "Až ke spuštění nedojde. Kompilátor nesouhlasí počet argumentů." },
+  ],
+  ex: "Hláška zní *this function takes 0 arguments but 1 argument was supplied*. Lék: test přejmenovat, třeba `get_task_returns_previous_index`." },
+{ l: 9, kind: 'Přeloží se?',
+  q: "`parse_index` nemá `pub`. Co udělá `cargo test`?",
+  code: R`mod list {
+    fn parse_index(arg: &str) -> usize {
+        arg.parse().unwrap()
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn parses_three() {
+            assert_eq!(parse_index("3"), 3);
+        }
+    }
+}
+
+fn main() {}`,
+  checks: [{ test: true, has: ["test list::tests::parses_three ... ok"], pass: true }],
+  opts: [
+    { t: "Test projde", ok: true },
+    { t: "`E0603`: `parse_index` je soukromá", why: "`tests` je potomek modulu `list` a potomci vidí soukromé položky předků." },
+    { t: "`E0425`: `parse_index` v `tests` neexistuje", why: "To by platilo bez `use super::*;`. Tady import je." },
+    { t: "Přeloží se, ale test se nespustí, protože `main` je prázdný", why: "Testy na `main` nezávisí, `cargo test` je spouští samostatně." },
+  ],
+  ex: "Testy patří do stejného souboru jako kód, který testují, a díky tomu smí volat i soukromé funkce. `pub` kvůli testům není potřeba." },
+{ l: 9, kind: 'Pojem',
+  q: "Co spustí `cargo test parse`?",
+  checks: [{ test: true, src: "#[cfg(test)]\nmod tests {\n    #[test]\n    fn parse_index_number() {}\n    #[test]\n    fn parse_index_rejects_zero() {}\n    #[test]\n    fn task_start() {}\n}\n", args: ['parse'], has: ["running 2 tests", "1 filtered out"], pass: true }],
+  opts: [
+    { t: "Jen testy, které mají `parse` v cestě nebo jménu", ok: true },
+    { t: "Jen test, který se jmenuje přesně `parse`", why: "Filtr hledá text kdekoli v cestě, `parse_index_rejects_zero` ho obsahuje taky." },
+    { t: "Jen testy ze souboru `parse.rs`", why: "Filtr se dívá na cestu typu `list::tests::parse_index_number`, ne na název souboru." },
+    { t: "Všechny testy a pak program s argumentem `parse`", why: "`cargo test` program nespouští. Ostatní testy jsou ve výpisu jako *filtered out*." },
+  ],
+  ex: "Filtr je obyčejný kus textu. `cargo test task::` tak spustí všechny testy z modulu `task`. Kolik se jich vynechalo, ukáže *filtered out*." },
+{ l: 9, kind: 'Pojem',
+  q: "V modulu `#[cfg(test)] mod tests` je kód, který by se nepřeložil. Co udělá `cargo build`?",
+  checks: [{ src: "fn main() {\n    println!(\"hi\");\n}\n\n#[cfg(test)]\nmod tests {\n    fn broken() -> i32 {\n        \"text\"\n    }\n}\n", out: "hi\n" }],
+  opts: [
+    { t: "Program se přeloží, modul `tests` v něm vůbec není", ok: true },
+    { t: "Chyba překladu, kompilátor kontroluje všechny soubory", why: "`#[cfg(test)]` modul z běžného buildu úplně vyřadí. Chyba se ukáže až v `cargo test`." },
+    { t: "Přeloží se, ale testy se spustí před `main`", why: "`cargo build` testy nespouští nikdy. Na to je `cargo test`." },
+    { t: "Jen varování *never used* u modulu `tests`", why: "Modul v běžném buildu neexistuje, takže na něj ani varování být nemůže." },
+  ],
+  ex: "`cfg` = *configuration*: `#[cfg(test)]` = přelož jen při testech. Bez něj by se modul dostal do programu a pomocné funkce by hlásily *never used*." },
 ];

@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum TaskStatus {
     ToDo,
     InProgress,
@@ -6,7 +6,7 @@ enum TaskStatus {
     Canceled,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Task {
     title: String,
     status: TaskStatus,
@@ -70,5 +70,53 @@ impl Task {
 
     pub fn is_todo(&self) -> bool {
         matches!(self.status, TaskStatus::ToDo)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_task_has_title() {
+        assert_eq!(Task::new("A").title, "A");
+    }
+
+    #[test]
+    fn new_task_is_todo() {
+        assert_eq!(Task::new("A").status, TaskStatus::ToDo);
+    }
+
+    #[test]
+    fn new_task_priority_is_none() {
+        assert_eq!(Task::new("A").priority_label(), "None");
+    }
+
+    #[test]
+    fn task_start() {
+        let mut task = Task::new("A");
+        task.start();
+        assert_eq!(task.status, TaskStatus::InProgress);
+    }
+
+    #[test]
+    fn task_set_priority_high() {
+        let mut task = Task::new("A");
+        task.set_priority(1);
+        assert_eq!(task.priority_label(), "High");
+    }
+
+    #[test]
+    fn task_set_priority_out_of_range() {
+        let mut task = Task::new("A");
+        task.set_priority(9);
+        assert_eq!(task.priority_label(), "None");
+    }
+
+    #[test]
+    fn task_rename() {
+        let mut task = Task::new("A");
+        task.rename("X");
+        assert_eq!(task.title, "X");
     }
 }

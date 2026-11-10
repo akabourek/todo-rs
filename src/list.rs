@@ -46,3 +46,71 @@ pub fn get_task<'a>(tasks: &'a mut [Task], arg: &str) -> Result<&'a mut Task, Ta
     let n = parse_index(arg)?;
     tasks.get_mut(n - 1).ok_or(TaskError::NoSuchTask(n))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_tasks() -> Vec<Task> {
+        vec![Task::new("A"), Task::new("B")]
+    }
+
+    #[test]
+    fn parse_index_number() {
+        assert_eq!(parse_index("3"), Ok(3));
+    }
+
+    #[test]
+    fn parse_index_rejects_zero() {
+        assert_eq!(parse_index("0"), Err(TaskError::ZeroIndex));
+    }
+
+    #[test]
+    fn parse_index_rejects_empty() {
+        assert_eq!(parse_index(""), Err(TaskError::MissingArgument));
+    }
+
+    #[test]
+    fn parse_index_not_a_number() {
+        assert_eq!(
+            parse_index("abc"),
+            Err(TaskError::NotANumber("abc".to_string()))
+        );
+    }
+
+    #[test]
+    fn get_task_returns_task_by_number() {
+        assert_eq!(get_task(&mut sample_tasks(), "2").unwrap().title(), "B");
+    }
+
+    #[test]
+    fn get_task_out_of_bounds() {
+        assert_eq!(
+            get_task(&mut sample_tasks(), "3").unwrap_err(),
+            TaskError::NoSuchTask(3)
+        );
+    }
+
+    #[test]
+    fn start_all_only_uncompleted_tasks() {
+        let mut tasks = sample_tasks();
+        tasks[0].complete();
+        start_all(&mut tasks);
+        assert!(tasks[0].is_done());
+        assert_eq!(tasks[1].symbol(), '~');
+    }
+
+    #[test]
+    fn add_empty_task() {
+        let mut tasks = sample_tasks();
+        add_task(&mut tasks, "");
+        assert_eq!(tasks.len(), 2);
+    }
+
+    #[test]
+    fn find_task_result() {
+        let tasks = sample_tasks();
+        assert_eq!(find_task(&tasks, "A").unwrap().title(), "A");
+        assert_eq!(find_task(&tasks, "X"), None);
+    }
+}

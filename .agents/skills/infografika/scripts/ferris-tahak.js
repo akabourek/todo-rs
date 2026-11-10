@@ -34,6 +34,9 @@ const LESSONS = [
   { md: '08-moduly.md', html: '08-moduly-infografika.html', thing: 'okénko přepážky',
     tip: "Nový soubor? `mod` v `main.rs`. Jiný modul? `use crate::…`. Vidět zvenku? `pub`, ale jen co je potřeba.",
     object: `<rect x="71" y="9" width="58" height="39" rx="3" fill="#c9975c" stroke="#6f4c24" stroke-width="2.5"/><rect x="82" y="12" width="36" height="9" rx="1.5" fill="#f7f1e3" stroke="#a7773f" stroke-width="1.5"/><path d="M87 16.5 H113" stroke="#5b6676" stroke-width="2"/><rect x="79" y="24" width="42" height="19" fill="#d7eef0" stroke="#0d7480" stroke-width="2"/><rect x="75" y="42" width="50" height="6" rx="1" fill="#efc75e" stroke="#6f4c24" stroke-width="1.5"/>` },
+  { md: '09-testy.md', html: '09-testy-infografika.html', thing: 'váhu',
+    tip: "Porovnáváš? `assert_eq!(skutečná, očekávaná)`. Očekávanou hodnotu napiš natvrdo a na každou věc jeden test.",
+    object: `<rect x="98" y="14" width="4" height="30" fill="#a7773f"/><rect x="87" y="42" width="26" height="6" rx="1.5" fill="#a7773f" stroke="#6f4c24" stroke-width="1.5"/><path d="M78 14 L72 30 M78 14 L84 30 M122 14 L116 30 M122 14 L128 30" stroke="#5b6676" stroke-width="1.2" fill="none"/><path d="M73 14 H127" stroke="#1b2330" stroke-width="3" stroke-linecap="round"/><circle cx="100" cy="14" r="3.2" fill="#efc75e" stroke="#1b2330" stroke-width="1.5"/><rect x="73" y="24" width="10" height="6" rx="1" fill="#f7f1e3" stroke="#a7773f" stroke-width="1"/><rect x="117" y="24" width="10" height="6" rx="1" fill="#f7f1e3" stroke="#a7773f" stroke-width="1"/><path d="M70 30 Q78 37 86 30 Z M114 30 Q122 37 130 30 Z" fill="#c9975c" stroke="#6f4c24" stroke-width="1.5" stroke-linejoin="round"/>` },
 ];
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const tipHtml = (t) => t.split('`').map((p, i) => (i % 2 ? `<code>${esc(p)}</code>` : esc(p))).join('');

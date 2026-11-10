@@ -36,6 +36,8 @@ git diff lekce-01 lekce-02 # co přibylo mezi lekcemi
   - [Infografika: Červená obálka](infografika/07-chyby-infografika.html) – obálky `Ok`/`Err` putují patry funkcí, `?` jako potrubní pošta + hřiště s cestou příkazu a „rozbij kód“ (otevřít v prohlížeči)
 - [08 – Moduly](08-moduly.md) – `mod`, `crate::`, `use`, `pub`, soukromá pole a metody místo nich
   - [Infografika: Úřad s přepážkami](infografika/08-moduly-infografika.html) – moduly jako kanceláře, `pub` jako přepážka, `use` jako rychlá volba + hřiště s cestou příkazu, „kdo na co dosáhne“ a „rozbij kód“ (otevřít v prohlížeči)
+- [09 – Testy](09-testy.md) – `#[test]`, `assert_eq!`, `#[cfg(test)] mod tests`, `use super::*`, `PartialEq`, `cargo test`
+  - [Infografika: Zkušebna s váhou](infografika/09-testy-infografika.html) – testy jako zkušební stolky, `assert_eq!` jako váha s miskami `left`/`right`, `#[cfg(test)]` jako zkušebna za dílnou + hřiště „rozbij kód a pusť `cargo test`“ s filtrem (otevřít v prohlížeči)
 
 Celá plánovaná osnova je v [AGENTS.md](../AGENTS.md#osnova-stav--hotovo--čeká).
 

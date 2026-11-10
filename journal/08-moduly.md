@@ -1,6 +1,6 @@
 # 08 – Moduly
 
-[← 07 – Chyby](07-chyby.md) · [Obsah](README.md) · [GitHub](https://github.com/akabourek/todo-rs)
+[← 07 – Chyby](07-chyby.md) · [Obsah](README.md) · [09 – Testy →](09-testy.md) · [GitHub](https://github.com/akabourek/todo-rs)
 
 ## Cíl
 Program už není jeden dlouhý `main.rs`, ale čtyři soubory. Umíme zapojit soubor přes `mod`, dojít
@@ -301,4 +301,4 @@ Poznámky:
 
 ---
 
-[← 07 – Chyby](07-chyby.md) · [Obsah](README.md) · [GitHub](https://github.com/akabourek/todo-rs)
+[← 07 – Chyby](07-chyby.md) · [Obsah](README.md) · [09 – Testy →](09-testy.md) · [GitHub](https://github.com/akabourek/todo-rs)
